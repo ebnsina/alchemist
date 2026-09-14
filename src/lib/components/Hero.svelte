@@ -1,6 +1,42 @@
 <script lang="ts">
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
 	import AuroraGradient from './AuroraGradient.svelte';
+
+	/* Illustrative rates, not a promise: a phone recording in, a web-ready file out. */
+	const SOURCE_MBPS = 16;
+	const QUALITIES = [
+		{ label: '1080p', mbps: 1.12 },
+		{ label: '720p', mbps: 0.7 },
+		{ label: '480p', mbps: 0.4 }
+	];
+
+	let minutes = $state(10);
+	let quality = $state(QUALITIES[0]);
+
+	const bytes = (mbps: number) => (mbps * 1_000_000 * minutes * 60) / 8;
+	const before = $derived(bytes(SOURCE_MBPS));
+	const after = $derived(bytes(quality.mbps));
+	const saved = $derived(Math.round((1 - after / before) * 100));
+
+	const size = (n: number) =>
+		n >= 1_000_000_000
+			? new Intl.NumberFormat('en', {
+					style: 'unit',
+					unit: 'gigabyte',
+					maximumFractionDigits: 1
+				}).format(n / 1_000_000_000)
+			: new Intl.NumberFormat('en', {
+					style: 'unit',
+					unit: 'megabyte',
+					maximumFractionDigits: 0
+				}).format(n / 1_000_000);
+
+	const duration = $derived(
+		new Intl.NumberFormat('en', { style: 'unit', unit: 'minute', unitDisplay: 'long' }).format(
+			minutes
+		)
+	);
+	const percent = $derived(new Intl.NumberFormat('en', { style: 'percent' }).format(saved / 100));
 </script>
 
 <section class="relative overflow-hidden pt-36 pb-20 sm:pt-44 sm:pb-28">
@@ -51,28 +87,63 @@
 		<!-- An illustration of what the tool does, not a screenshot of an app. -->
 		<figure class="card shine mx-auto mt-14 max-w-2xl p-4 text-left sm:p-6" use:scrollReveal>
 			<figcaption class="mb-4 flex items-center justify-between text-xs text-muted">
-				<span>What one conversion looks like</span>
+				<span>Try it with your own numbers</span>
 				<span>Illustration</span>
 			</figcaption>
 			<div class="flex items-center justify-between gap-4">
 				<div>
 					<p class="text-xs text-muted">Before</p>
-					<p class="text-2xl font-bold tracking-tight sm:text-3xl">1.2 GB</p>
+					<p class="text-2xl font-bold tracking-tight tabular-nums sm:text-3xl">{size(before)}</p>
 				</div>
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="flex-none text-emerald-light" aria-hidden="true">
 					<path d="M4 12h15M13.5 6.5 20 12l-6.5 5.5" />
 				</svg>
 				<div class="text-right">
 					<p class="text-xs text-muted">After</p>
-					<p class="gradient-text text-2xl font-bold tracking-tight sm:text-3xl">84 MB</p>
+					<p class="gradient-text text-2xl font-bold tracking-tight tabular-nums sm:text-3xl">
+						{size(after)}
+					</p>
 				</div>
 			</div>
+
 			<div class="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
-				<div class="progress-anim h-full w-full rounded-full bg-emerald"></div>
+				<div
+					class="h-full rounded-full bg-emerald transition-[width] duration-500 ease-out"
+					style="width: {100 - saved}%"
+				></div>
 			</div>
-			<p class="mt-3 text-xs text-muted">
-				A 10-minute clip, 93% smaller, and it still looks right on a big screen.
+
+			<p class="mt-3 text-xs text-muted" aria-live="polite">
+				{duration} of video comes out {percent} smaller, and still plays anywhere.
 			</p>
+
+			<div class="mt-5 grid gap-4 border-t border-hairline pt-5 sm:grid-cols-[1fr_auto] sm:items-end">
+				<label class="block text-xs text-muted">
+					<span class="flex items-center justify-between">
+						How long is it? <span class="tabular-nums text-ink">{duration}</span>
+					</span>
+					<input
+						type="range"
+						min="1"
+						max="120"
+						step="1"
+						bind:value={minutes}
+						class="range mt-2 w-full"
+					/>
+				</label>
+				<div class="flex gap-1.5" role="group" aria-label="Quality">
+					{#each QUALITIES as q (q.label)}
+						<button
+							type="button"
+							class="chip"
+							aria-pressed={quality.label === q.label}
+							onclick={() => (quality = q)}
+						>
+							{q.label}
+						</button>
+					{/each}
+				</div>
+			</div>
 		</figure>
 	</div>
 </section>
