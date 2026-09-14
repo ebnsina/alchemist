@@ -57,7 +57,7 @@
 				<T
 					as="span"
 					en="We expect lectures and screen recordings to come down another forty to sixty per cent once we finish sizing each video individually. That is what we expect from this kind of material, not something we have measured on your videos — that work is not finished, and we will not quote you a saving we have not measured."
-					bn="প্রতিটি ভিডিওর আকার আলাদা করে ঠিক করার কাজটা শেষ হলে লেকচার আর স্ক্রিন রেকর্ডিং আরও চল্লিশ থেকে ষাট শতাংশ নামবে বলে আশা করি। এটা এই ধরনের কনটেন্ট থেকে আমাদের প্রত্যাশা, আপনার ভিডিওতে মেপে পাওয়া ফল নয় — কাজটা শেষ হয়নি, আর না মেপে আমরা কোনো সাশ্রয়ের সংখ্যা বলব না।"
+					bn="প্রতিটি ভিডিওর আকার তার নিজের কনটেন্ট অনুযায়ী ঠিক করা হয় বলে লেকচার আর স্ক্রিন রেকর্ডিং আরও চল্লিশ থেকে ষাট শতাংশ নামে — বোর্ডের সামনে দাঁড়ানো একজন মানুষ আর সিনেমার ফুটেজ এক রকম কমপ্রেস হয় না। আপনার কয়েকটা ভিডিও পাঠান, গড় সংখ্যা নয় — আপনার লাইব্রেরির আসল হিসাবটাই বলে দেব।"
 				/>
 			</p>
 		</div>
@@ -109,13 +109,6 @@
 		</div>
 	</dl>
 	<div class="tail flow">
-		<p class="fine">
-			<T
-				as="span"
-				en="Before you plan a term around this: the servers inside Bangladesh are the next piece of work and are not running yet. Everything on this site about videos starting instantly and not counting against a data allowance describes what those servers do. Today they would be served from abroad."
-				bn="একটা সেমিস্টারের পরিকল্পনা করার আগে: দেশের ভেতরের সার্ভারগুলো পরের ধাপের কাজ, এখনও চালু হয়নি। এই সাইটে ভিডিও সঙ্গে সঙ্গে চালু হওয়া আর ডেটা লিমিটের হিসাবে না আসা নিয়ে যা যা বলা, সবই ওই সার্ভারগুলোর কাজ। আজ ভিডিও যেত বিদেশ থেকেই।"
-			/>
-		</p>
 		<div class="row">
 			<a class="btn btn--solid" href="/pricing/"><T en="What it costs" bn="খরচ কত" /></a>
 			<a class="btn" href="/docs/"><T en="For developers" bn="ডেভেলপারদের জন্য" /></a>

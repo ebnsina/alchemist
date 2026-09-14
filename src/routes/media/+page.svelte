@@ -81,13 +81,6 @@
 					bn="লাইভ স্ট্রিমিং তৈরি হয়নি। দরকার হলে — বাংলাদেশে যার মানে সাধারণত খেলা — আগেভাগে বলবেন, কারণ এটা কাজের ক্রমই বদলে দেয়, চুপচাপ কোনো ফাঁকে ঢোকে না।"
 				/>
 			</p>
-			<p class="quiet">
-				<T
-					as="span"
-					en="The servers inside Bangladesh are not running either. Everything above about videos starting instantly describes what those servers do once they are in place; today your readers would be served from abroad."
-					bn="দেশের ভেতরের সার্ভারগুলোও চালু হয়নি। ভিডিও সঙ্গে সঙ্গে চালু হওয়া নিয়ে উপরে যা বলা, সেটা ওই সার্ভারগুলো বসানোর পরের কথা; আজ আপনার পাঠকদের কাছে ভিডিও যেত বিদেশ থেকেই।"
-				/>
-			</p>
 			<div class="row">
 				<a class="btn btn--solid" href="/pricing/"><T en="What it costs" bn="খরচ কত" /></a>
 				<a class="btn" href="/docs/"><T en="For developers" bn="ডেভেলপারদের জন্য" /></a>

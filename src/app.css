@@ -40,6 +40,7 @@
 	--rule: rgba(255, 255, 255, 0.07);
 	--rule-firm: rgba(255, 255, 255, 0.11);
 	--brass: #e8a33d;
+	--brass-hi: #f2b558;
 	--brass-ink: #08090a;
 	--wash: rgba(232, 163, 61, 0.08);
 	--glow: rgba(232, 163, 61, 0.1);
@@ -78,6 +79,7 @@
 	--rule: rgba(16, 17, 18, 0.09);
 	--rule-firm: rgba(16, 17, 18, 0.16);
 	--brass: #8a5a0b;
+	--brass-hi: #6f4708;
 	--brass-ink: #fbfbfa;
 	--wash: rgba(138, 90, 11, 0.07);
 	--glow: rgba(138, 90, 11, 0.07);
@@ -293,17 +295,23 @@ html[lang='bn'] .btn {
 	background: #e6e6e3;
 }
 .btn--solid {
-	background: var(--ink);
-	border-color: transparent;
-	color: var(--paper);
+	background: var(--brass);
+	border-color: var(--brass);
+	color: var(--brass-ink);
 	box-shadow: none;
+	font-weight: 600;
 }
 .btn--solid:hover {
-	background: #fff;
-	border-color: transparent;
+	background: var(--brass-hi);
+	border-color: var(--brass-hi);
+	color: var(--brass-ink);
 }
-:root[data-theme='light'] .btn--solid:hover {
-	background: #000;
+.btn--sm {
+	padding: 0.38rem 0.75rem;
+	font-size: var(--step--1);
+}
+html[lang='bn'] .btn--sm {
+	font-size: var(--step-0);
 }
 .row {
 	display: flex;
@@ -322,22 +330,6 @@ html[lang='bn'] .btn {
 .tlink:hover {
 	color: var(--brass);
 	box-shadow: inset 0 -1px 0 var(--brass);
-}
-
-.panel {
-	background: var(--leaf);
-	border: 1px solid var(--rule);
-	border-radius: var(--r);
-	box-shadow: var(--lift);
-	padding: clamp(1rem, 0.85rem + 0.5vw, 1.35rem);
-}
-a.panel {
-	display: block;
-	text-decoration: none;
-	transition: border-color 150ms var(--ease);
-}
-a.panel:hover {
-	border-color: var(--rule-firm);
 }
 
 /* ---- tables ---- */
@@ -388,46 +380,202 @@ html[lang='bn'] thead th {
 	overflow-x: auto;
 }
 
-/* ---- indicative values ----------------------------------------------------
-   No price has been set. These read as real numbers so the page is a finished
-   design, and each is captioned "Indicative" in the accent against a brass edge —
-   deliberate annotation, not an error state. */
-.indic {
-	position: relative;
-	padding: 0.7rem 0.9rem 0.75rem;
-	background: var(--wash);
-	border: 1px solid var(--rule);
-	border-inline-start: 2px solid var(--brass);
-	border-radius: 0 var(--r-sm) var(--r-sm) 0;
-}
-.indic__tag {
-	display: block;
-	font-size: var(--step--1);
-	font-weight: 500;
-	letter-spacing: 0.04em;
-	color: var(--brass);
-	margin-bottom: 0.3rem;
-}
-html[lang='bn'] .indic__tag {
-	letter-spacing: 0;
-	font-size: var(--step-0);
-}
-.indic__value {
+/* ---- prices ---- */
+.price {
+	margin: 0.7rem 0 0.5rem;
 	font-size: var(--step-4);
 	font-weight: 600;
 	letter-spacing: -0.03em;
-	line-height: 1.1;
+	line-height: 1.15;
 }
-.indic__unit {
+.price span {
 	display: block;
 	font-size: var(--step-0);
+	font-weight: 400;
+	letter-spacing: 0;
 	color: var(--graphite);
-	margin-top: 0.2rem;
+	margin-top: 0.25rem;
 }
-html[lang='bn'] .indic__unit {
+html[lang='bn'] .price span {
+	font-size: var(--step-1);
+}
+.price + .price {
+	margin-top: 1rem;
+}
+
+/* ---- pieces the home page is built from ---------------------------------- */
+
+/* Status pill. Solid fill, no gradient, no glow. */
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.3rem 0.7rem 0.3rem 0.55rem;
+	border: 1px solid var(--rule-firm);
+	border-radius: 999px;
+	background: var(--leaf);
+	font-size: var(--step--1);
+	color: var(--graphite);
+}
+html[lang='bn'] .pill {
+	font-size: var(--step-0);
+}
+.pill b {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--brass);
+}
+
+/* Three short facts under the hero buttons. */
+.assure {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.6rem;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	font-size: var(--step-0);
+	color: var(--ink-3);
+}
+html[lang='bn'] .assure {
+	font-size: var(--step-1);
+}
+.assure li {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+}
+.assure svg {
+	color: var(--brass);
+	flex: 0 0 auto;
+}
+
+/* A framed, titled surface. Used for the data diagram and the worked examples. */
+.frame {
+	border: 1px solid var(--rule);
+	border-radius: var(--r);
+	background: var(--leaf);
+	box-shadow: var(--lift);
+	overflow: hidden;
+}
+.frame__bar {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+	flex-wrap: wrap;
+	padding: 0.7rem 1.1rem;
+	border-bottom: 1px solid var(--rule);
+	background: var(--sink);
+}
+.frame__title {
+	font-size: var(--step-0);
+	font-weight: 500;
+}
+html[lang='bn'] .frame__title {
+	font-size: var(--step-1);
+}
+.frame__note {
+	font-size: var(--step--1);
+	color: var(--ink-3);
+}
+html[lang='bn'] .frame__note {
+	font-size: var(--step-0);
+}
+.frame__body {
+	padding: clamp(1rem, 0.85rem + 0.6vw, 1.5rem);
+}
+
+/* Feature card. Flat surface, flat icon tile, no gradient anywhere. */
+.cards {
+	display: grid;
+	gap: var(--gap);
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+.card {
+	background: var(--leaf);
+	border: 1px solid var(--rule);
+	border-radius: var(--r);
+	box-shadow: var(--lift);
+	padding: 1.15rem;
+}
+.card__icon {
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	border-radius: var(--r-sm);
+	background: var(--sink);
+	border: 1px solid var(--rule);
+	color: var(--brass);
+	margin-bottom: 0.8rem;
+}
+.card h3 {
+	margin-bottom: 0.35rem;
+}
+.card p {
+	margin: 0;
+	font-size: var(--step-0);
+	line-height: 1.62;
+	color: var(--graphite);
+}
+html[lang='bn'] .card p {
 	font-size: var(--step-1);
 }
 
+/* Accordion. <details> is the whole mechanism — no script. */
+.faq {
+	border-top: 1px solid var(--rule);
+	max-width: 780px;
+}
+.faq details {
+	border-bottom: 1px solid var(--rule);
+}
+.faq summary {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.95rem 0;
+	cursor: pointer;
+	list-style: none;
+	font-weight: 500;
+	transition: color 140ms var(--ease);
+}
+.faq summary::-webkit-details-marker {
+	display: none;
+}
+.faq summary:hover {
+	color: var(--brass);
+}
+.faq summary::after {
+	content: '+';
+	font-family: var(--mono);
+	color: var(--ink-3);
+	flex: 0 0 auto;
+	line-height: 1;
+}
+.faq details[open] summary::after {
+	content: '\2013';
+}
+.faq details[open] summary {
+	color: var(--ink);
+}
+.faq p {
+	margin: 0 0 1rem;
+	padding-right: 2rem;
+	font-size: var(--step-0);
+	color: var(--graphite);
+	max-width: 68ch;
+}
+html[lang='bn'] .faq p {
+	font-size: var(--step-1);
+}
+
+/* The only motion is a response to something the reader did, plus one very slow
+   drift behind the hero. Both go when the reader asks for less. */
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,

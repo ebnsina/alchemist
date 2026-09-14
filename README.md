@@ -24,11 +24,13 @@ eat the viewer's data allowance, and the course they sell cannot simply be passe
 around. `/docs/` is the one page where precise terms are correct, because developers
 read it.
 
-**Almost no motion.** A hover state on links and buttons, and the focus ring, all at
-140ms. No entrance animations, no scroll-triggered anything, no libraries. One soft
-radial gradient sits behind the opening of the home page; it is two declarations of
-CSS and costs about 120 bytes. `prefers-reduced-motion` removes what motion there is,
-and `npm run verify` asserts that it actually does.
+**Almost no motion.** A hover state on links and buttons and the focus ring, all at
+140ms, plus one very slow drift on the hero background: four layered
+`radial-gradient`s on a single element, transform-only, 120 seconds per cycle. It is
+CSS rather than a canvas because a shader costs battery and bytes on exactly the
+phones this product exists for. `prefers-reduced-motion` removes all of it, and
+`npm run verify` asserts both that it does and that the drift exists when motion is
+allowed.
 
 **No client framework ships.** `csr = false` in `src/routes/+layout.ts`. The language
 and theme toggles are about twenty lines of delegated DOM in `src/app.html`. A first
@@ -70,13 +72,16 @@ only. Bangla gets 16px and more leading, because Bengali needs the room.
 - No customer logos, testimonials, case studies, uptime figures or compliance badges.
   There are no customers yet, so there is nothing honest to put there.
 - No countdown timers, fake scarcity, pre-ticked boxes or asterisked promises.
-- Every price is an indicative example, rendered inside `.indic`, which draws a brass
-  edge and captions the figure "Indicative" in both languages. The pricing page also
-  opens with a notice saying no price has been set. Grep for `class="indic"`.
-- Every number is either measured, cited to whoever measured it, or marked as a
-  projection or an indicative example. Claims about servers inside Bangladesh describe
-  what the system is being built to do; those servers are not running, and the site
-  says so on four pages.
+- **No invented people or organisations.** No testimonial quotes with names, no
+  customer logo wall, no "trusted by N customers", no star rating. Those slots are
+  filled instead by a line naming the kinds of organisation this is for, by the
+  megabytes-per-hour diagram, and — where testimonials would go — by nothing.
+- Product capabilities are written in present tense, like any product page. Figures
+  that are not yet fixed carry one quiet line rather than a badge on every number:
+  "Pricing is not final until launch" appears once on the pricing page, once under the
+  worked examples on the home page, and once in the footer.
+- Rollout status lives in one quiet place, the "Where it stands" block on `/about/`.
+  It is deliberately not on the home page or the audience pages.
 
 ## Verification
 
@@ -108,10 +113,13 @@ and 404 as well.
 
 ## Before this goes live
 
-- **Set real prices.** Every figure on `/pricing/` is an indicative example worked out
-  from the cost model, not a decision. Replace them and remove the `.indic` wrappers
-  and the notice at the top of that page together, so a real price is never shown in
-  the indicative treatment or an indicative one without it.
+- **Set real prices.** Every figure on `/pricing/`, and the three worked examples on
+  the home page, come from the cost model rather than a decision. When they are fixed,
+  drop the three "not final until launch" lines in the same change.
+- **Decide the commercial terms the copy already states**: no minimum, no setup fee,
+  no exit fee, cancel any time, price changes announced before they take effect.
+  Nothing on the site promises a free tier or a trial, because neither has been
+  decided — do not add one to the page before it exists in the billing code.
 - **Register the domain.** Grep for `alchemist.example`: it is in `src/lib/site.ts`
   (site origin, contact address, repository links) and `static/robots.txt`.
 - **Re-check the two dated figures**: the BTRC June 2026 user counts, and the ৳135 to

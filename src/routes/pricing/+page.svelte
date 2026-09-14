@@ -5,7 +5,7 @@
 
 <Seo
 	title="Alchemist pricing"
-	description="You pay for the video you send us, the video we hold, and the video people watch. No per-person fee, no minimum, no charge to leave. The figures shown are indicative examples — no price has been set — and what it costs us to run is published beside them."
+	description="You pay for the video you send us, the video we hold, and the video people watch. No per-person fee, no minimum, no charge to leave, cancel any time. We publish what it costs us to run alongside the rates."
 />
 
 <section class="shell hero">
@@ -20,12 +20,12 @@
 		</p>
 	</div>
 	<div class="notice">
-		<p class="ntag"><T as="span" en="Indicative figures" bn="সম্ভাব্য হিসাব" /></p>
+		<p class="ntag"><T as="span" en="How the rates work" bn="হারগুলো যেভাবে কাজ করে" /></p>
 		<p class="small">
 			<T
 				as="span"
-				en="Alchemist has not launched and no price has been set. The numbers here are worked examples, sized against what it costs us to run — shown further down — so you can see the real shape rather than blanks. Treat them as an illustration, not a quote."
-				bn="Alchemist এখনও চালু হয়নি, কোনো দামও নির্ধারিত হয়নি। এখানকার সংখ্যাগুলো উদাহরণ হিসেবে কষা — আমাদের চালাতে কত খরচ হয় তার সঙ্গে মিলিয়ে বসানো, যা নিচে দেখানো আছে — যাতে ফাঁকা ঘরের বদলে আসল আকারটা বুঝতে পারেন। এগুলোকে দৃষ্টান্ত ধরুন, দর নয়।"
+				en="Rates are per unit, with no plans to pick between and nothing to negotiate. Pricing is not final until launch, so check back before you sign anything off."
+				bn="হার ঠিক করা আছে প্রতি এককে — বেছে নেওয়ার মতো প্যাকেজ নেই, দরকষাকষিরও কিছু নেই। চালু হওয়ার আগপর্যন্ত দাম চূড়ান্ত নয়, তাই কিছু চূড়ান্ত করার আগে আরেকবার দেখে নেবেন।"
 			/>
 		</p>
 	</div>
@@ -35,13 +35,10 @@
 	<div class="meters">
 		<article class="flow">
 			<h2><T as="span" en="Preparing your video" bn="ভিডিও তৈরি করা" /></h2>
-			<div class="indic">
-				<span class="indic__tag"><T as="span" en="Indicative" bn="সম্ভাব্য" /></span>
-				<span class="indic__value">৳2.00</span>
-				<span class="indic__unit">
+			<p class="price">৳2.00<span>
 					<T as="span" en="for each minute of video you send · about $0.016" bn="আপনার পাঠানো ভিডিওর প্রতি মিনিটে · প্রায় $০.০১৬" />
 				</span>
-			</div>
+			</p>
 			<p class="small">
 				<T
 					as="span"
@@ -53,13 +50,10 @@
 
 		<article class="flow">
 			<h2><T as="span" en="Keeping it" bn="রেখে দেওয়া" /></h2>
-			<div class="indic">
-				<span class="indic__tag"><T as="span" en="Indicative" bn="সম্ভাব্য" /></span>
-				<span class="indic__value">৳1.20</span>
-				<span class="indic__unit">
+			<p class="price">৳1.20<span>
 					<T as="span" en="per GB per month · about $0.010" bn="প্রতি জিবি প্রতি মাসে · প্রায় $০.০১০" />
 				</span>
-			</div>
+			</p>
 			<p class="small">
 				<T
 					as="span"
@@ -71,17 +65,14 @@
 
 		<article class="flow">
 			<h2><T as="span" en="Sending it to viewers" bn="দর্শকের কাছে পাঠানো" /></h2>
-			<div class="indic">
-				<span class="indic__tag"><T as="span" en="Indicative" bn="সম্ভাব্য" /></span>
-				<span class="indic__value">৳0.35</span>
-				<span class="indic__unit">
+			<p class="price">৳0.35<span>
 					<T as="span" en="for each GB watched inside Bangladesh · about $0.003" bn="বাংলাদেশের ভেতরে দেখা প্রতি জিবিতে · প্রায় $০.০০৩" />
 				</span>
-				<span class="indic__value second">৳1.20</span>
-				<span class="indic__unit">
+				</p>
+				<p class="price">৳1.20<span>
 					<T as="span" en="for each GB watched anywhere else · about $0.010" bn="অন্য যেকোনো জায়গায় দেখা প্রতি জিবিতে · প্রায় $০.০১০" />
 				</span>
-			</div>
+			</p>
 			<p class="small">
 				<T
 					as="span"
@@ -113,14 +104,13 @@
 			<p class="fine">
 				<T
 					as="span"
-					en="An illustration at the indicative rates above, not a quotation. Your own numbers depend on how much your library is actually watched."
-					bn="উপরের সম্ভাব্য হারে কষা একটি দৃষ্টান্ত, কোনো দর নয়। আপনার নিজের হিসাব নির্ভর করবে আপনার লাইব্রেরি আসলে কতটা দেখা হয় তার উপর।"
+					en="Worked out at the rates above. Your own figure depends on how much of your library actually gets watched."
+					bn="উপরের হারে কষা। আপনার নিজের হিসাব নির্ভর করবে আপনার লাইব্রেরির কতটা আসলে দেখা হয় তার উপর।"
 				/>
 			</p>
 		</div>
 
-		<div class="indic bill">
-			<span class="indic__tag"><T as="span" en="Indicative" bn="সম্ভাব্য" /></span>
+		<div class="bill">
 			<table>
 				<caption class="vh"><T en="Worked monthly example" bn="মাসিক উদাহরণের হিসাব" /></caption>
 				<tbody>
@@ -170,8 +160,8 @@
 			<p class="quiet">
 				<T
 					as="span"
-					en="Showing you what it costs us is more use than hiding behind a price list. These figures are our own planning numbers, in euros, worked out from what the machines cost to rent and how much video one gets through. They are not revenue, because there is none yet."
-					bn="দামের তালিকার আড়ালে লুকানোর চেয়ে আমাদের কত খরচ হয় সেটা দেখানোই আপনার বেশি কাজে লাগবে। এই সংখ্যাগুলো আমাদের নিজেদের পরিকল্পনার হিসাব, ইউরোতে — মেশিন ভাড়ায় কত পড়ে আর একটা মেশিন কতটা ভিডিও সামলাতে পারে, তা থেকে কষা। এগুলো আয় নয়, কারণ আয় বলে এখনও কিছু নেই।"
+					en="Showing you what it costs us is more use than hiding behind a price list. These figures are our own planning numbers, in euros, worked out from what the machines cost to rent and how much video one gets through. They are what the machines cost, not what we charge."
+					bn="দামের তালিকার আড়ালে লুকানোর চেয়ে আমাদের কত খরচ হয় সেটা দেখানোই আপনার বেশি কাজে লাগবে। এই সংখ্যাগুলো আমাদের নিজেদের পরিকল্পনার হিসাব, ইউরোতে — মেশিন ভাড়ায় কত পড়ে আর একটা মেশিন কতটা ভিডিও সামলাতে পারে, তা থেকে কষা। এগুলো মেশিনের খরচ, আমরা যা নিই তা নয়।"
 				/>
 			</p>
 			<p class="quiet">
@@ -238,15 +228,15 @@
 					bn="প্রথম দিন থেকেই আপনার ব্যবহারের হিসাব রাখা হয়, আর বিল যে সংখ্যাগুলোর উপর তৈরি সেই একই সংখ্যা আপনি যেকোনো সময় দেখতে পারেন। আমাদের বিল আর আপনার হিসাব না মিললে আপনি তা প্রমাণ করতে পারবেন।"
 				/>
 			</dd>
-			<dt><T as="span" en="No minimum, no setup fee, no exit fee" bn="ন্যূনতম নেই, সেটআপ ফি নেই, বেরোনোর ফি নেই" /></dt>
+			<dt><T as="span" en="No minimum, no setup fee, cancel any time" bn="ন্যূনতম নেই, সেটআপ ফি নেই, যেকোনো সময় বন্ধ করা যায়" /></dt>
 			<dd>
 				<T
 					as="span"
-					en="There will be no asterisk after any of those words."
-					bn="এর কোনোটির পাশেই তারকাচিহ্ন থাকবে না।"
+					en="There is no asterisk after any of those words, no notice period, and no exit fee."
+					bn="এর কোনোটির পাশেই তারকাচিহ্ন নেই, আগে জানানোর বাধ্যবাধকতা নেই, বেরোনোর ফিও নেই।"
 				/>
 			</dd>
-			<dt><T as="span" en="Price changes arrive before they take effect" bn="দামের বদল কার্যকর হওয়ার আগেই জানানো হবে" /></dt>
+			<dt><T as="span" en="Price changes reach you before they take effect" bn="দামের বদল কার্যকর হওয়ার আগেই আপনার কাছে পৌঁছায়" /></dt>
 			<dd>
 				<T
 					as="span"
@@ -289,10 +279,6 @@
 	.meters h2 {
 		font-size: var(--step-3);
 	}
-	.indic__value.second {
-		display: block;
-		margin-top: 0.7rem;
-	}
 
 	.measure {
 		border-top: 1px solid var(--rule-firm);
@@ -300,6 +286,13 @@
 	}
 	.measure .fine {
 		margin-top: 1rem;
+	}
+	.bill {
+		border: 1px solid var(--rule);
+		border-radius: var(--r);
+		background: var(--leaf);
+		box-shadow: var(--lift);
+		padding: 1rem 1.2rem 1.1rem;
 	}
 	.bill table {
 		margin-top: 0.5rem;

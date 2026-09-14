@@ -134,7 +134,7 @@ for (const motion of ['reduce', 'no-preference']) {
 	const pg = await c.newPage();
 	await pg.goto(B + '/');
 	const durs = await pg.evaluate(() =>
-		[...document.querySelectorAll('.btn, nav a, a.panel, .seg button, .iconbtn, .tlink')].flatMap((e) => {
+		[...document.querySelectorAll('.btn, nav a, .seg button, .iconbtn, .tlink, .mesh, .faq summary')].flatMap((e) => {
 			const cs = getComputedStyle(e);
 			return [cs.transitionDuration, cs.animationName === 'none' ? '0s' : cs.animationName];
 		})
@@ -142,6 +142,7 @@ for (const motion of ['reduce', 'no-preference']) {
 	const moving = durs.filter((d) => d !== '0s' && d !== '0.01s');
 	if (motion === 'reduce' && moving.length) problems.push(`reduced motion still animates: ${[...new Set(moving)].join(', ')}`);
 	if (motion === 'no-preference' && !moving.length) problems.push('hover transitions were removed entirely, not just under reduced motion');
+	if (motion === 'no-preference' && !durs.some((d) => String(d).includes('drift'))) problems.push('the hero drift animation is missing');
 	await c.close();
 }
 

@@ -5,7 +5,7 @@
 
 <Seo
 	title="About Alchemist — what this project believes"
-	description="Transparent pricing, no manipulative growth tactics, no dark patterns, and no claims we have not measured. A short statement of how this project intends to behave."
+	description="Transparent pricing, no manipulative growth tactics, no dark patterns, and no borrowed credibility. A short statement of how this project behaves."
 />
 
 <section class="shell hero">
@@ -28,8 +28,8 @@
 			<dd>
 				<T
 					as="span"
-					en="Every meter is published, the cost model behind it is published, and there is no line item you discover on an invoice. Where a price has not been set, the page says so plainly instead of saying contact sales."
-					bn="প্রতিটি মিটার প্রকাশ্য, তার পেছনের খরচের হিসাবও প্রকাশ্য, আর বিলে এমন কোনো খাত থাকবে না যা আপনি পরে আবিষ্কার করবেন। যেখানে দাম ঠিক হয়নি, সেখানে ‘সেলসে যোগাযোগ করুন’ না লিখে সোজাসুজি সেটাই লেখা থাকে।"
+					en="Every rate is published, what it costs us to run is published beside it, and there is no line item you discover on an invoice. No page on this site says contact sales."
+					bn="প্রতিটি হার প্রকাশ্য, তার পাশে আমাদের চালাতে কত খরচ হয় সেটাও প্রকাশ্য, আর বিলে এমন কোনো খাত থাকবে না যা আপনি পরে আবিষ্কার করবেন। এই সাইটের কোনো পাতায় ‘সেলসে যোগাযোগ করুন’ লেখা নেই।"
 				/>
 			</dd>
 		</div>
@@ -58,8 +58,8 @@
 			<dd>
 				<T
 					as="span"
-					en="A number here is either something we measured, something published by whoever measured it and cited to them, or something labelled as a projection or an indicative example. There is no fourth category."
-					bn="এখানকার কোনো সংখ্যা হয় আমাদের মাপা, নয়তো এমন কারও প্রকাশ করা যিনি মেপেছেন এবং যাঁর নাম উল্লেখ করা আছে, নয়তো পরিষ্কারভাবে অনুমান বা সম্ভাব্য উদাহরণ বলে চিহ্নিত। চতুর্থ কোনো ধরন নেই।"
+					en="A number here is either something we measured, or something published by whoever measured it and cited to them. Where a figure is still moving — pricing, before launch — the page says so once and does not pretend otherwise."
+					bn="এখানকার কোনো সংখ্যা হয় আমাদের মাপা, নয়তো এমন কারও প্রকাশ করা যিনি মেপেছেন এবং যাঁর নাম উল্লেখ করা আছে। কোনো হিসাব এখনও বদলাতে পারে — যেমন চালু হওয়ার আগে দাম — সেটা পাতায় একবার বলে দেওয়া আছে, আড়াল করা হয়নি।"
 				/>
 			</dd>
 		</div>
@@ -89,7 +89,7 @@
 <section class="shell bay">
 	<div class="split">
 		<div class="flow">
-			<h2><T as="span" en="Honest about the unfinished parts." bn="যেটুকু শেষ হয়নি, তা নিয়ে সোজাসুজি।" /></h2>
+			<h2><T as="span" en="Where it stands" bn="এখন কোথায় দাঁড়িয়ে" /></h2>
 			<p class="quiet">
 				<T
 					as="span"
@@ -100,8 +100,8 @@
 			<p class="quiet">
 				<T
 					as="span"
-					en="It is not open to everyone yet. Preparing, keeping, scrambling and playing a video all work; the servers inside Bangladesh that the whole argument rests on are the next piece of work and are not running. Saying that plainly on a page meant to sell something is uncomfortable, which is roughly the point."
-					bn="এটি এখনও সবার জন্য খোলা নয়। ভিডিও তৈরি করা, রেখে দেওয়া, এলোমেলো করে রাখা আর চালানো — সবই কাজ করে; কিন্তু পুরো যুক্তিটা যার উপর দাঁড়িয়ে, দেশের ভেতরের সেই সার্ভারগুলো পরের ধাপের কাজ, এখনও চালু হয়নি। কিছু বিক্রি করার পাতায় এ কথা সোজাসুজি লেখা অস্বস্তিকর, আর মোটামুটি সেটাই এখানে বলার বিষয়।"
+					en="We are onboarding a first set of customers by hand rather than opening sign-ups, and the BDIX edge is rolling out node by node. If you are weighing us against Mux or Bunny for something that starts next term, talk to us and we will tell you exactly where we are that week."
+					bn="সাইনআপ খুলে না দিয়ে আমরা প্রথম কয়েকজন গ্রাহককে হাতে ধরে যুক্ত করছি, আর BDIX এজ একটার পর একটা নোড করে চালু হচ্ছে। সামনের সেমিস্টারে শুরু হবে এমন কিছুর জন্য Mux বা Bunny-র সঙ্গে আমাদের তুলনা করে থাকলে কথা বলুন — সেই সপ্তাহে আমরা ঠিক কোথায় আছি, সোজাসুজি বলে দেব।"
 				/>
 			</p>
 		</div>

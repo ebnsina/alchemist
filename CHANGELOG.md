@@ -15,6 +15,13 @@
   text node against its real composited background, in both themes.
 
 ### Changed
+- Rebuilt the home page: hero with a status line, two-line headline and three short
+  facts; a framed diagram of the sizes a video goes out at; a six-card feature grid;
+  three steps and a worked example; three worked cost examples with the middle one
+  emphasised; a `<details>` FAQ; a closing block; and a three-column footer.
+- Product capabilities are written in present tense. Rollout status now lives in one
+  place on `/about/` instead of on four pages, and pricing carries one "not final
+  until launch" line instead of a badge on every figure.
 - Rebuilt the visual system dark-first: `#08090A` ground, one ink at three opacities
   instead of separate text colours, hairline borders at 7% and 11%, 8px radii, large
   negatively-tracked headings over 15px body, and a single soft radial gradient behind
@@ -27,6 +34,7 @@
   accent, light as the primary surface, a 17px text size and a narrower type scale.
 
 ### Removed
+- The per-figure "Indicative" treatment on prices.
 - All entrance and scroll motion. What is left is a hover state and the focus ring.
 - The icon set, the card grids, the typographic labels above section headings, and the
   competitor price comparison, which came from figures recorded from memory rather
