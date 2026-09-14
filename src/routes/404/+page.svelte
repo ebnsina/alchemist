@@ -1,5 +1,4 @@
 <script lang="ts">
-	import T from '$lib/T.svelte';
 </script>
 
 <svelte:head>
@@ -10,21 +9,17 @@
 <section class="shell bay">
 	<div class="flow">
 		<p class="marker">404</p>
-		<h1><T as="span" en="That page is not here." bn="এই পাতাটি এখানে নেই।" /></h1>
+		<h1>That page is not here.</h1>
 		<p class="lede quiet">
-			<T
-				as="span"
-				en="Either it moved or it never existed. Neither is your fault. Everything this site has is one click away."
-				bn="হয় পাতাটি সরে গেছে, নয়তো কখনও ছিলই না। দুটোর কোনোটাই আপনার দোষ নয়। এই সাইটে যা যা আছে, সবই এক ক্লিক দূরে।"
-			/>
+			Either it moved or it never existed. Neither is your fault. Everything this site has is one click away.
 		</p>
 		<ul class="ways">
-			<li><a class="tlink" href="/"><T en="Home" bn="হোম" /></a></li>
-			<li><a class="tlink" href="/edtech/"><T en="Course platforms" bn="কোর্স প্ল্যাটফর্ম" /></a></li>
-			<li><a class="tlink" href="/media/"><T en="News and media" bn="সংবাদ ও মিডিয়া" /></a></li>
-			<li><a class="tlink" href="/pricing/"><T en="Pricing" bn="মূল্য" /></a></li>
-			<li><a class="tlink" href="/docs/"><T en="Docs" bn="ডকুমেন্টেশন" /></a></li>
-			<li><a class="tlink" href="/about/"><T en="About" bn="পরিচিতি" /></a></li>
+			<li><a class="tlink" href="/">Home</a></li>
+			<li><a class="tlink" href="/edtech/">Course platforms</a></li>
+			<li><a class="tlink" href="/media/">News and media</a></li>
+			<li><a class="tlink" href="/pricing/">Pricing</a></li>
+			<li><a class="tlink" href="/docs/">Docs</a></li>
+			<li><a class="tlink" href="/about/">About</a></li>
 		</ul>
 	</div>
 </section>

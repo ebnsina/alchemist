@@ -1,5 +1,4 @@
 <script lang="ts">
-	import T from '$lib/T.svelte';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
 
 	const steps = [
@@ -29,11 +28,11 @@
 	<div class="mx-auto max-w-6xl px-4 sm:px-6">
 		<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
 			<p class="text-xs tracking-widest text-emerald-light uppercase">
-				<T en="How it works" bn="কীভাবে কাজ করে" />
+				How it works
 			</p>
 			<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.18]">
-				<T as="span" en="Three easy steps." bn="তিনটি সহজ ধাপ।" />
-				<span class="gradient-text"><T as="span" en="That's it." bn="ব্যস, এইটুকুই।" /></span>
+				Three easy steps.
+				<span class="gradient-text">That's it.</span>
 			</h2>
 		</div>
 
@@ -44,8 +43,8 @@
 						class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-body text-sm font-bold text-emerald-light"
 						aria-hidden="true">{i + 1}</span
 					>
-					<h3 class="mt-4 text-lg font-bold tracking-tight"><T as="span" en={s.ten} bn={s.tbn} /></h3>
-					<p class="mt-2 text-sm leading-relaxed text-muted"><T as="span" en={s.ben} bn={s.bbn} /></p>
+					<h3 class="mt-4 text-lg font-bold tracking-tight">{s.ten}</h3>
+					<p class="mt-2 text-sm leading-relaxed text-muted">{s.ben}</p>
 				</li>
 			{/each}
 		</ol>

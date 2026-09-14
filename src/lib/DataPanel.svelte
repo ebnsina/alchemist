@@ -1,5 +1,4 @@
 <script lang="ts">
-	import T from './T.svelte';
 
 	// A diagram, not a screenshot. One uploaded video, the five sizes we send it at,
 	// and what an hour of each costs the person watching. Bar length is the value
@@ -18,43 +17,27 @@
 <figure class="frame">
 	<figcaption class="frame__bar">
 		<span class="frame__title">
-			<T
-				as="span"
-				en="One video you send us, and the sizes it goes out at"
-				bn="আপনার পাঠানো একটি ভিডিও, আর যে যে আকারে সেটি যায়"
-			/>
+			One video you send us, and the sizes it goes out at
 		</span>
 		<span class="frame__note">
-			<T
-				as="span"
-				en="A diagram, not a screen from an app"
-				bn="এটি একটি চিত্র, কোনো অ্যাপের পর্দা নয়"
-			/>
+			A diagram, not a screen from an app
 		</span>
 	</figcaption>
 	<div class="frame__body">
 		<p class="capt">
-			<T
-				as="span"
-				en="Data an hour of watching costs the viewer"
-				bn="এক ঘণ্টা দেখতে দর্শকের যত ডেটা লাগে"
-			/>
+			Data an hour of watching costs the viewer
 		</p>
 		<ul>
 			{#each sizes as s (s.en)}
 				<li class:is-default={s.dflt}>
-					<span class="name"><T as="span" en={s.en} bn={s.bn} /></span>
+					<span class="name">{s.en}</span>
 					<span class="track"><span class="bar" style="--w:{((s.mb / TOP) * 100).toFixed(1)}%"></span></span>
 					<span class="val">{s.mb}<span> MB</span></span>
 				</li>
 			{/each}
 		</ul>
 		<p class="foot">
-			<T
-				as="span"
-				en="The player picks a size to suit the connection and starts at the default. Worked out from the size we send at each step; a real video varies a little either way."
-				bn="সংযোগ বুঝে প্লেয়ার নিজেই একটি আকার বেছে নেয়, শুরু করে ডিফল্ট থেকে। প্রতিটি ধাপে আমরা যে আকারে পাঠাই তা থেকে কষা; আসল ভিডিওতে এদিক-ওদিক একটু হয়।"
-			/>
+			The player picks a size to suit the connection and starts at the default. Worked out from the size we send at each step; a real video varies a little either way.
 		</p>
 	</div>
 </figure>

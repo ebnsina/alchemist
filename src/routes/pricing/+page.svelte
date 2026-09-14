@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Seo from '$lib/Seo.svelte';
-	import T from '$lib/T.svelte';
 	import Money from '$lib/Money.svelte';
 </script>
 
@@ -11,23 +10,15 @@
 
 <section class="shell hero">
 	<div class="flow">
-		<h1><T as="span" en="Three things you pay for, and nothing else." bn="আপনি টাকা দেন তিনটি জিনিসের জন্য, আর কিছুর নয়।" /></h1>
+		<h1>Three things you pay for, and nothing else.</h1>
 		<p class="lede quiet">
-			<T
-				as="span"
-				en="You pay for the minutes of video you send us, the gigabytes we hold, and the gigabytes people watch. Everything else is simply how the thing works, and is not charged for separately."
-				bn="আপনি টাকা দেন আমাদের কাছে পাঠানো ভিডিওর মিনিটের জন্য, আমরা যত গিগাবাইট রাখি তার জন্য, আর মানুষ যত গিগাবাইট দেখে তার জন্য। বাকি সবকিছু নিছক এর কাজ করার ধরন, আলাদা করে তার দাম নেই।"
-			/>
+			You pay for the minutes of video you send us, the gigabytes we hold, and the gigabytes people watch. Everything else is simply how the thing works, and is not charged for separately.
 		</p>
 	</div>
 	<div class="notice">
-		<p class="ntag"><T as="span" en="How the rates work" bn="হারগুলো যেভাবে কাজ করে" /></p>
+		<p class="ntag">How the rates work</p>
 		<p class="small">
-			<T
-				as="span"
-				en="Rates are per unit, with no plans to pick between and nothing to negotiate. Pricing is not final until launch, so check back before you sign anything off."
-				bn="হার ঠিক করা আছে প্রতি এককে — বেছে নেওয়ার মতো প্যাকেজ নেই, দরকষাকষিরও কিছু নেই। চালু হওয়ার আগপর্যন্ত দাম চূড়ান্ত নয়, তাই কিছু চূড়ান্ত করার আগে আরেকবার দেখে নেবেন।"
-			/>
+			Rates are per unit, with no plans to pick between and nothing to negotiate. Pricing is not final until launch, so check back before you sign anything off.
 		</p>
 	</div>
 </section>
@@ -35,51 +26,39 @@
 <section class="shell bay">
 	<div class="meters">
 		<article class="flow">
-			<h2><T as="span" en="Preparing your video" bn="ভিডিও তৈরি করা" /></h2>
+			<h2>Preparing your video</h2>
 			<p class="price"><Money amount={2} /><span class="note">
-					<T as="span" en="for each minute of video you send · about $0.016" bn="আপনার পাঠানো ভিডিওর প্রতি মিনিটে · প্রায় $০.০১৬" />
+					for each minute of video you send · about $0.016
 				</span>
 			</p>
 			<p class="small">
-				<T
-					as="span"
-					en="Charged once, on the length of the video you send us. We make several sizes of it so it plays on any connection, and you are not charged for each one — a one-hour lecture is one hour."
-					bn="একবারই নেওয়া হয়, আপনার পাঠানো ভিডিওর দৈর্ঘ্যের উপর। যেকোনো সংযোগে যাতে চলে, সেজন্য আমরা কয়েকটি আকার বানাই — প্রতিটির জন্য আলাদা টাকা নেওয়া হয় না। এক ঘণ্টার লেকচার মানে এক ঘণ্টাই।"
-				/>
+				Charged once, on the length of the video you send us. We make several sizes of it so it plays on any connection, and you are not charged for each one — a one-hour lecture is one hour.
 			</p>
 		</article>
 
 		<article class="flow">
-			<h2><T as="span" en="Keeping it" bn="রেখে দেওয়া" /></h2>
+			<h2>Keeping it</h2>
 			<p class="price"><Money amount={1.2} /><span class="note">
-					<T as="span" en="per GB per month · about $0.010" bn="প্রতি জিবি প্রতি মাসে · প্রায় $০.০১০" />
+					per GB per month · about $0.010
 				</span>
 			</p>
 			<p class="small">
-				<T
-					as="span"
-					en="Counted on what we actually hold, which is less than you would guess. We do not keep your original file unless you ask us to, and the larger sizes only exist for videos somebody has watched."
-					bn="আমরা সত্যিই যতটা রাখি তার উপর হিসাব — আর সেটা আপনার ধারণার চেয়ে কম। আপনি না বললে আপনার মূল ফাইলটা আমরা রাখি না, আর বড় আকারগুলো কেবল সেই ভিডিওর জন্যই থাকে যা কেউ দেখেছেন।"
-				/>
+				Counted on what we actually hold, which is less than you would guess. We do not keep your original file unless you ask us to, and the larger sizes only exist for videos somebody has watched.
 			</p>
 		</article>
 
 		<article class="flow">
-			<h2><T as="span" en="Sending it to viewers" bn="দর্শকের কাছে পাঠানো" /></h2>
+			<h2>Sending it to viewers</h2>
 			<p class="price"><Money amount={0.35} /><span class="note">
-					<T as="span" en="for each GB watched inside Bangladesh · about $0.003" bn="বাংলাদেশের ভেতরে দেখা প্রতি জিবিতে · প্রায় $০.০০৩" />
+					for each GB watched inside Bangladesh · about $0.003
 				</span>
 				</p>
 				<p class="price"><Money amount={1.2} /><span class="note">
-					<T as="span" en="for each GB watched anywhere else · about $0.010" bn="অন্য যেকোনো জায়গায় দেখা প্রতি জিবিতে · প্রায় $০.০১০" />
+					for each GB watched anywhere else · about $0.010
 				</span>
 			</p>
 			<p class="small">
-				<T
-					as="span"
-					en="Two rates because they cost us two different amounts. Reaching someone in Bangladesh is far cheaper than reaching someone abroad, and charging one flat rate would mean your Bangladeshi viewers quietly paying for the difference."
-					bn="দুটি আলাদা হার, কারণ আমাদের খরচও দুই রকম। বাংলাদেশের কারও কাছে পৌঁছানো বিদেশের কারও কাছে পৌঁছানোর চেয়ে অনেক সস্তা — একটাই হার রাখলে সেই ফারাকের টাকাটা চুপচাপ আপনার দেশি দর্শকরাই দিতেন।"
-				/>
+				Two rates because they cost us two different amounts. Reaching someone in Bangladesh is far cheaper than reaching someone abroad, and charging one flat rate would mean your Bangladeshi viewers quietly paying for the difference.
 			</p>
 		</article>
 	</div>
@@ -89,121 +68,97 @@
 	<div class="split">
 		<div class="flow">
 			<h2>
-				<T
-					as="span"
-					en="What a mid-sized course platform would pay."
-					bn="মাঝারি আকারের একটি কোর্স প্ল্যাটফর্মের কত পড়ত।"
-				/>
+				What a mid-sized course platform would pay.
 			</h2>
 			<p class="quiet">
-				<T
-					as="span"
-					en="Twenty hours of new lecture a month, five hundred gigabytes of videos held, and two hundred and fifty gigabytes watched by students in Bangladesh. That is the three rates above multiplied out, and nothing else — there is no monthly platform fee underneath."
-					bn="মাসে বিশ ঘণ্টা নতুন লেকচার, পাঁচশ গিগাবাইট ভিডিও রাখা, আর বাংলাদেশে শিক্ষার্থীদের দেখা আড়াইশ গিগাবাইট। এটা উপরের তিনটি হার গুণ করেই পাওয়া, আর কিছু নয় — নিচে কোনো মাসিক প্ল্যাটফর্ম ফি নেই।"
-				/>
+				Twenty hours of new lecture a month, five hundred gigabytes of videos held, and two hundred and fifty gigabytes watched by students in Bangladesh. That is the three rates above multiplied out, and nothing else — there is no monthly platform fee underneath.
 			</p>
 			<p class="fine">
-				<T
-					as="span"
-					en="Worked out at the rates above. Your own figure depends on how much of your library actually gets watched."
-					bn="উপরের হারে কষা। আপনার নিজের হিসাব নির্ভর করবে আপনার লাইব্রেরির কতটা আসলে দেখা হয় তার উপর।"
-				/>
+				Worked out at the rates above. Your own figure depends on how much of your library actually gets watched.
 			</p>
 		</div>
 
 		<div class="bill">
 			<table>
-				<caption class="vh"><T en="Worked monthly example" bn="মাসিক উদাহরণের হিসাব" /></caption>
+				<caption class="vh">Worked monthly example</caption>
 				<tbody>
 					<tr>
-						<th scope="row"><T as="span" en="Preparing 20 hours of video" bn="২০ ঘণ্টা ভিডিও তৈরি" /></th>
+						<th scope="row">Preparing 20 hours of video</th>
 						<td class="figure"><Money amount={2400} decimals={0} /></td>
 					</tr>
 					<tr>
-						<th scope="row"><T as="span" en="Keeping 500 GB" bn="৫০০ জিবি রেখে দেওয়া" /></th>
+						<th scope="row">Keeping 500 GB</th>
 						<td class="figure"><Money amount={600} decimals={0} /></td>
 					</tr>
 					<tr>
-						<th scope="row"><T as="span" en="Sending 250 GB inside Bangladesh" bn="দেশের ভেতরে ২৫০ জিবি পাঠানো" /></th>
+						<th scope="row">Sending 250 GB inside Bangladesh</th>
 						<td class="figure"><Money amount={88} decimals={0} /></td>
 					</tr>
 				</tbody>
 				<tfoot>
 					<tr>
-						<th scope="row"><T as="span" en="A month" bn="মাসে" /></th>
+						<th scope="row">A month</th>
 						<td class="figure total"><Money amount={3088} decimals={0} /></td>
 					</tr>
 				</tfoot>
 			</table>
 			<p class="fine conv">
-				<T as="span" en="About $25. Conversions on this page are approximate." bn="প্রায় $২৫। এই পাতার মুদ্রা রূপান্তরগুলো আনুমানিক।" />
+				About $25. Conversions on this page are approximate.
 			</p>
 		</div>
 	</div>
 </section>
 
 <section class="shell bay">
-	<h2 class="wide"><T as="span" en="Things you will never see on an invoice." bn="যেগুলো কখনও বিলে দেখবেন না।" /></h2>
+	<h2 class="wide">Things you will never see on an invoice.</h2>
 	<ul class="never">
-		<li><T as="span" en="Seats. Add as many teammates as you like." bn="সিট। যত খুশি সহকর্মী যোগ করুন।" /></li>
-		<li><T as="span" en="The several sizes we make of each video so it plays everywhere." bn="সব জায়গায় যাতে চলে, সেজন্য প্রতিটি ভিডিওর যে কয়েকটি আকার বানানো হয়।" /></li>
-		<li><T as="span" en="Asking us questions — how many videos you have, how much you have used." bn="আমাদের কাছে জানতে চাওয়া — কতগুলো ভিডিও আছে, কতটা ব্যবহার হয়েছে।" /></li>
-		<li><T as="span" en="Us telling your system when a video is ready." bn="ভিডিও তৈরি হলে আপনার সিস্টেমকে জানানো।" /></li>
-		<li><T as="span" en="Scrambling, expiring links and preview images. They are the product, not an upgrade." bn="এলোমেলো করে রাখা, মেয়াদওয়ালা লিংক আর প্রিভিউ ছবি। এগুলোই পণ্য, আলাদা কোনো আপগ্রেড নয়।" /></li>
-		<li><T as="span" en="Leaving, and taking your files with you." bn="চলে যাওয়া, আর নিজের ফাইল সঙ্গে নিয়ে যাওয়া।" /></li>
+		<li>Seats. Add as many teammates as you like.</li>
+		<li>The several sizes we make of each video so it plays everywhere.</li>
+		<li>Asking us questions — how many videos you have, how much you have used.</li>
+		<li>Us telling your system when a video is ready.</li>
+		<li>Scrambling, expiring links and preview images. They are the product, not an upgrade.</li>
+		<li>Leaving, and taking your files with you.</li>
 	</ul>
 </section>
 
 <section class="shell bay">
 	<div class="split">
 		<div class="flow">
-			<h2><T as="span" en="What this costs us to run." bn="এটা চালাতে আমাদের কত খরচ।" /></h2>
+			<h2>What this costs us to run.</h2>
 			<p class="quiet">
-				<T
-					as="span"
-					en="Showing you what it costs us is more use than hiding behind a price list. These figures are our own planning numbers, in euros, worked out from what the machines cost to rent and how much video one gets through. They are what the machines cost, not what we charge."
-					bn="দামের তালিকার আড়ালে লুকানোর চেয়ে আমাদের কত খরচ হয় সেটা দেখানোই আপনার বেশি কাজে লাগবে। এই সংখ্যাগুলো আমাদের নিজেদের পরিকল্পনার হিসাব, ইউরোতে — মেশিন ভাড়ায় কত পড়ে আর একটা মেশিন কতটা ভিডিও সামলাতে পারে, তা থেকে কষা। এগুলো মেশিনের খরচ, আমরা যা নিই তা নয়।"
-				/>
+				Showing you what it costs us is more use than hiding behind a price list. These figures are our own planning numbers, in euros, worked out from what the machines cost to rent and how much video one gets through. They are what the machines cost, not what we charge.
 			</p>
 			<p class="quiet">
-				<T
-					as="span"
-					en="The gap between that and the rates above is margin, and it stays visible. A number you can check is worth more than one you have to take on faith."
-					bn="ওটার সঙ্গে উপরের হারগুলোর যে ফারাক, সেটাই মুনাফা — আর সেটা চোখের সামনেই থাকবে। বিশ্বাস করে মেনে নিতে হয় এমন সংখ্যার চেয়ে যাচাই করা যায় এমন সংখ্যার দাম বেশি।"
-				/>
+				The gap between that and the rates above is margin, and it stays visible. A number you can check is worth more than one you have to take on faith.
 			</p>
 		</div>
 		<div class="measure">
 			<div class="scroll-x">
 				<table>
-					<caption><T en="What our servers cost us, per hour of video prepared" bn="প্রতি ঘণ্টা ভিডিও তৈরিতে আমাদের সার্ভারের খরচ" /></caption>
+					<caption>What our servers cost us, per hour of video prepared</caption>
 					<thead>
 						<tr>
-							<th scope="col"><T en="Volume" bn="পরিমাণ" /></th>
-							<th scope="col"><T en="Servers" bn="সার্ভার" /></th>
-							<th scope="col"><T en="Per hour" bn="ঘণ্টাপ্রতি" /></th>
+							<th scope="col">Volume</th>
+							<th scope="col">Servers</th>
+							<th scope="col">Per hour</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr>
-							<th scope="row"><T as="span" en="2,000 hours of video a month" bn="মাসে ২,০০০ ঘণ্টা ভিডিও" /></th>
-							<td><T as="span" en="3 machines, €350–500 a month" bn="৩টি মেশিন, মাসে €৩৫০–৫০০" /></td>
+							<th scope="row">2,000 hours of video a month</th>
+							<td>3 machines, €350–500 a month</td>
 							<td class="figure">€0.20</td>
 						</tr>
 						<tr>
-							<th scope="row"><T as="span" en="100,000 hours of video a month" bn="মাসে ১,০০,০০০ ঘণ্টা ভিডিও" /></th>
-							<td><T as="span" en="About €13,630 a month" bn="মাসে প্রায় €১৩,৬৩০" /></td>
+							<th scope="row">100,000 hours of video a month</th>
+							<td>About €13,630 a month</td>
 							<td class="figure">€0.14</td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
 			<p class="fine">
-				<T
-					as="span"
-					en="At roughly ৳135 to the euro — worth checking the rate yourself — €0.14 is about ৳19 of server cost per hour of video. The time it takes to build and run the thing is not in these numbers, and it is the larger cost of the two."
-					bn="প্রতি ইউরো মোটামুটি ১৩৫ টাকা ধরে — রেটটা নিজে যাচাই করে নেওয়া ভালো — €০.১৪ মানে প্রতি ঘণ্টা ভিডিওতে প্রায় ১৯ টাকার সার্ভার খরচ। এটা বানাতে আর চালাতে যত সময় যায় সেটা এই হিসাবে নেই, অথচ দুটোর মধ্যে বড় খরচ সেটাই।"
-				/>
+				At roughly ৳135 to the euro — worth checking the rate yourself — €0.14 is about ৳19 of server cost per hour of video. The time it takes to build and run the thing is not in these numbers, and it is the larger cost of the two.
 			</p>
 		</div>
 	</div>
@@ -211,39 +166,23 @@
 
 <section class="shell bay">
 	<div class="flow narrow">
-		<h2><T as="span" en="In plain words." bn="সহজ কথায়।" /></h2>
+		<h2>In plain words.</h2>
 		<dl class="plainly">
-			<dt><T as="span" en="Taka for Bangladeshi customers" bn="বাংলাদেশি গ্রাহকের জন্য টাকায়" /></dt>
+			<dt>Taka for Bangladeshi customers</dt>
 			<dd>
-				<T
-					as="span"
-					en="Collected through bKash, Nagad or card — not a foreign-currency charge with a bank's markup stacked on top. USD for everyone else."
-					bn="আদায় হবে বিকাশ, নগদ বা কার্ডে — ব্যাংকের বাড়তি চার্জ চাপানো বিদেশি মুদ্রার বিল নয়। বাকি সবার জন্য ডলারে।"
-				/>
+				Collected through bKash, Nagad or card — not a foreign-currency charge with a bank's markup stacked on top. USD for everyone else.
 			</dd>
-			<dt><T as="span" en="You can check the numbers yourself" bn="সংখ্যাগুলো আপনি নিজেই যাচাই করতে পারবেন" /></dt>
+			<dt>You can check the numbers yourself</dt>
 			<dd>
-				<T
-					as="span"
-					en="Your usage is counted from the first day, and you can read the same numbers the bill is built from at any time. If our bill and your own figures disagree, you should be able to prove it."
-					bn="প্রথম দিন থেকেই আপনার ব্যবহারের হিসাব রাখা হয়, আর বিল যে সংখ্যাগুলোর উপর তৈরি সেই একই সংখ্যা আপনি যেকোনো সময় দেখতে পারেন। আমাদের বিল আর আপনার হিসাব না মিললে আপনি তা প্রমাণ করতে পারবেন।"
-				/>
+				Your usage is counted from the first day, and you can read the same numbers the bill is built from at any time. If our bill and your own figures disagree, you should be able to prove it.
 			</dd>
-			<dt><T as="span" en="No minimum, no setup fee, cancel any time" bn="ন্যূনতম নেই, সেটআপ ফি নেই, যেকোনো সময় বন্ধ করা যায়" /></dt>
+			<dt>No minimum, no setup fee, cancel any time</dt>
 			<dd>
-				<T
-					as="span"
-					en="There is no asterisk after any of those words, no notice period, and no exit fee."
-					bn="এর কোনোটির পাশেই তারকাচিহ্ন নেই, আগে জানানোর বাধ্যবাধকতা নেই, বেরোনোর ফিও নেই।"
-				/>
+				There is no asterisk after any of those words, no notice period, and no exit fee.
 			</dd>
-			<dt><T as="span" en="Price changes reach you before they take effect" bn="দামের বদল কার্যকর হওয়ার আগেই আপনার কাছে পৌঁছায়" /></dt>
+			<dt>Price changes reach you before they take effect</dt>
 			<dd>
-				<T
-					as="span"
-					en="Not after. Keeping a customer by making the way out confusing is not something we are willing to do."
-					bn="পরে নয়। বেরোনোর পথটা জটিল করে গ্রাহক ধরে রাখা আমরা করব না।"
-				/>
+				Not after. Keeping a customer by making the way out confusing is not something we are willing to do.
 			</dd>
 		</dl>
 	</div>

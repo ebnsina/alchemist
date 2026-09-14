@@ -19,13 +19,11 @@
 					if (s === 'bn' || s === 'en') d.lang = s;
 				} catch (e) {}
 				function paint() {
-					var b = document.querySelectorAll('[data-set-lang]');
 					for (var i = 0; i < b.length; i++)
 						b[i].setAttribute('aria-pressed', b[i].dataset.setLang === d.lang ? 'true' : 'false');
 				}
 				document.addEventListener('DOMContentLoaded', paint);
 				document.addEventListener('click', function (e) {
-					var l = e.target.closest && e.target.closest('[data-set-lang]');
 					if (!l) return;
 					d.lang = l.dataset.setLang;
 					put('alc-lang', d.lang);
@@ -42,7 +40,7 @@
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link
 			rel="stylesheet"
-			href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400..600&display=swap"
+			href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..600&display=swap"
 		/>
 	</head>
 	<body data-sveltekit-preload-data="tap">

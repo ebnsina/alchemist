@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Logo from './Logo.svelte';
-	import T from '$lib/T.svelte';
 
 	const cols = [
 		{
@@ -40,24 +39,20 @@
 				<Logo size={24} /> Alchemist
 			</p>
 			<p class="mt-3 max-w-sm text-sm text-muted">
-				<T
-					as="span"
-					en="Heavy video in, light video out. Made for creators, teachers and small businesses who would rather not think about file sizes."
-					bn="ভারী ভিডিও ঢোকে, হালকা ভিডিও বেরোয়। ক্রিয়েটর, শিক্ষক আর ছোট ব্যবসার জন্য — যাঁরা ফাইলের আকার নিয়ে মাথা ঘামাতে চান না।"
-				/>
+				Heavy video in, light video out. Made for creators, teachers and small businesses who would rather not think about file sizes.
 			</p>
 		</div>
 		<nav class="grid gap-8 sm:grid-cols-3" aria-label="Footer">
 			{#each cols as c (c.hen)}
 				<div>
 					<h2 class="text-xs font-semibold tracking-widest text-muted uppercase">
-						<T as="span" en={c.hen} bn={c.hbn} />
+						{c.hen}
 					</h2>
 					<ul class="mt-4 space-y-2.5">
 						{#each c.links as l (l.href)}
 							<li>
 								<a href={l.href} class="text-sm text-muted transition-colors hover:text-ink"
-									><T en={l.en} bn={l.bn} /></a
+									>{l.en}</a
 								>
 							</li>
 						{/each}
@@ -70,6 +65,6 @@
 		class="mx-auto flex max-w-6xl flex-wrap gap-x-8 gap-y-2 border-t border-hairline px-4 py-6 text-xs text-muted sm:px-6"
 	>
 		<p>© 2026 Alchemist</p>
-		<p><T as="span" en="Files deleted 24 hours after you download them." bn="নামিয়ে নেওয়ার ২৪ ঘণ্টা পর ফাইল মুছে ফেলা হয়।" /></p>
+		<p>Files deleted 24 hours after you download them.</p>
 	</div>
 </footer>

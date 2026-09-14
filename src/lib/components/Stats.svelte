@@ -1,5 +1,4 @@
 <script lang="ts">
-	import T from '$lib/T.svelte';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
 
 	// The reference used customer counts, video counts and a star rating here. These
@@ -16,11 +15,11 @@
 	<dl class="grid grid-cols-2 gap-x-6 gap-y-10 text-center md:grid-cols-4">
 		{#each stats as s, i (s.value)}
 			<div use:scrollReveal={{ delay: i * 70 }}>
-				<dt class="vh"><T as="span" en={s.en} bn={s.bn} /></dt>
+				<dt class="vh">{s.en}</dt>
 				<dd class="gradient-text text-3xl font-bold tracking-tight sm:text-4xl">
-					{#if s.vbn}<T as="span" en={s.value} bn={s.vbn} />{:else}{s.value}{/if}
+					{#if s.vbn}{s.value}{:else}{s.value}{/if}
 				</dd>
-				<p class="mt-2 text-sm text-muted"><T as="span" en={s.en} bn={s.bn} /></p>
+				<p class="mt-2 text-sm text-muted">{s.en}</p>
 			</div>
 		{/each}
 	</dl>

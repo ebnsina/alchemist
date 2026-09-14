@@ -43,7 +43,7 @@
 		inset: 0;
 		background: linear-gradient(
 			to bottom,
-			color-mix(in srgb, var(--color-body) 34%, transparent) 0%,
+			color-mix(in srgb, var(--color-body) 46%, transparent) 0%,
 			color-mix(in srgb, var(--color-body) 62%, transparent) 38%,
 			color-mix(in srgb, var(--color-body) 68%, transparent) 100%
 		);

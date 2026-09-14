@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import Logo from './Logo.svelte';
-	import T from '$lib/T.svelte';
 
 	let stuck = $state(false);
 
@@ -49,7 +48,7 @@
 						<a
 							href={l.href}
 							class="block py-1 text-sm text-muted transition-colors hover:text-ink"
-							><T en={l.en} bn={l.bn} /></a
+							>{l.en}</a
 						>
 					</li>
 				{/each}
@@ -57,30 +56,8 @@
 		</nav>
 
 		<div class="ml-auto flex flex-none items-center gap-2 sm:ml-0 sm:justify-self-end">
-			<div
-				class="flex items-center gap-0.5 rounded-xl border border-hairline bg-card p-0.5"
-				role="group"
-				aria-label="Language / ভাষা"
-			>
-				<button
-					type="button"
-					data-set-lang="en"
-					aria-pressed="true"
-					lang="en"
-					class="rounded-xl px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-ink aria-pressed:bg-body aria-pressed:text-ink"
-					>EN</button
-				>
-				<button
-					type="button"
-					data-set-lang="bn"
-					aria-pressed="false"
-					lang="bn"
-					class="rounded-xl px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-ink aria-pressed:bg-body aria-pressed:text-ink"
-					>বাংলা</button
-				>
-			</div>
 			<a href="/#pricing" class="btn-primary hidden text-sm sm:inline-flex">
-				<T en="Start free" bn="ফ্রি শুরু করুন" />
+				Start free
 			</a>
 		</div>
 	</div>

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import T from '$lib/T.svelte';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
 
 	const features = [
@@ -51,11 +50,11 @@
 <section id="features" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
-			<T en="What you get" bn="যা যা পাবেন" />
+			What you get
 		</p>
 		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.18]">
-			<T as="span" en="Video made simple." bn="ভিডিও, একেবারে সহজ।" />
-			<span class="gradient-text"><T as="span" en="Really simple." bn="সত্যিই সহজ।" /></span>
+			Video made simple.
+			<span class="gradient-text">Really simple.</span>
 		</h2>
 	</div>
 
@@ -67,8 +66,8 @@
 				>
 					<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={f.d} /></svg>
 				</span>
-				<h3 class="text-lg font-bold tracking-tight"><T as="span" en={f.ten} bn={f.tbn} /></h3>
-				<p class="mt-2 text-sm leading-relaxed text-muted"><T as="span" en={f.ben} bn={f.bbn} /></p>
+				<h3 class="text-lg font-bold tracking-tight">{f.ten}</h3>
+				<p class="mt-2 text-sm leading-relaxed text-muted">{f.ben}</p>
 			</article>
 		{/each}
 	</div>

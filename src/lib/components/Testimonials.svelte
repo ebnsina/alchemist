@@ -1,5 +1,4 @@
 <script lang="ts">
-	import T from '$lib/T.svelte';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
 
 	// The reference put three invented people with names, roles, avatars and star
@@ -33,10 +32,10 @@
 <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
-			<T en="Who it's for" bn="কাদের জন্য" />
+			Who it's for
 		</p>
 		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.18]">
-			<T as="span" en="Made for the way you work." bn="আপনি যেভাবে কাজ করেন, সেভাবেই বানানো।" />
+			Made for the way you work.
 		</h2>
 	</div>
 
@@ -49,8 +48,8 @@
 				>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d={u.d} /></svg>
 				</span>
-				<h3 class="text-lg font-bold tracking-tight"><T as="span" en={u.ten} bn={u.tbn} /></h3>
-				<p class="mt-2 text-sm leading-relaxed text-muted"><T as="span" en={u.ben} bn={u.bbn} /></p>
+				<h3 class="text-lg font-bold tracking-tight">{u.ten}</h3>
+				<p class="mt-2 text-sm leading-relaxed text-muted">{u.ben}</p>
 			</article>
 		{/each}
 	</div>

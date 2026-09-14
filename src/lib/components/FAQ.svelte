@@ -1,5 +1,4 @@
 <script lang="ts">
-	import T from '$lib/T.svelte';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
 
 	const qs = [
@@ -45,11 +44,11 @@
 <section id="faq" class="mx-auto max-w-3xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="text-center" use:scrollReveal>
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
-			<T en="Questions" bn="প্রশ্ন" />
+			Questions
 		</p>
 		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.18]">
-			<T as="span" en="Got questions?" bn="প্রশ্ন আছে?" />
-			<span class="gradient-text"><T as="span" en="We've got answers." bn="উত্তরও আছে।" /></span>
+			Got questions?
+			<span class="gradient-text">We've got answers.</span>
 		</h2>
 	</div>
 
@@ -59,7 +58,7 @@
 				<summary
 					class="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium transition-colors hover:text-emerald-light"
 				>
-					<T as="span" en={q.qen} bn={q.qbn} />
+					{q.qen}
 					<svg
 						class="chevron flex-none text-muted"
 						width="17"
@@ -73,7 +72,7 @@
 						aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
 					>
 				</summary>
-				<p class="pb-5 text-sm leading-relaxed text-muted"><T as="span" en={q.aen} bn={q.abn} /></p>
+				<p class="pb-5 text-sm leading-relaxed text-muted">{q.aen}</p>
 			</details>
 		{/each}
 	</div>

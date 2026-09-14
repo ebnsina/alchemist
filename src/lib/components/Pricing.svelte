@@ -1,5 +1,4 @@
 <script lang="ts">
-	import T from '$lib/T.svelte';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
 
 	const tiers = [
@@ -62,17 +61,13 @@
 
 <section id="pricing" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
-		<p class="text-xs tracking-widest text-emerald-light uppercase"><T en="Pricing" bn="দাম" /></p>
+		<p class="text-xs tracking-widest text-emerald-light uppercase">Pricing</p>
 		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.18]">
-			<T as="span" en="Simple pricing." bn="সহজ দাম।" />
-			<span class="gradient-text"><T as="span" en="No surprises." bn="কোনো চমক নেই।" /></span>
+			Simple pricing.
+			<span class="gradient-text">No surprises.</span>
 		</h2>
 		<p class="mt-4 text-sm text-muted">
-			<T
-				as="span"
-				en="Cancel any time, from your account page, in two clicks. No notice period and no asterisk."
-				bn="যেকোনো সময় বন্ধ করতে পারেন, নিজের অ্যাকাউন্ট পাতা থেকে, দুটি ক্লিকে। আগে জানানোর বাধ্যবাধকতা নেই, তারকাচিহ্নও নেই।"
-			/>
+			Cancel any time, from your account page, in two clicks. No notice period and no asterisk.
 		</p>
 	</div>
 
@@ -86,27 +81,27 @@
 					<p
 						class="absolute -top-3 left-6 rounded-full bg-emerald px-2.5 py-0.5 text-xs font-semibold text-body"
 					>
-						<T en="Most popular" bn="সবচেয়ে বেশি নেওয়া হয়" />
+						Most popular
 					</p>
 				{/if}
 				<h3 class="text-sm font-semibold tracking-wide text-muted uppercase">
-					<T as="span" en={t.ten} bn={t.tbn} />
+					{t.ten}
 				</h3>
 				<p class="mt-3 flex items-baseline gap-1.5">
 					<span class="text-4xl font-bold tracking-tight">{t.price}</span>
-					<span class="text-sm text-muted"><T as="span" en={t.pen} bn={t.pbn} /></span>
+					<span class="text-sm text-muted">{t.pen}</span>
 				</p>
-				<p class="mt-2 text-sm text-muted"><T as="span" en={t.den} bn={t.dbn} /></p>
+				<p class="mt-2 text-sm text-muted">{t.den}</p>
 				<ul class="mt-6 flex-1 space-y-2.5">
 					{#each t.rows as [en, bn] (en)}
 						<li class="flex items-start gap-2.5 text-sm">
 							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="mt-1 flex-none text-emerald-light" aria-hidden="true"><path d="M4.6 12.5 9.4 17.3 19.4 6.9" /></svg>
-							<T as="span" {en} {bn} />
+							
 						</li>
 					{/each}
 				</ul>
 				<a href="/#faq" class="mt-6 {t.featured ? 'btn-primary' : 'btn-ghost'}">
-					<T en={t.cta_en} bn={t.cta_bn} />
+					{t.cta_en}
 				</a>
 			</article>
 		{/each}
