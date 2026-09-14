@@ -506,8 +506,6 @@ html[lang='bn'] :is(.small, .fine) {
 		color-mix(in srgb, var(--color-body) 72%, transparent) 55%,
 		transparent 100%
 	);
-	-webkit-backdrop-filter: blur(14px) saturate(1.4);
-	backdrop-filter: blur(14px) saturate(1.4);
 	-webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 	mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 	pointer-events: none;
@@ -515,6 +513,8 @@ html[lang='bn'] :is(.small, .fine) {
 
 .nav-shell[data-stuck='true']::before {
 	opacity: 1;
+	-webkit-backdrop-filter: blur(14px) saturate(1.4);
+	backdrop-filter: blur(14px) saturate(1.4);
 }
 
 @media (prefers-reduced-motion: reduce) {

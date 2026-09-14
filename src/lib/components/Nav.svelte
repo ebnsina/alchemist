@@ -4,15 +4,16 @@
 	import T from '$lib/T.svelte';
 
 	let stuck = $state(false);
-	let sentinel = $state<HTMLElement | null>(null);
 
+	// Scroll position, not an observer. The sentinel this replaced sat at top:0
+	// inside the fixed header, so a negative rootMargin put it outside the
+	// observer's box on the first frame and stuck latched true before the page had
+	// moved — which painted the scrolled backdrop over the hero.
 	$effect(() => {
-		if (!sentinel) return;
-		const io = new IntersectionObserver(([e]) => (stuck = !e.isIntersecting), {
-			rootMargin: '-8px 0px 0px 0px'
-		});
-		io.observe(sentinel);
-		return () => io.disconnect();
+		const read = () => (stuck = window.scrollY > 8);
+		read();
+		window.addEventListener('scroll', read, { passive: true });
+		return () => window.removeEventListener('scroll', read);
 	});
 	const links = [
 		{ href: '/#features', en: 'Features', bn: 'যা যা আছে' },
@@ -26,12 +27,14 @@
 <!-- The nav never draws an edge. Over the hero it is fully transparent so the
      shader runs behind it; once scrolled it fades in a background that dissolves
      downward rather than ending on a line, so there is no seam in either state. -->
-<div bind:this={sentinel} class="absolute top-0 h-px w-full" aria-hidden="true"></div>
 <header
 	class="nav-shell fixed inset-x-0 top-0 z-50 transition-opacity duration-200"
 	data-stuck={stuck}
 >
-	<div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+	<!-- relative, so the nav content paints above the absolutely-positioned
+	     backdrop. Without it the backdrop-filter treats the links and buttons as
+	     part of what it blurs. -->
+	<div class="relative z-10 mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
 		<a href="/" class="flex flex-none items-center gap-2 text-lg font-bold tracking-tight">
 			<Logo size={26} />
 			Alchemist
