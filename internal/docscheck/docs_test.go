@@ -38,7 +38,10 @@ func TestDocsReferenceRealPaths(t *testing.T) {
 			}
 			return nil
 		}
-		if strings.HasSuffix(path, ".md") {
+		// llms.txt is markdown despite the extension, and it is the file an agent
+		// integrating against this reads first, so a dead link there is the most
+		// expensive kind.
+		if strings.HasSuffix(path, ".md") || d.Name() == "llms.txt" {
 			docs = append(docs, path)
 		}
 		return nil

@@ -1,0 +1,83 @@
+# Alchemist
+
+> Multi-tenant video transcoding and delivery. Upload or import a video, get an
+> adaptive-bitrate encrypted stream and a signed playback URL. Self-hosted: Go,
+> PostgreSQL, River, SeaweedFS, ffmpeg, shaka-packager. Built Bangladesh-first.
+
+Consumers integrate through the HTTP API with an API key. There is no shared
+database, no direct object-storage access, and no internal endpoints. If something
+you need is not in the API, that is a gap in the API.
+
+Things that will otherwise surprise you:
+
+- **`partially_ready` means playable.** Ingest encodes a low ladder (144p-360p) and
+  returns immediately; 480p and above are generated on first playback. Treat
+  `ready` and `partially_ready` as equally playable. Waiting for `ready` will hang
+  for content nobody has watched yet.
+- **Playback URLs expire** (4h) and carry `exp`, `kid` and `sig`. One signature
+  authorizes the manifest, every segment, the content key, the poster and the
+  thumbnails. Re-fetch the asset to get a fresh set; do not construct them yourself.
+- **Errors are `{"error":{"code","message"}}`.** Branch on `code`, which is stable.
+  `message` is written for a human and is translated when the request sends
+  `Accept-Language: bn`.
+- **Media is encrypted** with SAMPLE-AES (cbcs). Players fetch the key from the URL
+  in the manifest using the same signature. shaka-player and hls.js handle this.
+- **HLS is the primary output.** DASH is produced too, but only HLS is verified
+  end to end.
+- **Uploads never pass through the API.** `POST /v1/uploads` returns a presigned
+  target; `PUT` the bytes there, then call `/complete`.
+
+## API
+
+- [OpenAPI specification](api/openapi.yaml): Every endpoint, checked against the
+  running router by a test in both directions, so it cannot drift.
+- [Customer journey script](test/journey.sh): A runnable end-to-end integration
+  using only the public API and an API key. The clearest worked example.
+- [Customer stand-ins](test/customer_servers.py): A source origin and webhook
+  receiver for testing an integration locally.
+
+## Integration flow
+
+```
+POST /admin/tenants            -> tenant_id          (operator, admin key)
+POST /admin/tenants/{id}/keys  -> api_key            (shown once)
+
+POST /v1/uploads               -> presigned upload target + asset_id
+PUT  <upload_url>              -> the bytes, direct to storage
+POST /v1/assets/{id}/complete  -> queues processing
+  or
+POST /v1/assets {"url":"..."}  -> import from a URL instead
+
+GET  /v1/assets/{id}           -> state, and playback URLs once playable
+POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready
+GET  /v1/usage                 -> billable aggregates
+```
+
+Webhook deliveries are signed: `X-Alchemist-Signature: sha256=<hmac of the raw body>`
+using the secret returned when the endpoint was registered. Verify it.
+
+## Running it locally
+
+- [Makefile](Makefile): `make db-reset`, `make storage`, `make run`, `make test`.
+- [Environment template](.env.example): Every variable is required; the binary
+  refuses to start if one is missing, rather than defaulting.
+- [Deployment notes](deploy/README.md): Topology, key rotation, and the edge cache.
+
+Requires `ffmpeg`, `packager` (shaka-packager) and `weed` (SeaweedFS) on PATH.
+The last two are GitHub release binaries, not in Homebrew.
+
+## Architecture
+
+- [Working conventions and constraints](CLAUDE.md): Non-obvious decisions that were
+  established by measurement and are expensive to rediscover. Read before changing
+  encoding, caching or signing.
+- [Module boundaries](internal/modules/README.md): How the modular monolith is
+  separated, and how to extract a module into its own service.
+
+## Optional
+
+- [Edge cache configuration](deploy/edge/nginx.conf): nginx with byte-range slice
+  caching. Authorization must run before the cache lookup; the comment there
+  explains why.
+- [Edge signature validation](deploy/edge/playback_auth.js): njs implementation,
+  kept byte-identical to the Go one by a test.

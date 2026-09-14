@@ -14,9 +14,14 @@ migration updates the docs that mention it, in the same change.** Stale docs are
 than none: they read plausibly and send the next person somewhere that no longer
 exists.
 
-Two tests enforce what can be enforced:
+`llms.txt` is what an agent integrating against this reads first, so a wrong statement
+there propagates into someone else's code. Its links are checked by `internal/docscheck`
+like any other document; its claims are not, so verify them by hand when behaviour
+changes — TTLs, state names, header names, and the lazy-rung threshold especially.
 
-- `internal/docscheck` — every path referenced in any `.md` must exist.
+Three tests enforce what can be enforced:
+
+- `internal/docscheck` — every path referenced in any `.md`, and in `llms.txt`, must exist.
 - `internal/modules/boundary_test.go` — module boundaries.
 - `internal/api/openapi_test.go` — every served route is in `api/openapi.yaml`, and
   every documented route is served. Both directions, so neither can drift.
@@ -35,6 +40,7 @@ Prose still needs judgement. After changing behaviour, check:
 | Env vars | `.env.example`, `deploy/README.md` |
 | Migrations | `deploy/README.md` |
 | Phase scope | `docs/04-roadmap.md` |
+| Asset states, URL TTLs, headers | `llms.txt` (claims are not test-enforced) |
 | Costs, volumes, BD assumptions | `docs/03-cost-model.md`, `docs/05-bangladesh.md` |
 
 `docs/` and `data/` are gitignored — they are working references, not published.
