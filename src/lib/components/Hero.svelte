@@ -6,7 +6,6 @@
 
 <section class="relative overflow-hidden pt-32 pb-16 sm:pt-40 sm:pb-24">
 	<ShaderGradient />
-	<div class="grid-bg pointer-events-none absolute inset-0 -z-10 opacity-40" aria-hidden="true"></div>
 
 	<div class="mx-auto max-w-6xl px-4 text-center sm:px-6">
 		<p

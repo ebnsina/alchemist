@@ -23,13 +23,13 @@
 	const lang = $derived(page.url.pathname);
 </script>
 
-<!-- The nav sits over the hero with no seam; the sentinel above it flips the
-     background and hairline on once the page has scrolled past the hero's top. -->
+<!-- The nav never draws an edge. Over the hero it is fully transparent so the
+     shader runs behind it; once scrolled it fades in a background that dissolves
+     downward rather than ending on a line, so there is no seam in either state. -->
 <div bind:this={sentinel} class="absolute top-0 h-px w-full" aria-hidden="true"></div>
 <header
-	class="fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-200 {stuck
-		? 'border-b border-hairline bg-body/70 backdrop-blur-xl backdrop-saturate-150'
-		: 'border-b border-transparent'}"
+	class="nav-shell fixed inset-x-0 top-0 z-50 transition-opacity duration-200"
+	data-stuck={stuck}
 >
 	<div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
 		<a href="/" class="flex flex-none items-center gap-2 text-lg font-bold tracking-tight">

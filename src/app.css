@@ -83,13 +83,6 @@ html[lang='en'] .l-bn {
 	-webkit-text-fill-color: transparent;
 }
 
-@utility grid-bg {
-	background-image:
-		linear-gradient(var(--color-hairline) 1px, transparent 1px),
-		linear-gradient(90deg, var(--color-hairline) 1px, transparent 1px);
-	background-size: 56px 56px;
-	mask-image: radial-gradient(70% 55% at 50% 0%, #000 0%, transparent 78%);
-}
 
 @utility glow {
 	background: radial-gradient(closest-side, rgba(16, 185, 129, 0.22), transparent);
@@ -494,4 +487,38 @@ html[lang='bn'] :is(.small, .fine) {
 }
 .shell :is(dl, dd) {
 	margin: 0;
+}
+
+
+/* The header never ends on a line. Over the hero it is fully transparent so the
+   shader shows through; once scrolled it fades in a backdrop that dissolves toward
+   the bottom edge, which blends instead of cutting. A hard border there is the
+   single most obvious seam on the page. */
+.nav-shell::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	transition: opacity 200ms ease;
+	background: linear-gradient(
+		to bottom,
+		color-mix(in srgb, var(--color-body) 88%, transparent) 0%,
+		color-mix(in srgb, var(--color-body) 72%, transparent) 55%,
+		transparent 100%
+	);
+	-webkit-backdrop-filter: blur(14px) saturate(1.4);
+	backdrop-filter: blur(14px) saturate(1.4);
+	-webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+	mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+	pointer-events: none;
+}
+
+.nav-shell[data-stuck='true']::before {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.nav-shell::before {
+		transition: none;
+	}
 }
