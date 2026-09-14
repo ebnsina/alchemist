@@ -11,8 +11,8 @@
 		'Client work'
 	];
 
-	const VISIBLE = 7;
-	const CENTER = 3;
+	const VISIBLE = 9;
+	const CENTER = 4;
 	const rows = [...kinds, ...kinds];
 
 	let i = $state(0);
@@ -39,17 +39,17 @@
 	const fade = (idx: number) => Math.max(0.18, 1 - Math.abs(idx - (i + CENTER)) * 0.3);
 </script>
 
-<section class="border-y border-hairline py-14">
-	<p class="mb-8 text-center text-xs tracking-widest text-muted uppercase">
+<section class="flex min-h-svh flex-col items-center justify-center border-y border-hairline py-16">
+	<p class="mb-10 text-center text-xs tracking-widest text-muted uppercase">
 		Built for creators, teachers, and small businesses
 	</p>
 
 	<div
-		class="picker-mask mx-auto overflow-hidden px-5"
+		class="picker-mask mx-auto w-full overflow-hidden px-5"
 		style="height: calc({VISIBLE} * var(--row))"
 	>
 		<ul
-			class="mx-auto max-w-xs"
+			class="mx-auto max-w-md"
 			style="transform: translateY(calc({-i} * var(--row))); transition: transform {animate
 				? '600ms cubic-bezier(0.32, 0.72, 0.3, 1)'
 				: '0ms'}"
@@ -57,7 +57,7 @@
 			{#each rows as kind, idx (idx)}
 				{@const active = idx === i + CENTER}
 				<li
-					class="flex items-center justify-between rounded-lg px-3 text-sm whitespace-nowrap transition-colors duration-300"
+					class="flex items-center justify-between rounded-xl px-5 text-lg whitespace-nowrap transition-colors duration-300 sm:text-xl"
 					class:bg-brand-mid={active}
 					class:text-body={active}
 					class:font-semibold={active}
@@ -67,7 +67,7 @@
 				>
 					{kind}
 					<svg
-						class="h-4 w-4 flex-none transition-opacity duration-300"
+						class="h-5 w-5 flex-none transition-opacity duration-300"
 						style="opacity: {active ? 1 : 0}"
 						viewBox="0 0 24 24"
 						fill="none"
@@ -87,7 +87,12 @@
 
 <style>
 	.picker-mask {
-		--row: 2.5rem;
+		--row: 3rem;
 		mask-image: linear-gradient(180deg, transparent, #000 28%, #000 72%, transparent);
+	}
+	@media (min-width: 640px) {
+		.picker-mask {
+			--row: 3.75rem;
+		}
 	}
 </style>
