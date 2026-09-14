@@ -10,6 +10,7 @@
   extra request.
 -->
 <div class="aurora" aria-hidden="true">
+	<div class="aurora__scrim"></div>
 	<div class="aurora__grain"></div>
 </div>
 
@@ -31,6 +32,21 @@
 		   no seam at its base the way the header no longer has one at its top. */
 		-webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
 		mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+	}
+
+	/* The gradient's lighter stops reach rgb(64,142,106), where even pure white
+	   measures 3.96:1 — so no text colour can pass AA against it and the surface
+	   itself has to come down. The scrim darkens toward onyx while keeping the hue,
+	   and is weakest at the very top where no text sits. */
+	.aurora__scrim {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			to bottom,
+			color-mix(in srgb, var(--color-body) 34%, transparent) 0%,
+			color-mix(in srgb, var(--color-body) 62%, transparent) 38%,
+			color-mix(in srgb, var(--color-body) 68%, transparent) 100%
+		);
 	}
 
 	.aurora__grain {
