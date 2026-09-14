@@ -23,7 +23,7 @@
 	];
 </script>
 
-<section id="how" class="relative scroll-mt-24 overflow-hidden py-16 sm:py-24">
+<section id="how" class="slab relative scroll-mt-24 overflow-hidden py-16 sm:py-24">
 	<div class="glow-2 pointer-events-none absolute top-10 -right-20 -z-10 h-[26rem] w-[26rem]" aria-hidden="true"></div>
 	<div class="mx-auto max-w-6xl px-4 sm:px-6">
 		<div class="mx-auto max-w-2xl text-center" use:scrollReveal>

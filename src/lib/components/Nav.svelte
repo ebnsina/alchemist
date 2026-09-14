@@ -47,7 +47,7 @@
 					<li>
 						<a
 							href={l.href}
-							class="block py-1 text-sm text-muted transition-colors hover:text-ink"
+							class="nav-link block py-1 text-sm transition-colors hover:text-ink"
 							>{l.en}</a
 						>
 					</li>

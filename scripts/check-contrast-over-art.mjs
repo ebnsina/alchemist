@@ -1,44 +1,78 @@
 // Contrast of text that sits over artwork rather than over a background-color.
 //
-// The usual walk-up-the-DOM check is useless here: the aurora is a sibling layer,
-// not an ancestor, so compositing parent backgrounds reports the body colour and
-// passes everything. This hides the glyphs, screenshots, and samples the real
-// pixel under each text node instead.
+// The usual walk-up-the-DOM check is useless here: the aurora and the page's
+// washes and slabs are sibling layers, not ancestors, so compositing parent
+// backgrounds reports the body colour and passes everything. This hides the
+// glyphs, screenshots each viewport down the page, and samples the real pixel
+// under each text node instead.
 //
 // Run against a served build: npm run preview, then npm run check:contrast
 
 import { chromium } from 'playwright';
-const b = await chromium.launch();
-const p = await b.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
-await p.goto('http://localhost:4321/', { waitUntil: 'networkidle' });
-await p.waitForTimeout(1000);
-const spots = await p.evaluate(() => [...document.querySelectorAll('[class*="text-muted"], h1, h2, p, li, a')]
-  .filter(e => e.getBoundingClientRect().top < 900 && e.textContent.trim() && e.children.length === 0)
-  .map(e => { const r = e.getBoundingClientRect();
-    const m = getComputedStyle(e).color.match(/[\d.]+/g);
-    return { t: e.textContent.trim().slice(0,20), x: Math.round(r.left+r.width/2),
-             y: Math.round(r.top+r.height/2), c: [+m[0],+m[1],+m[2]],
-             a: m.length<4?1:parseFloat(m[3]) }; })
-  .filter(s => s.y > 0 && s.y < 900 && s.x > 0 && s.x < 1280));
-await p.addStyleTag({ content: '*{color:transparent!important}' });
-await p.waitForTimeout(250);
-const png = (await p.screenshot()).toString('base64');
-const px = await p.evaluate(async ({ png, spots }) => {
-  const img = new Image();
-  await new Promise(r => { img.onload = r; img.src = 'data:image/png;base64,' + png; });
-  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
-  const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
-  return spots.map(s => ({ ...s, bg: [...ctx.getImageData(s.x, s.y, 1, 1).data].slice(0,3) }));
-}, { png, spots });
-const lin = c => { c/=255; return c<=0.03928 ? c/12.92 : ((c+0.055)/1.055)**2.4; };
-const lum = ([r,g,bl]) => 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(bl);
-let fails = 0;
-for (const s of px) {
-  const fg = [0,1,2].map(i => s.c[i]*s.a + s.bg[i]*(1-s.a));
-  const A = lum(fg), B = lum(s.bg);
-  const r = (Math.max(A,B)+0.05)/(Math.min(A,B)+0.05);
-  if (r < 4.5) { fails++; console.log(`  FAIL ${s.t.padEnd(22)} bg=rgb(${s.bg.join(',')}) ${r.toFixed(2)}:1`); }
+
+const W = 1280, H = 900;
+const PAGES = ['/', '/pricing'];
+
+const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+
+const browser = await chromium.launch();
+const p = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+let fails = 0, checked = 0;
+
+for (const route of PAGES) {
+	await p.goto('http://localhost:4321' + route, { waitUntil: 'networkidle' });
+	await p.waitForTimeout(800);
+	const total = await p.evaluate(() => document.body.scrollHeight);
+
+	for (let top = 0; top < total; top += H) {
+		await p.evaluate(y => window.scrollTo(0, y), top);
+		await p.waitForTimeout(350);
+
+		const spots = await p.evaluate(({ W, H }) => [...document.querySelectorAll('[class*="text-"], h1, h2, h3, p, li, a, span')]
+			.filter(e => e.textContent.trim() && e.children.length === 0)
+			.map(e => {
+				const r = e.getBoundingClientRect();
+				// Canvas resolves color-mix() and oklab() the way a regex cannot.
+				const cv = document.createElement('canvas').getContext('2d');
+				cv.fillStyle = '#000';
+				cv.fillStyle = getComputedStyle(e).color;
+				cv.fillRect(0, 0, 1, 1);
+				const [cr, cg, cb, ca] = cv.getImageData(0, 0, 1, 1).data;
+				return { t: e.textContent.trim().slice(0, 20), x: Math.round(r.left + r.width / 2),
+					y: Math.round(r.top + r.height / 2), c: [cr, cg, cb], a: ca / 255 };
+			})
+			.filter(s => s.y > 4 && s.y < H - 4 && s.x > 4 && s.x < W - 4), { W, H });
+		if (!spots.length) continue;
+
+		await p.addStyleTag({ content: '.contrast-probe{color:transparent!important}' });
+		await p.evaluate(() => document.documentElement.classList.add('contrast-probe'));
+		await p.addStyleTag({ content: '.contrast-probe *{color:transparent!important}' });
+		await p.waitForTimeout(200);
+		const png = (await p.screenshot()).toString('base64');
+		await p.evaluate(() => document.documentElement.classList.remove('contrast-probe'));
+
+		const px = await p.evaluate(async ({ png, spots }) => {
+			const img = new Image();
+			await new Promise(r => { img.onload = r; img.src = 'data:image/png;base64,' + png; });
+			const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+			const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
+			return spots.map(s => ({ ...s, bg: [...ctx.getImageData(s.x, s.y, 1, 1).data].slice(0, 3) }));
+		}, { png, spots });
+
+		for (const s of px) {
+			checked++;
+			const fg = [0, 1, 2].map(i => s.c[i] * s.a + s.bg[i] * (1 - s.a));
+			const A = lum(fg), B = lum(s.bg);
+			const r = (Math.max(A, B) + 0.05) / (Math.min(A, B) + 0.05);
+			if (r < 4.5) {
+				fails++;
+				console.log(`  FAIL ${route} ${s.t.padEnd(22)} bg=rgb(${s.bg.join(',')}) ${r.toFixed(2)}:1`);
+			}
+		}
+	}
 }
-console.log(fails ? `  ${fails} failing` : '  all hero text passes AA');
-await b.close();
+
+console.log(fails ? `  ${fails} failing of ${checked}` : `  all ${checked} text samples pass AA`);
+await browser.close();
 process.exit(fails ? 1 : 0);
