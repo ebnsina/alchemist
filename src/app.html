@@ -4,33 +4,6 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-		<script>
-			// Pre-paint, so a remembered language never flashes the other one. No IP or
-			// navigator.language guessing: the toggle is the only thing that decides.
-			(function () {
-				var d = document.documentElement;
-				function put(k, v) {
-					try {
-						localStorage.setItem(k, v);
-					} catch (e) {}
-				}
-				try {
-					var s = localStorage.getItem('alc-lang');
-					if (s === 'bn' || s === 'en') d.lang = s;
-				} catch (e) {}
-				function paint() {
-					for (var i = 0; i < b.length; i++)
-						b[i].setAttribute('aria-pressed', b[i].dataset.setLang === d.lang ? 'true' : 'false');
-				}
-				document.addEventListener('DOMContentLoaded', paint);
-				document.addEventListener('click', function (e) {
-					if (!l) return;
-					d.lang = l.dataset.setLang;
-					put('alc-lang', d.lang);
-					paint();
-				});
-			})();
-		</script>
 		%sveltekit.head%
 			<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
 		<link
