@@ -61,3 +61,24 @@ palette, and it is not the blue every other video API reaches for.
 horizontal scroll at 360px across every route in both languages and themes, no
 language leaking through the CSS swap, the toggles working and surviving a reload,
 no module script sneaking back in, and it prints the page weight.
+
+## Deploying
+
+`build/` is static files. Point a web root at it and map unknown paths to `404.html`:
+
+```nginx
+root /srv/alchemist-web;
+error_page 404 /404.html;
+location / { try_files $uri $uri/ $uri/index.html =404; }
+```
+
+Asset paths are absolute (`kit.paths.relative = false`) because `404.html` is served at
+whatever path the visitor asked for, so relative hrefs would resolve against that path
+and 404 as well.
+
+## Before this goes live
+
+Grep for `alchemist.example` — the domain, the contact address and the repository links
+are all placeholders. Replace `SITE.origin` in `src/lib/site.ts`, `static/robots.txt`,
+and set real prices in `src/routes/pricing/+page.svelte`, removing the `.ph` wrappers
+and the placeholder banner at the top of that page as you do.

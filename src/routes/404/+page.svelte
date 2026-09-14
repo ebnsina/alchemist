@@ -1,15 +1,14 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import T from '$lib/T.svelte';
 </script>
 
 <svelte:head>
-	<title>{page.status} — Alchemist</title>
+	<title>Page not found — Alchemist</title>
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
 <section class="wrap">
-	<p class="code num">{page.status}</p>
+	<p class="code num">404</p>
 	<h1>
 		<T
 			as="span"
@@ -20,8 +19,8 @@
 	<p class="lede">
 		<T
 			as="span"
-			en="Either it moved or it never existed. Neither is your fault. The five pages this site has are all one click away."
-			bn="হয় পাতাটি সরে গেছে, নয়তো কখনও ছিলই না। দুটোর কোনোটাই আপনার দোষ নয়। এই সাইটের পাঁচটি পাতাই এক ক্লিক দূরে।"
+			en="Either it moved or it never existed. Neither is your fault. Everything this site has is one click away."
+			bn="হয় পাতাটি সরে গেছে, নয়তো কখনও ছিলই না। দুটোর কোনোটাই আপনার দোষ নয়। এই সাইটে যা যা আছে, সবই এক ক্লিক দূরে।"
 		/>
 	</p>
 	<ul>

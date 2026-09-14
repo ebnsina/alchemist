@@ -3,7 +3,6 @@
 export const SITE = {
 	origin: 'https://alchemist.example',
 	email: 'hello@alchemist.example',
-	apiBase: 'https://api.alchemist.example',
 	repo: 'https://github.com/ebnsina/alchemist'
 };
 

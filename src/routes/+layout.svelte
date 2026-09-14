@@ -35,20 +35,17 @@
 			<span>Alchemist</span>
 		</a>
 
-		<details class="nav">
-			<summary><T en="Menu" bn="মেনু" /></summary>
-			<nav aria-label="Main">
-				<ul>
-					{#each nav as n (n.href)}
-						<li>
-							<a href={n.href} aria-current={here === n.href ? 'page' : undefined}>
-								<T en={n.en} bn={n.bn} />
-							</a>
-						</li>
-					{/each}
-				</ul>
-			</nav>
-		</details>
+		<nav class="nav" aria-label="Main">
+			<ul>
+				{#each nav as n (n.href)}
+					<li>
+						<a href={n.href} aria-current={here === n.href ? 'page' : undefined}>
+							<T en={n.en} bn={n.bn} />
+						</a>
+					</li>
+				{/each}
+			</ul>
+		</nav>
 
 		<div class="tools">
 			<div class="seg" role="group" aria-label="Language / ভাষা">
@@ -135,22 +132,11 @@
 	.nav {
 		margin-inline-start: auto;
 	}
-	.nav summary {
-		display: none;
-		list-style: none;
-		cursor: pointer;
-		border: 1px solid var(--line);
-		border-radius: 8px;
-		padding: 0.35rem 0.7rem;
-		font-size: 0.85rem;
-	}
-	.nav summary::-webkit-details-marker {
-		display: none;
-	}
 	ul {
 		list-style: none;
 		display: flex;
-		gap: 0.25rem;
+		flex-wrap: wrap;
+		gap: 0.1rem 0.25rem;
 		margin: 0;
 		padding: 0;
 	}
@@ -231,18 +217,12 @@
 			width: 100%;
 			margin-inline-start: 0;
 		}
-		.nav summary {
-			display: inline-block;
-			margin-block: 0.1rem 0.4rem;
-		}
 		.nav ul {
-			flex-direction: column;
-			gap: 0;
 			padding-bottom: 0.5rem;
+			margin-inline-start: -0.5rem;
 		}
 		nav a {
-			padding: 0.6rem 0.2rem;
-			font-size: 1rem;
+			padding: 0.45rem 0.5rem;
 		}
 		.tools {
 			margin-inline-start: auto;
