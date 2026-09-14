@@ -282,6 +282,15 @@ details[open] > summary .chevron {
 }
 
 
+/* Card icons sit tilted and straighten when the card is hovered. */
+.tilt {
+	transform: rotate(-14deg);
+	transition: transform 260ms cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+.card-hover:hover .tilt {
+	transform: rotate(0deg);
+}
+
 /* Nav sits over the aurora, where text-muted measures 4.24:1. */
 .nav-link {
 	color: rgba(255, 255, 255, 0.68);

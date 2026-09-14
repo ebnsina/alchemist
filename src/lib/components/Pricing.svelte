@@ -13,7 +13,7 @@
 				'100 videos a month',
 				'Up to 1080p',
 				'Files up to 2 GB',
-				'Links that expire'
+				'Links you can switch off'
 			]
 		},
 		{
@@ -29,7 +29,7 @@
 				'Up to 4K',
 				'Files up to 20 GB',
 				'Batch up to 10 at once',
-				'Encrypted playback'
+				'Locked to your viewers'
 			]
 		},
 		{

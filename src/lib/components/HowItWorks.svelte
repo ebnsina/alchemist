@@ -12,7 +12,7 @@
 		},
 		{
 			ten: 'Share the link',
-			ben: 'Put the link in your course, your site or an email. It expires when you say it does, and every viewer gets the video encrypted.',
+			ben: 'Put the link in your course, your site or an email. You decide how long it works for, and it only works for the person you gave it to.',
 		}
 	];
 </script>

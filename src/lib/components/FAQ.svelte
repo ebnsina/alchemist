@@ -4,7 +4,7 @@
 	const qs = [
 		{
 			qen: 'Where does my video live, and who can watch it?',
-			aen: 'It stays with us and plays from a link only you hand out — one that expires, over an encrypted stream. The file you uploaded is a different thing: once the playable versions exist, we can delete that master for you. Nothing of yours is ever used for anything else.',
+			aen: 'It stays with us and plays from a link you hand out, and you decide how long that link keeps working. The big file you first sent us is a separate thing — once your video is ready to watch, we can get rid of that for you. Nothing of yours is ever used for anything else.',
 		},
 		{
 			qen: 'Will it look worse?',

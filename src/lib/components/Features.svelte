@@ -20,12 +20,12 @@
 		{
 			d: 'M6.6 10.4h10.8a1 1 0 0 1 1 1v8.1a1 1 0 0 1-1 1H6.6a1 1 0 0 1-1-1v-8.1a1 1 0 0 1 1-1zM8.6 10.4V7a3.4 3.4 0 1 1 6.8 0v3.4',
 			ten: 'Only the people you sold it to',
-			ben: 'Every play runs through a link that expires, over an encrypted stream. A copied link stops working, and a saved file is no use without the key.',
+			ben: 'Each viewer gets a link that stops working when you decide. Pass it around and it does nothing, and a downloaded copy will not play for anyone else.',
 		},
 		{
 			d: 'M4.5 6.5h15M9.5 6.5V4.8a1.3 1.3 0 0 1 1.3-1.3h2.4a1.3 1.3 0 0 1 1.3 1.3v1.7M6.5 6.5l.9 12.2a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5l.9-12.2',
-			ten: 'Your master, gone when you say',
-			ben: 'Once the playable versions exist we can delete the file you uploaded. Your course keeps streaming; the copy nobody needs stops existing.',
+			ten: 'We keep it, not your big file',
+			ben: 'Once your video is ready to watch, the huge file you sent can go. Your course keeps playing exactly as before, and nothing sits around that nobody needs.',
 		},
 		{
 			d: 'M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4zM2.8 12h18.4M12 2.8c2.3 2.5 3.5 5.7 3.5 9.2s-1.2 6.7-3.5 9.2c-2.3-2.5-3.5-5.7-3.5-9.2S9.7 5.3 12 2.8z',
