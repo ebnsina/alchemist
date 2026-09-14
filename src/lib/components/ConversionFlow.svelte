@@ -44,7 +44,7 @@
 	const progress = $derived(Math.min(100, Math.round((elapsed / 3200) * 100)));
 </script>
 
-<figure class="card shine w-full p-4 text-left sm:p-6">
+<figure class="card shine relative w-full p-4 text-left sm:p-6">
 	<figcaption class="mb-5 flex items-center justify-between text-xs text-muted">
 		<span>What happens after you drop a file</span>
 		<span>Illustration</span>

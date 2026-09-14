@@ -51,6 +51,18 @@
 
 		</div>
 
-		<ConversionFlow />
+		<div class="relative">
+			<!-- The right half of the hero is where the aurora has already faded out.
+			     These two layers light it: a tilted plate and a soft halo. -->
+			<div
+				class="pointer-events-none absolute -inset-5 -rotate-3 rounded-3xl border border-emerald/15 bg-gradient-to-br from-emerald/15 via-emerald/5 to-transparent sm:-inset-7"
+				aria-hidden="true"
+			></div>
+			<div
+				class="pointer-events-none absolute -inset-16 rounded-full bg-emerald/10 blur-3xl"
+				aria-hidden="true"
+			></div>
+			<ConversionFlow />
+		</div>
 	</div>
 </section>
