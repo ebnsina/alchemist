@@ -52,7 +52,7 @@
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
 			What you get
 		</p>
-		<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl leading-[1.18]">
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.32]">
 			Video made simple.
 			<span class="gradient-text">Really simple.</span>
 		</h2>
@@ -66,7 +66,7 @@
 				>
 					<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={f.d} /></svg>
 				</span>
-				<h3 class="text-lg font-extrabold tracking-tight">{f.ten}</h3>
+				<h3 class="text-lg font-bold tracking-tight">{f.ten}</h3>
 				<p class="mt-2 text-sm leading-relaxed text-muted">{f.ben}</p>
 			</article>
 		{/each}

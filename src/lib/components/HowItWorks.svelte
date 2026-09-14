@@ -30,7 +30,7 @@
 			<p class="text-xs tracking-widest text-emerald-light uppercase">
 				How it works
 			</p>
-			<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl leading-[1.18]">
+			<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.32]">
 				Three easy steps.
 				<span class="gradient-text">That's it.</span>
 			</h2>
@@ -43,7 +43,7 @@
 						class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-body text-sm font-bold text-emerald-light"
 						aria-hidden="true">{i + 1}</span
 					>
-					<h3 class="mt-4 text-lg font-extrabold tracking-tight">{s.ten}</h3>
+					<h3 class="mt-4 text-lg font-bold tracking-tight">{s.ten}</h3>
 					<p class="mt-2 text-sm leading-relaxed text-muted">{s.ben}</p>
 				</li>
 			{/each}

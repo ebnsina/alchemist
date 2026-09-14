@@ -28,11 +28,11 @@
 	--color-hairline: rgba(255, 255, 255, 0.08);
 	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-		/* One family for everything. Epilogue carries 400-800 on a variable axis, so
-	   headings and body differ by weight rather than by typeface — which is why the
-	   heading token points at the same stack. */
+		/* One family throughout. Miriam Libre ships 400 and 700 only — no variable axis
+	   and nothing above bold — so headings are 700; asking for 800 would have the
+	   browser synthesise it, which smears the stems. */
 	--font-sans:
-		'Epilogue', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		'Miriam Libre', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-heading:
 		var(--font-sans);
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
@@ -55,10 +55,14 @@
 	   face never even downloaded. */
 	:is(h1, h2, h3, h4) {
 		font-family: var(--font-heading);
-		/* One typeface throughout, so weight carries the hierarchy the slab used to. */
-		font-weight: 800;
+		/* 700 is the family's heaviest real weight. */
+		font-weight: 700;
 		letter-spacing: -0.02em;
-		line-height: 1.12;
+		/* Measured, not chosen: Miriam Libre's ascenders and descenders are tall for
+		   its em, and anything under 1.32 clipped headings on this page. Vertical
+		   metrics differ per family, so this is worth re-measuring on a font change
+		   rather than carrying over. */
+		line-height: 1.32;
 	}
 	:focus-visible {
 		outline: 2px solid var(--color-emerald-light);

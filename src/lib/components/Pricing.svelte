@@ -62,7 +62,7 @@
 <section id="pricing" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
 		<p class="text-xs tracking-widest text-emerald-light uppercase">Pricing</p>
-		<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl leading-[1.18]">
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.32]">
 			Simple pricing.
 			<span class="gradient-text">No surprises.</span>
 		</h2>

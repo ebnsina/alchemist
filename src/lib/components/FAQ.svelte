@@ -46,7 +46,7 @@
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
 			Questions
 		</p>
-		<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl leading-[1.18]">
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.32]">
 			Got questions?
 			<span class="gradient-text">We've got answers.</span>
 		</h2>

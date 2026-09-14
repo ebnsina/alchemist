@@ -14,7 +14,7 @@
 			100 free videos every month · no card needed
 		</p>
 
-		<h1 class="mx-auto mt-8 max-w-5xl text-5xl font-extrabold tracking-tight sm:text-7xl leading-[1.12]">
+		<h1 class="mx-auto mt-8 max-w-5xl text-5xl font-bold tracking-tight sm:text-7xl leading-[1.32]">
 			Convert any video,
 			<span class="gradient-text block"
 				>into something magical.</span

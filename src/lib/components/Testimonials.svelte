@@ -34,7 +34,7 @@
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
 			Who it's for
 		</p>
-		<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl leading-[1.18]">
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.32]">
 			Made for the way you work.
 		</h2>
 	</div>
@@ -48,7 +48,7 @@
 				>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d={u.d} /></svg>
 				</span>
-				<h3 class="text-lg font-extrabold tracking-tight">{u.ten}</h3>
+				<h3 class="text-lg font-bold tracking-tight">{u.ten}</h3>
 				<p class="mt-2 text-sm leading-relaxed text-muted">{u.ben}</p>
 			</article>
 		{/each}
