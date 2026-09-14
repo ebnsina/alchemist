@@ -31,8 +31,9 @@
 			<p class="text-xs tracking-widest text-emerald-light uppercase">
 				<T en="How it works" bn="কীভাবে কাজ করে" />
 			</p>
-			<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-				<T as="span" en="Three steps, and none of them are settings." bn="তিনটি ধাপ, আর একটাও সেটিংস নয়।" />
+			<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+				<T as="span" en="Three easy steps." bn="তিনটি সহজ ধাপ।" />
+				<span class="gradient-text"><T as="span" en="That's it." bn="ব্যস, এইটুকুই।" /></span>
 			</h2>
 		</div>
 

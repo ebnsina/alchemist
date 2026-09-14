@@ -36,7 +36,7 @@
 <footer class="border-t border-hairline">
 	<div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[5fr_7fr]">
 		<div>
-			<p class="flex items-center gap-2 text-lg font-extrabold tracking-tight">
+			<p class="flex items-center gap-2 text-lg font-bold tracking-tight">
 				<Logo size={24} /> Alchemist
 			</p>
 			<p class="mt-3 max-w-sm text-sm text-muted">

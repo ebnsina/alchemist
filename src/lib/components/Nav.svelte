@@ -3,7 +3,17 @@
 	import Logo from './Logo.svelte';
 	import T from '$lib/T.svelte';
 
-	let open = $state(false);
+	let stuck = $state(false);
+	let sentinel = $state<HTMLElement | null>(null);
+
+	$effect(() => {
+		if (!sentinel) return;
+		const io = new IntersectionObserver(([e]) => (stuck = !e.isIntersecting), {
+			rootMargin: '-8px 0px 0px 0px'
+		});
+		io.observe(sentinel);
+		return () => io.disconnect();
+	});
 	const links = [
 		{ href: '/#features', en: 'Features', bn: 'যা যা আছে' },
 		{ href: '/#how', en: 'How it works', bn: 'কীভাবে কাজ করে' },
@@ -13,11 +23,16 @@
 	const lang = $derived(page.url.pathname);
 </script>
 
+<!-- The nav sits over the hero with no seam; the sentinel above it flips the
+     background and hairline on once the page has scrolled past the hero's top. -->
+<div bind:this={sentinel} class="absolute top-0 h-px w-full" aria-hidden="true"></div>
 <header
-	class="fixed inset-x-0 top-0 z-50 border-b border-hairline bg-body/70 backdrop-blur-xl backdrop-saturate-150"
+	class="fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-200 {stuck
+		? 'border-b border-hairline bg-body/70 backdrop-blur-xl backdrop-saturate-150'
+		: 'border-b border-transparent'}"
 >
 	<div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-		<a href="/" class="flex flex-none items-center gap-2 text-lg font-extrabold tracking-tight">
+		<a href="/" class="flex flex-none items-center gap-2 text-lg font-bold tracking-tight">
 			<Logo size={26} />
 			Alchemist
 		</a>
@@ -29,7 +44,7 @@
 						<a
 							href={l.href}
 							class="block py-1 text-sm text-muted transition-colors hover:text-ink"
-							onclick={() => (open = false)}><T en={l.en} bn={l.bn} /></a
+							><T en={l.en} bn={l.bn} /></a
 						>
 					</li>
 				{/each}
@@ -38,7 +53,7 @@
 
 		<div class="ml-auto flex flex-none items-center gap-2">
 			<div
-				class="flex items-center gap-0.5 rounded-lg border border-hairline bg-card p-0.5"
+				class="flex items-center gap-0.5 rounded-xl border border-hairline bg-card p-0.5"
 				role="group"
 				aria-label="Language / ভাষা"
 			>
@@ -47,7 +62,7 @@
 					data-set-lang="en"
 					aria-pressed="true"
 					lang="en"
-					class="rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-ink aria-pressed:bg-body aria-pressed:text-ink"
+					class="rounded-xl px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-ink aria-pressed:bg-body aria-pressed:text-ink"
 					>EN</button
 				>
 				<button
@@ -55,7 +70,7 @@
 					data-set-lang="bn"
 					aria-pressed="false"
 					lang="bn"
-					class="rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-ink aria-pressed:bg-body aria-pressed:text-ink"
+					class="rounded-xl px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-ink aria-pressed:bg-body aria-pressed:text-ink"
 					>বাংলা</button
 				>
 			</div>

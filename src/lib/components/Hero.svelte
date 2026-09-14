@@ -1,13 +1,12 @@
 <script lang="ts">
 	import T from '$lib/T.svelte';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
+	import ShaderGradient from './ShaderGradient.svelte';
 </script>
 
-<section class="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24">
-	<div class="grid-bg pointer-events-none absolute inset-0 -z-20" aria-hidden="true"></div>
-	<div class="glow pointer-events-none absolute -top-32 left-1/2 -z-10 h-[34rem] w-[34rem] -translate-x-2/3" aria-hidden="true"></div>
-	<div class="glow-2 pointer-events-none absolute -top-10 right-0 -z-10 h-[26rem] w-[26rem]" aria-hidden="true"></div>
-	<div class="glow-gold pointer-events-none absolute top-64 left-1/4 -z-10 h-[22rem] w-[22rem]" aria-hidden="true"></div>
+<section class="relative overflow-hidden pt-32 pb-16 sm:pt-40 sm:pb-24">
+	<ShaderGradient />
+	<div class="grid-bg pointer-events-none absolute inset-0 -z-10 opacity-40" aria-hidden="true"></div>
 
 	<div class="mx-auto max-w-6xl px-4 text-center sm:px-6">
 		<p
@@ -17,10 +16,10 @@
 			<T en="100 free videos every month · no card needed" bn="মাসে ১০০টি ভিডিও ফ্রি · কার্ড লাগবে না" />
 		</p>
 
-		<h1 class="mx-auto mt-6 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-6xl">
-			<T as="span" en="Big videos in." bn="ভারী ভিডিও দিন।" />
+		<h1 class="mx-auto mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl">
+			<T as="span" en="Convert any video," bn="যেকোনো ভিডিও বদলে ফেলুন," />
 			<span class="gradient-text block"
-				><T as="span" en="Small videos out." bn="হালকা ভিডিও নিন।" /></span
+				><T as="span" en="into something magical." bn="জাদুকরি কিছুতে।" /></span
 			>
 		</h1>
 
@@ -52,14 +51,14 @@
 			<div class="flex items-center justify-between gap-4">
 				<div>
 					<p class="text-xs text-muted"><T as="span" en="Before" bn="আগে" /></p>
-					<p class="text-2xl font-extrabold tracking-tight">1.2 GB</p>
+					<p class="text-2xl font-bold tracking-tight">1.2 GB</p>
 				</div>
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="flex-none text-emerald-light" aria-hidden="true">
 					<path d="M4 12h15M13.5 6.5 20 12l-6.5 5.5" />
 				</svg>
 				<div class="text-right">
 					<p class="text-xs text-muted"><T as="span" en="After" bn="পরে" /></p>
-					<p class="gradient-text text-2xl font-extrabold tracking-tight">84 MB</p>
+					<p class="gradient-text text-2xl font-bold tracking-tight">84 MB</p>
 				</div>
 			</div>
 			<div class="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">

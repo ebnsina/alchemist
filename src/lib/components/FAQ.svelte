@@ -47,8 +47,9 @@
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
 			<T en="Questions" bn="প্রশ্ন" />
 		</p>
-		<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-			<T as="span" en="Things people ask first." bn="মানুষ প্রথমেই যা জানতে চান।" />
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+			<T as="span" en="Got questions?" bn="প্রশ্ন আছে?" />
+			<span class="gradient-text"><T as="span" en="We've got answers." bn="উত্তরও আছে।" /></span>
 		</h2>
 	</div>
 

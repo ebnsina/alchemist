@@ -63,9 +63,9 @@
 <section id="pricing" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
 		<p class="text-xs tracking-widest text-emerald-light uppercase"><T en="Pricing" bn="দাম" /></p>
-		<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-			<T as="span" en="Start free." bn="ফ্রি দিয়ে শুরু করুন।" />
-			<span class="gradient-text"><T as="span" en="Pay when it pays off." bn="কাজে লাগলে তখন টাকা দিন।" /></span>
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+			<T as="span" en="Simple pricing." bn="সহজ দাম।" />
+			<span class="gradient-text"><T as="span" en="No surprises." bn="কোনো চমক নেই।" /></span>
 		</h2>
 		<p class="mt-4 text-sm text-muted">
 			<T
@@ -93,7 +93,7 @@
 					<T as="span" en={t.ten} bn={t.tbn} />
 				</h3>
 				<p class="mt-3 flex items-baseline gap-1.5">
-					<span class="text-4xl font-extrabold tracking-tight">{t.price}</span>
+					<span class="text-4xl font-bold tracking-tight">{t.price}</span>
 					<span class="text-sm text-muted"><T as="span" en={t.pen} bn={t.pbn} /></span>
 				</p>
 				<p class="mt-2 text-sm text-muted"><T as="span" en={t.den} bn={t.dbn} /></p>

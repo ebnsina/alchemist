@@ -17,6 +17,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.5.1",
     "playwright": "^1.63.0",
+    "pngjs": "^7.0.0",
     "svelte": "^5.57.0",
     "svelte-check": "^4.7.6",
     "tailwindcss": "^4.3.3",

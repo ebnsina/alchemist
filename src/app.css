@@ -4,18 +4,19 @@
    emerald to gold is the transformation, and it is the only gradient that carries
    meaning rather than decoration.
 
-   Contrast computed against #06100d, not eyeballed:
+   Contrast computed against the onyx ground #0B0B0C, not eyeballed:
      text #e5e7eb ............ 15.59:1
      muted white @ 0.55 ...... 6.24:1   (the spec's 0.40 measures 3.80:1 and fails AA)
      emerald #10b981 ......... 7.61:1
      emerald light #34d399 ... 10.04:1
      gold #fbbf24 ............ 11.57:1
      seafoam #2dd4bf ......... 10.37:1
-   The emerald button carries #06100d text (7.61:1); white on emerald is 2.54:1
+   The emerald button carries #0B0B0C text; white on emerald is 2.54:1 and fails
    and would fail. */
 @theme {
-	--color-body: #06100d;
-	--color-card: #0a1a16;
+	--color-body: #0B0B0C;
+	--color-card: #141416;
+	--color-elevated: #1C1C1F;
 	--color-deep: #064e3b;
 	--color-emerald: #10b981;
 	--color-emerald-light: #34d399;
@@ -26,8 +27,11 @@
 	--color-hairline: rgba(255, 255, 255, 0.08);
 	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
+	/* Matangi carries latin, latin-ext and devanagari — no Bengali — so Bangla falls
+	   through to the system's Noto Sans Bengali and the devanagari subset is never
+	   fetched. Latin is 21.8 KB on the variable axis. */
 	--font-sans:
-		'Inter', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		'Matangi', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
 }
 
@@ -100,7 +104,7 @@ html[lang='en'] .l-bn {
 @utility card {
 	background: var(--color-card);
 	border: 1px solid var(--color-hairline);
-	border-radius: 14px;
+	border-radius: var(--radius-xl);
 	transition:
 		border-color 200ms ease,
 		transform 200ms ease;
@@ -120,7 +124,7 @@ html[lang='en'] .l-bn {
 	background: var(--color-emerald);
 	color: var(--color-body);
 	font-weight: 600;
-	border-radius: 10px;
+	border-radius: var(--radius-xl);
 	padding: 0.7rem 1.25rem;
 	transition: background 160ms ease;
 	&:hover {
@@ -135,7 +139,7 @@ html[lang='en'] .l-bn {
 	border: 1px solid var(--color-hairline-strong);
 	color: var(--color-ink);
 	font-weight: 500;
-	border-radius: 10px;
+	border-radius: var(--radius-xl);
 	padding: 0.7rem 1.25rem;
 	transition:
 		background 160ms ease,
@@ -263,7 +267,7 @@ details[open] > summary .chevron {
    developers, about, 404) were authored against an earlier token set. Aliasing
    those names onto the sea-green theme re-skins all six for free instead of
    rewriting them; the classes below are the handful they share.
-   Contrast on #06100d: --graphite 0.72 -> 9.87:1, --ink-3 0.55 -> 6.24:1.
+   Contrast on #0B0B0C: --graphite 0.72 -> 9.87:1, --ink-3 0.55 -> 6.24:1.
    --------------------------------------------------------------------------- */
 :root {
 	--paper: var(--color-body);
@@ -282,8 +286,8 @@ details[open] > summary .chevron {
 	--font: var(--font-sans);
 	--mono: var(--font-mono);
 	--ease: cubic-bezier(0.25, 0.8, 0.35, 1);
-	--r: 14px;
-	--r-sm: 10px;
+	--r: var(--radius-xl);
+	--r-sm: var(--radius-xl);
 	--maxw: 1100px;
 	--gap: clamp(1rem, 0.8rem + 1vw, 1.5rem);
 	--bay: clamp(2.75rem, 2rem + 2.8vw, 4.5rem);
@@ -299,7 +303,7 @@ details[open] > summary .chevron {
 
 .shell :is(h1, h2, h3) {
 	margin: 0;
-	font-weight: 800;
+	font-weight: 700;
 	letter-spacing: -0.03em;
 	line-height: 1.1;
 	text-wrap: balance;
@@ -394,7 +398,7 @@ html[lang='bn'] :is(.small, .fine) {
 	gap: 0.5rem;
 	padding: 0.6rem 1.1rem;
 	border: 1px solid var(--rule-firm);
-	border-radius: var(--r-sm);
+	border-radius: var(--radius-xl);
 	background: var(--leaf);
 	color: var(--ink);
 	font: inherit;
@@ -438,7 +442,7 @@ html[lang='bn'] :is(.small, .fine) {
 .price {
 	margin: 0.7rem 0 0.5rem;
 	font-size: var(--step-4);
-	font-weight: 800;
+	font-weight: 700;
 	letter-spacing: -0.03em;
 	line-height: 1.15;
 }
@@ -477,7 +481,7 @@ html[lang='bn'] :is(.small, .fine) {
 	padding: 1rem 1.1rem;
 	background: var(--leaf);
 	border: 1px solid var(--rule);
-	border-radius: var(--r-sm);
+	border-radius: var(--radius-xl);
 	overflow-x: auto;
 	font-family: var(--mono);
 	font-size: var(--step--1);

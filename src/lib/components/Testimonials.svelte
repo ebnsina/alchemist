@@ -35,7 +35,7 @@
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
 			<T en="Who it's for" bn="কাদের জন্য" />
 		</p>
-		<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
 			<T as="span" en="Made for the way you work." bn="আপনি যেভাবে কাজ করেন, সেভাবেই বানানো।" />
 		</h2>
 	</div>

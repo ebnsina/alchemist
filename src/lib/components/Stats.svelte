@@ -17,7 +17,7 @@
 		{#each stats as s, i (s.value)}
 			<div use:scrollReveal={{ delay: i * 70 }}>
 				<dt class="vh"><T as="span" en={s.en} bn={s.bn} /></dt>
-				<dd class="gradient-text text-3xl font-extrabold tracking-tight sm:text-4xl">
+				<dd class="gradient-text text-3xl font-bold tracking-tight sm:text-4xl">
 					{#if s.vbn}<T as="span" en={s.value} bn={s.vbn} />{:else}{s.value}{/if}
 				</dd>
 				<p class="mt-2 text-sm text-muted"><T as="span" en={s.en} bn={s.bn} /></p>

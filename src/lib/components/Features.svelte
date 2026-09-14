@@ -53,9 +53,9 @@
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
 			<T en="What you get" bn="যা যা পাবেন" />
 		</p>
-		<h2 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-			<T as="span" en="Everything the heavy tools do," bn="ভারী সফটওয়্যার যা করে, সবই —" />
-			<span class="gradient-text"><T as="span" en="without the heavy tools." bn="ভারী সফটওয়্যার ছাড়াই।" /></span>
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+			<T as="span" en="Video made simple." bn="ভিডিও, একেবারে সহজ।" />
+			<span class="gradient-text"><T as="span" en="Really simple." bn="সত্যিই সহজ।" /></span>
 		</h2>
 	</div>
 
