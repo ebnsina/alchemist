@@ -230,6 +230,15 @@ details[open] > summary .chevron {
 }
 
 /* Native range, themed. accent-color does the thumb and fill in one line. */
+/* Feature icons sit tilted and straighten when the card is hovered. */
+.tilt {
+	transform: rotate(-9deg);
+	transition: transform 260ms var(--ease, ease);
+}
+.card-hover:hover .tilt {
+	transform: rotate(0deg);
+}
+
 .range {
 	accent-color: var(--color-emerald);
 	height: 1.25rem;

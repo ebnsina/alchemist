@@ -61,12 +61,10 @@
 	<div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each features as f, i (f.ten)}
 			<article class="card card-hover p-6" use:scrollReveal={{ delay: (i % 3) * 80 }}>
-				<span
-					class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-hairline bg-body text-emerald-light"
-				>
-					<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={f.d} /></svg>
-				</span>
-				<h3 class="text-lg font-bold tracking-tight">{f.ten}</h3>
+				<div class="flex items-start justify-between gap-4">
+					<h3 class="text-lg font-bold tracking-tight">{f.ten}</h3>
+					<svg class="tilt flex-none text-emerald-light" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={f.d} /></svg>
+				</div>
 				<p class="mt-2 text-sm leading-relaxed text-muted">{f.ben}</p>
 			</article>
 		{/each}
