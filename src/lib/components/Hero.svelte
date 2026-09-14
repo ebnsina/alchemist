@@ -15,7 +15,7 @@
 			<T en="100 free videos every month · no card needed" bn="মাসে ১০০টি ভিডিও ফ্রি · কার্ড লাগবে না" />
 		</p>
 
-		<h1 class="mx-auto mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl">
+		<h1 class="mx-auto mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl leading-[1.18]">
 			<T as="span" en="Convert any video," bn="যেকোনো ভিডিও বদলে ফেলুন," />
 			<span class="gradient-text block"
 				><T as="span" en="into something magical." bn="জাদুকরি কিছুতে।" /></span

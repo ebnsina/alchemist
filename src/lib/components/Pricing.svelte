@@ -63,7 +63,7 @@
 <section id="pricing" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
 		<p class="text-xs tracking-widest text-emerald-light uppercase"><T en="Pricing" bn="দাম" /></p>
-		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.18]">
 			<T as="span" en="Simple pricing." bn="সহজ দাম।" />
 			<span class="gradient-text"><T as="span" en="No surprises." bn="কোনো চমক নেই।" /></span>
 		</h2>

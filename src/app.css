@@ -27,11 +27,12 @@
 	--color-hairline: rgba(255, 255, 255, 0.08);
 	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-	/* Spline Sans carries latin and latin-ext only — no Bengali — so Bangla falls
-	   through to the system's Noto Sans Bengali and the devanagari subset is never
-	   fetched. Latin is 56 KB on the variable axis. */
+		/* Fontshare serves latin only, so Bangla still falls through to the system's
+	   Noto Sans Bengali and the chain is unchanged. */
 	--font-sans:
-		'Spline Sans', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		'Amulya', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-heading:
+		'Trench Slab', 'Noto Sans Bengali', Georgia, 'Times New Roman', serif;
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
 }
 
@@ -45,6 +46,18 @@
 		font-family: var(--font-sans);
 		line-height: 1.65;
 		-webkit-font-smoothing: antialiased;
+	}
+
+	/* Headings globally, not scoped to a wrapper. The previous rule lived under
+	   .shell, which these pages do not use, so it never matched and the heading
+	   face never even downloaded. */
+	:is(h1, h2, h3, h4) {
+		font-family: var(--font-heading);
+		letter-spacing: -0.02em;
+		/* Trench Slab is a slab serif with deep descenders; at tight leading the
+		   tails of g, y and j are clipped by the line box at display sizes. */
+		line-height: 1.18;
+		padding-bottom: 0.06em;
 	}
 	/* Bengali needs a little more size and leading than latin at the same step, and
 	   Inter has no Bengali, so these fall through to the system's Noto Sans Bengali. */
@@ -75,12 +88,11 @@ html[lang='en'] .l-bn {
 	display: none !important;
 }
 
+/* Was a clipped background gradient. Removed: it washed the headline out against
+   the aurora and background-clip:text trims descenders on its own. A solid accent
+   reads better and cannot clip. */
 @utility gradient-text {
-	background: linear-gradient(135deg, #fff 0%, var(--color-emerald-light) 50%, var(--color-gold) 100%);
-	-webkit-background-clip: text;
-	background-clip: text;
-	color: transparent;
-	-webkit-text-fill-color: transparent;
+	color: var(--color-emerald-light);
 }
 
 
@@ -296,9 +308,13 @@ details[open] > summary .chevron {
 
 .shell :is(h1, h2, h3) {
 	margin: 0;
+	font-family: var(--font-heading);
 	font-weight: 700;
-	letter-spacing: -0.03em;
-	line-height: 1.1;
+	letter-spacing: -0.02em;
+	/* Trench Slab is a slab serif with deep descenders. At 1.1 the tails of g, y
+	   and j were being clipped by the line box on the largest sizes. */
+	line-height: 1.18;
+	padding-bottom: 0.08em;
 	text-wrap: balance;
 }
 .shell h1 {
@@ -306,7 +322,7 @@ details[open] > summary .chevron {
 }
 .shell h2 {
 	font-size: var(--step-5);
-	line-height: 1.15;
+	line-height: 1.2;
 }
 .shell h3 {
 	font-size: var(--step-2);

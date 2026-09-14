@@ -53,7 +53,7 @@
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
 			<T en="What you get" bn="যা যা পাবেন" />
 		</p>
-		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.18]">
 			<T as="span" en="Video made simple." bn="ভিডিও, একেবারে সহজ।" />
 			<span class="gradient-text"><T as="span" en="Really simple." bn="সত্যিই সহজ।" /></span>
 		</h2>
