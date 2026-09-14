@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { ArrowDown01Icon } from '@hugeicons/core-free-icons';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
 
 	const qs = [
@@ -47,18 +49,12 @@
 					class="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium transition-colors hover:text-brand-light"
 				>
 					{q.qen}
-					<svg
+					<HugeiconsIcon
+						icon={ArrowDown01Icon}
+						size={17}
+						strokeWidth={2}
 						class="chevron flex-none text-muted"
-						width="17"
-						height="17"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
-					>
+					/>
 				</summary>
 				<p class="pb-5 text-sm leading-relaxed text-muted">{q.aen}</p>
 			</details>

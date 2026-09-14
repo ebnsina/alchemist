@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { Tick02Icon } from '@hugeicons/core-free-icons';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
 
 	const tiers = [
@@ -65,7 +67,7 @@
 	<div class="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each tiers as t, i (t.ten)}
 			<article
-				class="card relative flex flex-col px-6 py-8 {t.featured ? 'border-brand-mid/60 bg-card' : ''}"
+				class="card relative flex flex-col px-6 py-8 {t.featured ? 'card-featured' : ''}"
 				use:scrollReveal={{ delay: i * 80 }}
 			>
 				{#if t.featured}
@@ -86,7 +88,7 @@
 				<ul class="mt-7 flex-1 space-y-3">
 					{#each t.rows as row (row)}
 						<li class="flex items-start gap-2.5 text-sm">
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="mt-1 flex-none text-brand-light" aria-hidden="true"><path d="M4.6 12.5 9.4 17.3 19.4 6.9" /></svg>
+							<HugeiconsIcon icon={Tick02Icon} size={15} strokeWidth={2.4} class="mt-1 flex-none text-brand-light" />
 							<span>{row}</span>
 						</li>
 					{/each}

@@ -113,27 +113,34 @@
 }
 
 @utility card {
-	/* A white stock over the paper ground, lifted by shadow rather than by a
-	   lighter fill — on paper there is nothing lighter to go to. */
+	/* A white stock over the paper ground, held by a hairline shadow rather than a
+	   border — a drawn edge on every card reads as a table. corner-shape falls
+	   back to a plain round where it is not supported yet. */
 	background: linear-gradient(180deg, #ffffff, #fcfcfa);
-	border: 1px solid var(--color-hairline);
-	border-radius: var(--radius-xl);
+	border: 0;
+	border-radius: 18px;
+	corner-shape: squircle;
 	box-shadow:
-		0 1px 2px rgba(16, 24, 40, 0.05),
-		0 14px 32px -20px rgba(16, 24, 40, 0.22);
+		0 1px 1px rgba(16, 24, 40, 0.04),
+		0 2px 6px -2px rgba(16, 24, 40, 0.08);
 	transition:
-		border-color 200ms ease,
 		box-shadow 200ms ease,
 		transform 200ms ease;
 }
 @utility card-hover {
 	&:hover {
-		border-color: var(--color-hairline-strong);
 		box-shadow:
-			0 1px 2px rgba(16, 24, 40, 0.06),
-			0 22px 44px -22px rgba(16, 24, 40, 0.3);
+			0 1px 1px rgba(16, 24, 40, 0.05),
+			0 8px 20px -6px rgba(16, 24, 40, 0.12);
 		transform: translateY(-2px);
 	}
+}
+
+/* The one card that has to stand out, now that no card has an edge. */
+@utility card-featured {
+	box-shadow:
+		0 0 0 2px var(--color-brand),
+		0 2px 8px -2px rgba(16, 24, 40, 0.12);
 }
 
 /* Pills at a fixed 46px, hover handled by opacity rather than a second colour so
@@ -149,6 +156,7 @@
 	padding-inline: 1.25rem;
 	border: 1px solid transparent;
 	border-radius: 999px;
+	corner-shape: squircle;
 	background: var(--color-brand);
 	color: #fff;
 	transition:
@@ -175,6 +183,7 @@
 	padding-inline: 1.25rem;
 	border: 1px solid var(--color-hairline-strong);
 	border-radius: 999px;
+	corner-shape: squircle;
 	background: transparent;
 	color: var(--color-ink);
 	transition:

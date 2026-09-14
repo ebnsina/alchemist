@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { Tick02Icon } from '@hugeicons/core-free-icons';
 	// Names the kinds of work Alchemist is for. Claims nothing about who uses it.
 	const kinds = [
 		'Online courses',
@@ -68,19 +70,13 @@
 					aria-hidden={idx >= kinds.length ? 'true' : undefined}
 				>
 					{kind}
-					<svg
-						class="h-5 w-5 flex-none transition-opacity duration-300"
+					<HugeiconsIcon
+						icon={Tick02Icon}
+						size={20}
+						strokeWidth={2.2}
+						class="flex-none transition-opacity duration-300"
 						style="opacity: {active ? 1 : 0}"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2.2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="m5 12.5 4.5 4.5L19 7" />
-					</svg>
+					/>
 				</li>
 			{/each}
 		</ul>
