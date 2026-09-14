@@ -1,0 +1,33 @@
+[Unit]
+Description=Alchemist control plane and transcode workers
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=alchemist
+Group=alchemist
+WorkingDirectory=/opt/alchemist
+ExecStart=/opt/alchemist/bin/alchemist
+# Every variable is required; the binary refuses to boot if one is missing.
+EnvironmentFile=/etc/alchemist/alchemist.env
+Restart=always
+RestartSec=5
+
+# Transcoding is the whole job, so do not let systemd starve it, but do keep it
+# from taking the box down with it.
+Nice=5
+LimitNOFILE=65535
+MemoryHigh=80%
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/alchemist
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

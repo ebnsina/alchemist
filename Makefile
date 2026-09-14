@@ -1,0 +1,38 @@
+DB_ADMIN := postgres://$(USER)@localhost:5432/alchemist?sslmode=disable
+DB_APP   := postgres://alchemist_app:alchemist@localhost:5432/alchemist?sslmode=disable
+SEAWEED  := .local/seaweed
+
+build:
+	go build -o bin/ ./cmd/...
+
+run: build
+	set -a; . ./.env; set +a; ./bin/alchemist
+
+# Dev object storage. Production runs the same SeaweedFS, with erasure coding.
+storage:
+	mkdir -p $(SEAWEED)/data
+	weed server -dir=$(SEAWEED)/data -s3 -s3.port=9000 \
+	  -s3.config=$(SEAWEED)/s3.json -volume.max=64 -master.volumeSizeLimitMB=1024 -ip=127.0.0.1
+
+db-reset:
+	dropdb --if-exists alchemist && createdb alchemist
+	psql -q -d alchemist -v ON_ERROR_STOP=1 -f internal/db/migrations/001_init.sql
+	go run github.com/riverqueue/river/cmd/river@latest migrate-up --database-url "$(DB_ADMIN)"
+	psql -q -d alchemist -c "grant select,insert,update,delete on all tables in schema public to alchemist_app; grant usage,select on all sequences in schema public to alchemist_app;"
+
+test:
+	ALCHEMIST_TEST_DATABASE_URL="$(DB_APP)" ALCHEMIST_TEST_ADMIN_URL="$(DB_ADMIN)" go test ./...
+
+# Local edge harness: real cache config, minus TLS and njs (no njs in Homebrew nginx).
+edge:
+	nginx -c $(PWD)/deploy/edge/nginx.test.conf
+
+edge-stop:
+	- nginx -c $(PWD)/deploy/edge/nginx.test.conf -s stop
+
+# Stand-ins for a third-party customer: an origin hosting their video and a webhook
+# receiver. Run alongside `make run` with ALCHEMIST_FETCH_ALLOWLIST set.
+customer-servers:
+	python3 test/customer_servers.py
+
+.PHONY: build run storage db-reset test edge edge-stop customer-servers

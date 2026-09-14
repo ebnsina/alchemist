@@ -1,0 +1,267 @@
+openapi: 3.1.0
+info:
+  title: Alchemist API
+  version: "1.0"
+  description: |
+    Video transcoding and delivery.
+
+    Authenticate control-plane calls with `Authorization: Bearer <api-key>`.
+    Playback URLs carry their own short-lived signature instead and need no key,
+    because the caller is a viewer.
+
+    Errors always take the shape `{"error":{"code","message"}}`. Branch on `code`,
+    which is stable; `message` is written for a human and may be reworded or
+    translated.
+servers:
+  - url: https://api.alchemist.example
+paths:
+  /healthz:
+    get:
+      summary: Liveness and database reachability
+      security: []
+      responses:
+        "200": { description: Healthy }
+        "503": { description: Database unavailable }
+
+  /v1/whoami:
+    get:
+      summary: Identify the authenticated tenant
+      responses:
+        "200": { description: Tenant identity and ladder profile }
+        "401": { description: Missing or invalid API key }
+
+  /v1/uploads:
+    post:
+      summary: Start a direct upload
+      description: |
+        Returns a presigned target. Upload the file there with `PUT`, then call
+        `/v1/assets/{id}/complete`. Bytes never pass through this API.
+      responses:
+        "201": { description: Upload target created }
+        "429": { description: Concurrency or monthly quota reached }
+
+  /v1/assets:
+    post:
+      summary: Import a video from a URL
+      description: |
+        For migrating a library from another provider. The URL is re-validated at
+        fetch time and on every redirect; addresses inside private, loopback or
+        link-local ranges are refused.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri }
+      responses:
+        "202": { description: Import queued }
+        "400": { description: missing_url or invalid_url }
+        "429": { description: Quota reached }
+
+  /v1/assets/{id}:
+    get:
+      summary: Fetch an asset
+      description: |
+        `playback` appears once the state is `ready` or `partially_ready`. URLs are
+        signed and expire.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Asset state and playback URLs }
+        "404": { description: asset_not_found }
+
+  /v1/assets/{id}/complete:
+    post:
+      summary: Signal that an upload has finished
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "202": { description: Queued for processing }
+        "404": { description: No upload awaiting that id }
+
+  /v1/webhooks:
+    get:
+      summary: List webhook endpoints
+      responses:
+        "200": { description: Endpoints }
+    post:
+      summary: Register a webhook endpoint
+      description: |
+        The signing secret is returned once, here, and never again. Deliveries carry
+        `X-Alchemist-Signature: sha256=<hmac>` over the raw body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri, description: Must be https }
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum: [asset.ready, asset.failed, rendition.ready]
+      responses:
+        "201": { description: Endpoint created; secret shown once }
+        "400": { description: invalid_url or unknown_event }
+
+  /v1/bucket-sources:
+    get:
+      summary: List connected buckets
+      responses:
+        "200": { description: Sources with sync status and import counts }
+    post:
+      summary: Connect a customer-owned bucket
+      description: |
+        Ingests every video appearing under `prefix`. The secret is wrapped before
+        storage and never returned again. A first scan starts immediately; afterwards
+        a reconcile re-lists every 15 minutes, which is what makes the sync reliable
+        when S3 event notifications are dropped or unsupported.
+
+        Only known video extensions are taken, so PDFs and images in the same bucket
+        are ignored. Re-listing never re-imports: objects are tracked by key and etag.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint, bucket, access_key_id, secret_access_key]
+              properties:
+                endpoint: { type: string, format: uri }
+                region: { type: string, default: us-east-1 }
+                bucket: { type: string }
+                prefix: { type: string, default: "" }
+                access_key_id: { type: string }
+                secret_access_key: { type: string, description: Read access is sufficient }
+      responses:
+        "201": { description: Connected; first scan queued }
+        "400": { description: invalid_url or invalid_request }
+
+  /v1/usage:
+    get:
+      summary: Billable usage for a period
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200": { description: Aggregated usage lines }
+        "400": { description: invalid_date or invalid_range }
+
+  /playback/{tenant}/{asset}/{file}:
+    get:
+      summary: Fetch a manifest or media byte range
+      security: []
+      description: |
+        Supports `Range`, `ETag` and `If-None-Match`. Media is immutable and cacheable
+        indefinitely; manifests carry a short TTL and are rewritten per request so
+        their relative URIs stay authorized.
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string } }
+        - { name: asset, in: path, required: true, schema: { type: string } }
+        - { name: file, in: path, required: true, schema: { type: string } }
+        - { name: exp, in: query, required: true, schema: { type: integer } }
+        - { name: kid, in: query, required: true, schema: { type: string } }
+        - { name: sig, in: query, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Full object }
+        "206": { description: Byte range }
+        "304": { description: Not modified }
+        "403": { description: playback_not_authorized }
+        "404": { description: not_found }
+        "416": { description: range_not_satisfiable }
+    head:
+      summary: Headers for a manifest or media object
+      security: []
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string } }
+        - { name: asset, in: path, required: true, schema: { type: string } }
+        - { name: file, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Headers only }
+        "403": { description: playback_not_authorized }
+    options:
+      summary: CORS preflight
+      security: []
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string } }
+        - { name: asset, in: path, required: true, schema: { type: string } }
+        - { name: file, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Allowed methods and headers }
+
+  /playback/{tenant}/{asset}/key:
+    get:
+      summary: Fetch the content decryption key
+      security: []
+      description: Authorized by the same signature as the media. Never cached.
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string } }
+        - { name: asset, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Raw 16-byte key }
+        "403": { description: playback_not_authorized }
+    head:
+      summary: Headers for the content key
+      security: []
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string } }
+        - { name: asset, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Headers only }
+    options:
+      summary: CORS preflight
+      security: []
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string } }
+        - { name: asset, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Allowed methods and headers }
+
+  /playback/{tenant}/{asset}/beacon:
+    post:
+      summary: Report playback quality
+      security: []
+      description: |
+        Sent by the viewer's player. Always answers 204, including for malformed
+        bodies, so telemetry never causes a retry or a visible error. Values are
+        clamped rather than rejected.
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string } }
+        - { name: asset, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Accepted or discarded }
+        "403": { description: playback_not_authorized }
+    options:
+      summary: CORS preflight for beacons
+      security: []
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string } }
+        - { name: asset, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Allowed methods and headers }
+
+  /internal/verify-playback:
+    get:
+      summary: Authorize a playback request without returning content
+      security: []
+      description: |
+        For edges and CDNs that cannot run njs. Called as an nginx `auth_request`
+        subrequest, which MUST happen before the cache lookup: the media cache key
+        excludes the signature.
+      responses:
+        "204": { description: Authorized }
+        "403": { description: Refused }
+
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+security:
+  - apiKey: []

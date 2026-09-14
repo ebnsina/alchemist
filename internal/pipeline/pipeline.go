@@ -1,0 +1,436 @@
+// Package pipeline turns transcoding into durable background work.
+package pipeline
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"mime"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+
+	"github.com/ebnsina/alchemist/internal/platform/db"
+	"github.com/ebnsina/alchemist/internal/platform/fetch"
+	"github.com/ebnsina/alchemist/internal/platform/keys"
+	"github.com/ebnsina/alchemist/internal/platform/media"
+	"github.com/ebnsina/alchemist/internal/platform/storage"
+)
+
+// Queue classes are sized independently so a bulk import cannot starve playback-
+// driven work. Capability tags let GPU nodes join encode_gpu without a scheduler change.
+const (
+	QueueIO     = "io"
+	QueueEncode = "encode_cpu"
+)
+
+type TranscodeArgs struct {
+	AssetID  string `json:"asset_id"`
+	TenantID string `json:"tenant_id"`
+}
+
+func (TranscodeArgs) Kind() string { return "transcode" }
+
+func (TranscodeArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{Queue: QueueEncode, MaxAttempts: 3}
+}
+
+// JobTimeout has to cover the whole chain for the longest asset a tenant can upload,
+// including uploading the packaged output. River's default is far too short: a
+// multi-hour lecture blows through it, and the job dies partway with output already
+// written.
+const JobTimeout = 6 * time.Hour
+
+func (w *TranscodeWorker) Timeout(*river.Job[TranscodeArgs]) time.Duration {
+	return JobTimeout
+}
+
+type TranscodeWorker struct {
+	river.WorkerDefaults[TranscodeArgs]
+	DB      *db.DB
+	Store   *storage.Store
+	Keys    *keys.Wrapper
+	River   *river.Client[pgx.Tx]
+	WorkDir string
+	// MaxSourceBytes caps a pull-from-URL download.
+	MaxSourceBytes int64
+}
+
+// Work runs the full chain for one asset.
+//
+// ponytail: one job per asset, encoding chunks in a local pool. The ceiling is a
+// single machine's cores and the mezzanine must fit on local disk, which is fine to
+// roughly 10k source hours/month. Splitting into (chunk x rendition) jobs that fetch
+// byte ranges from object storage is additive — the media primitives, the schema and
+// the API contract all stay as they are; see docs/04-roadmap.md phase 5.
+func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs]) (err error) {
+	a := job.Args
+
+	// An asset must never be left in a non-terminal state. Without this a job that
+	// exhausts its retries leaves the asset stuck in "encoding" forever, with no
+	// signal to the customer and nothing to retry against.
+	defer func() {
+		if err != nil && job.Attempt >= job.MaxAttempts {
+			w.markFailed(ctx, a, "processing_failed")
+		}
+	}()
+
+	var profile string
+	var sourceKey, sourceURL, bucketSourceID, objectKey *string
+	var ladderRaw []byte
+	err = w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx,
+			`select a.source_key, a.source_url, a.bucket_source_id::text,
+			        a.source_object_key, a.ladder_profile, p.rungs
+			   from assets a join ladder_profiles p on p.name = a.ladder_profile
+			  where a.id = $1`, a.AssetID).
+			Scan(&sourceKey, &sourceURL, &bucketSourceID, &objectKey, &profile, &ladderRaw)
+	})
+	if err != nil {
+		return fmt.Errorf("load asset %s: %w", a.AssetID, err)
+	}
+
+	rungs, err := media.ParseLadder(ladderRaw)
+	if err != nil {
+		return w.fail(ctx, a, "invalid_ladder_profile", err)
+	}
+
+	dir := filepath.Join(w.WorkDir, a.AssetID)
+	defer os.RemoveAll(dir)
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		return err
+	}
+
+	src := filepath.Join(dir, "source")
+	switch {
+	case bucketSourceID != nil && objectKey != nil:
+		if err := w.pullFromBucket(ctx, a, *bucketSourceID, *objectKey, src); err != nil {
+			return err
+		}
+	case sourceURL != nil && *sourceURL != "":
+		if err := w.pull(ctx, a, *sourceURL, src); err != nil {
+			return err
+		}
+	default:
+		if err := w.download(ctx, deref(sourceKey), src); err != nil {
+			return w.fail(ctx, a, "source_unreadable", err)
+		}
+	}
+
+	w.setState(ctx, a, "encoding")
+
+	opts := media.DefaultOptions()
+	keyID, key, err := keys.Generate()
+	if err != nil {
+		return err
+	}
+	// The key URI is relative so the playback signature is appended to it at serve
+	// time, the same way it is for manifests and segments.
+	opts.Encrypt = &media.Encryption{
+		KeyID: keyID, Key: key, KeyURI: "key", ClearLeadSeconds: 0,
+	}
+
+	wrapped, nonce, err := w.Keys.Wrap(key, a.AssetID)
+	if err != nil {
+		return err
+	}
+	if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx,
+			`insert into content_keys (asset_id, tenant_id, key_id, wrapped_key, nonce)
+			 values ($1,$2,$3,$4,$5)
+			 on conflict (asset_id) do update set
+			   key_id = excluded.key_id, wrapped_key = excluded.wrapped_key,
+			   nonce = excluded.nonce`,
+			a.AssetID, a.TenantID, keyID, wrapped, nonce)
+		return err
+	}); err != nil {
+		return fmt.Errorf("store content key: %w", err)
+	}
+
+	// Only the eager rungs are encoded now. The rest are recorded as pending and
+	// generated when a viewer first asks for them.
+	lazy := media.LazyRungs(rungs)
+	res, err := media.Transcode(ctx, src, dir, media.Eager(rungs), opts)
+	if err != nil {
+		return w.fail(ctx, a, errorCode(err), err)
+	}
+
+	w.setState(ctx, a, "packaging")
+	prefix := fmt.Sprintf("cmaf/%s/%s", a.TenantID, a.AssetID)
+
+	// The mezzanine is retained only while lazy rungs remain to be built from it.
+	// Keeping it forever would give back a large share of what JIT packaging saves.
+	mezzKey := ""
+	if len(lazy) > 0 {
+		mezzKey = fmt.Sprintf("mez/%s/%s/mezzanine.mp4", a.TenantID, a.AssetID)
+		fh, err := os.Open(filepath.Join(dir, "mezzanine.mp4"))
+		if err != nil {
+			return fmt.Errorf("open mezzanine: %w", err)
+		}
+		err = w.Store.Put(ctx, mezzKey, fh, "video/mp4")
+		fh.Close()
+		if err != nil {
+			return fmt.Errorf("retain mezzanine: %w", err)
+		}
+	}
+	if err := w.uploadDir(ctx, res.OutDir, prefix); err != nil {
+		return fmt.Errorf("publish: %w", err)
+	}
+
+	if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		// partially_ready is a real, published state: playback works on the low
+		// ladder while the expensive rungs do not exist yet.
+		state := "ready"
+		if len(lazy) > 0 {
+			state = "partially_ready"
+		}
+		if _, err := tx.Exec(ctx,
+			`update assets set state = $6::asset_state, duration_sec = $2, width = $3,
+			        height = $4, frame_rate = $5, mezzanine_key = $7,
+			        complexity = $8, updated_at = now()
+			  where id = $1`,
+			a.AssetID, res.Probe.DurationSec, res.Probe.Width,
+			res.Probe.Height, res.Probe.FrameRate, state, mezzKey,
+			res.Complexity); err != nil {
+			return err
+		}
+		for _, r := range res.Rungs {
+			width := r.Height * res.Probe.Width / res.Probe.Height
+			if width%2 != 0 {
+				width++
+			}
+			if _, err := tx.Exec(ctx,
+				`insert into renditions (asset_id, tenant_id, height, codec, bitrate_bps,
+				        encoder_version, params_hash, state, object_key, lazy,
+				        width, codec_string, avg_bandwidth_bps)
+				 values ($1,$2,$3,$4,$5,$6,$7,'ready',$8,false,$9,$10,$5)
+				 on conflict (asset_id, height, codec) do update set state = 'ready'`,
+				a.AssetID, a.TenantID, r.Height, r.Codec, r.MaxrateBPS,
+				media.EncoderVersion, media.ParamsHash(r),
+				fmt.Sprintf("%s/%dp.cmfv", prefix, r.Height),
+				width, codecString(r)); err != nil {
+				return err
+			}
+		}
+		// Pending rungs are recorded now so the API can report what is still coming,
+		// and so a playback request has a row to flip rather than having to re-derive
+		// the profile.
+		for _, r := range lazy {
+			if _, err := tx.Exec(ctx,
+				`insert into renditions (asset_id, tenant_id, height, codec, bitrate_bps,
+				        encoder_version, params_hash, state, lazy)
+				 values ($1,$2,$3,$4,$5,$6,$7,'pending',true)
+				 on conflict (asset_id, height, codec) do nothing`,
+				a.AssetID, a.TenantID, r.Height, r.Codec, r.MaxrateBPS,
+				media.EncoderVersion, media.ParamsHash(r)); err != nil {
+				return err
+			}
+		}
+		// Billing data cannot be backfilled, so it is emitted with the work.
+		_, err := tx.Exec(ctx,
+			`insert into usage_events (tenant_id, asset_id, kind, quantity, unit)
+			 values ($1, $2, 'ingest', $3, 'seconds')`,
+			a.TenantID, a.AssetID, res.Probe.DurationSec)
+		return err
+	}); err != nil {
+		return err
+	}
+
+	w.emit(ctx, a, "asset.ready", map[string]any{
+		"asset_id":         a.AssetID,
+		"duration_seconds": res.Probe.DurationSec,
+		"width":            res.Probe.Width, "height": res.Probe.Height,
+	})
+	return nil
+}
+
+func (w *TranscodeWorker) download(ctx context.Context, key, dst string) error {
+	body, err := w.Store.Get(ctx, key)
+	if err != nil {
+		return err
+	}
+	defer body.Close()
+
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, body)
+	return err
+}
+
+func (w *TranscodeWorker) uploadDir(ctx context.Context, dir, prefix string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		f, err := os.Open(filepath.Join(dir, e.Name()))
+		if err != nil {
+			return err
+		}
+		err = w.Store.Put(ctx, prefix+"/"+e.Name(), f, contentType(e.Name()))
+		f.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func contentType(name string) string {
+	switch filepath.Ext(name) {
+	case ".m3u8":
+		return "application/vnd.apple.mpegurl"
+	case ".mpd":
+		return "application/dash+xml"
+	case ".cmfv", ".cmfa", ".mp4":
+		return "video/mp4"
+	}
+	if ct := mime.TypeByExtension(filepath.Ext(name)); ct != "" {
+		return ct
+	}
+	return "application/octet-stream"
+}
+
+func (w *TranscodeWorker) setState(ctx context.Context, a TranscodeArgs, state string) {
+	_ = w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx,
+			`update assets set state = $2::asset_state, updated_at = now() where id = $1`,
+			a.AssetID, state)
+		return err
+	})
+}
+
+// fail records a stable code for the customer and stops retrying: a corrupt source
+// will not become readable on the third attempt.
+func (w *TranscodeWorker) fail(ctx context.Context, a TranscodeArgs, code string, cause error) error {
+	w.markFailed(ctx, a, code)
+	w.emit(ctx, a, "asset.failed", map[string]any{"asset_id": a.AssetID, "error_code": code})
+	return river.JobCancel(fmt.Errorf("%s: %w", code, cause))
+}
+
+// markFailed uses a fresh context: the job context may already be cancelled or past
+// its deadline, which is exactly when recording the failure matters most.
+func (w *TranscodeWorker) markFailed(ctx context.Context, a TranscodeArgs, code string) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+	defer cancel()
+	_ = w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx,
+			`update assets set state = 'failed', error_code = $2, updated_at = now()
+			  where id = $1 and state <> 'ready'`, a.AssetID, code)
+		return err
+	})
+}
+
+func errorCode(err error) string {
+	switch {
+	case errorsIs(err, media.ErrNoVideoStream):
+		return "no_video_stream"
+	case errorsIs(err, media.ErrUnreadableSource):
+		return "unreadable_source"
+	case errorsIs(err, media.ErrStitchFailed):
+		return "stitch_failed"
+	case errorsIs(err, media.ErrPackageFailed):
+		return "package_failed"
+	default:
+		return "encode_failed"
+	}
+}
+
+func errorsIs(err, target error) bool { return errors.Is(err, target) }
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+// pull downloads a customer-supplied URL. Every failure here maps to a stable code,
+// because "your link didn't work" needs to say why.
+func (w *TranscodeWorker) pull(ctx context.Context, a TranscodeArgs, url, dst string) error {
+	max := w.MaxSourceBytes
+	if max <= 0 {
+		max = DefaultMaxSourceBytes
+	}
+	if _, err := fetch.ToFile(ctx, url, dst, max, 2*time.Hour); err != nil {
+		switch {
+		case errors.Is(err, fetch.ErrBlockedAddress):
+			return w.fail(ctx, a, "source_url_not_allowed", err)
+		case errors.Is(err, fetch.ErrBadScheme):
+			return w.fail(ctx, a, "source_url_not_allowed", err)
+		case errors.Is(err, fetch.ErrTooLarge):
+			return w.fail(ctx, a, "source_too_large", err)
+		case errors.Is(err, fetch.ErrTooManyHops):
+			return w.fail(ctx, a, "source_unreachable", err)
+		default:
+			// Transient network problems deserve the retry the queue already gives us.
+			return fmt.Errorf("pull source: %w", err)
+		}
+	}
+	return nil
+}
+
+// DefaultMaxSourceBytes bounds a pull-from-URL download when no tenant limit applies.
+const DefaultMaxSourceBytes = 32 << 30
+
+func (w *TranscodeWorker) emit(ctx context.Context, a TranscodeArgs, event string, data any) {
+	if w.River == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	_ = Emit(ctx, w.DB, w.River, a.TenantID, event, data)
+}
+
+// pullFromBucket reads a source object out of the customer's own bucket using their
+// credentials, so the bucket never has to be public or pre-signed.
+func (w *TranscodeWorker) pullFromBucket(ctx context.Context, a TranscodeArgs, sourceID, objectKey, dst string) error {
+	var endpoint, region, bucket, accessKey string
+	var wrapped, nonce []byte
+
+	// Credentials are resolved before any tenant is in scope, hence the definer
+	// function; RLS would otherwise return no rows here.
+	err := w.DB.Pool().QueryRow(ctx,
+		`select endpoint, region, bucket, access_key_id, wrapped_secret, secret_nonce
+		   from bucket_source_credentials($1)`, sourceID).
+		Scan(&endpoint, &region, &bucket, &accessKey, &wrapped, &nonce)
+	if err != nil {
+		return w.fail(ctx, a, "source_unreadable", err)
+	}
+
+	secret, err := w.Keys.Unwrap(wrapped, nonce, sourceID)
+	if err != nil {
+		return w.fail(ctx, a, "source_unreadable", err)
+	}
+
+	client, err := storage.NewClient(ctx, endpoint, region, bucket, accessKey, string(secret))
+	if err != nil {
+		return w.fail(ctx, a, "source_unreadable", err)
+	}
+
+	body, err := client.Get(ctx, objectKey)
+	if err != nil {
+		return w.fail(ctx, a, "source_unreadable", err)
+	}
+	defer body.Close()
+
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := io.Copy(f, body); err != nil {
+		return fmt.Errorf("read %s from customer bucket: %w", objectKey, err)
+	}
+	return nil
+}
