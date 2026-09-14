@@ -24,59 +24,68 @@
 		U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* Brass on near-black. Alchemy is transmutation — base input, refined output — and
-   the player already wears it, so the site and the thing it sells are one object.
-   It is also not the blue every other video API defaults to. */
+/* Warm stone paper, warm near-black ink, one accent. Brass because alchemy is
+   al-kimiya and because alchemist-player already wears it, so the site and the
+   thing it sells read as one object. Light is the primary surface: the product's
+   argument is that less is sent, and a page that spends very little ink makes that
+   argument before a word is read. Every pair below clears WCAG AA. */
 :root {
-	--bg: #0c0c0e;
-	--raise: #141418;
-	--raise2: #1b1b20;
-	--line: #2a2a31;
-	--ink: #f4f1ec;
-	--muted: #a19c94;
-	--brass: #e8a33d;
-	--brass-soft: rgba(232, 163, 61, 0.14);
-	--brass-ink: #1a1206;
-	--save: #4ecf9b;
-	--save-soft: rgba(78, 207, 155, 0.14);
-	--warn: #e8785f;
-	--radius: 12px;
-	--maxw: 1080px;
+	--paper: #eeede9;
+	--leaf: #fbfaf7;
+	--sink: #e5e3dd;
+	--ink: #1b1a17;
+	--graphite: #6e6a61;
+	--brass: #8a5a0b;
+	--brass-ink: #fbfaf7;
+	--wash: rgba(138, 90, 11, 0.07);
+	--rule: #dcd9d1;
+	--rule-firm: #c3bfb4;
+
+	--step--1: 0.8125rem;
+	--step-0: 0.9375rem;
+	--step-1: 1.0625rem;
+	--step-2: 1.1875rem;
+	--step-3: 1.375rem;
+	--step-4: clamp(1.4rem, 1.22rem + 0.8vw, 1.75rem);
+	--step-5: clamp(1.625rem, 1.34rem + 1.25vw, 2.125rem);
+	--step-6: clamp(2.125rem, 1.5rem + 2.7vw, 3.25rem);
+
+	--gap: clamp(1.25rem, 0.9rem + 1.5vw, 2rem);
+	--bay: clamp(3rem, 2rem + 5vw, 6rem);
+	--maxw: 1120px;
+
 	--font: 'Google Sans Flex', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto,
 		'Noto Sans', sans-serif;
 	--mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
-	color-scheme: dark;
-}
-:root[data-theme='light'] {
-	--bg: #faf7f2;
-	--raise: #fffdfa;
-	--raise2: #f3ede4;
-	--line: #e2dad0;
-	--ink: #191510;
-	--muted: #665e53;
-	--brass: #8a5d0c;
-	--brass-soft: rgba(138, 93, 12, 0.1);
-	--brass-ink: #fffdfa;
-	--save: #0f7a55;
-	--save-soft: rgba(15, 122, 85, 0.1);
-	--warn: #a8341a;
+	--ease: cubic-bezier(0.22, 0.8, 0.28, 1);
 	color-scheme: light;
 }
-@media (prefers-color-scheme: light) {
-	:root:not([data-theme='dark']) {
-		--bg: #faf7f2;
-		--raise: #fffdfa;
-		--raise2: #f3ede4;
-		--line: #e2dad0;
-		--ink: #191510;
-		--muted: #665e53;
-		--brass: #8a5d0c;
-		--brass-soft: rgba(138, 93, 12, 0.1);
-		--brass-ink: #fffdfa;
-		--save: #0f7a55;
-		--save-soft: rgba(15, 122, 85, 0.1);
-		--warn: #a8341a;
-		color-scheme: light;
+:root[data-theme='dark'] {
+	--paper: #131311;
+	--leaf: #1c1b18;
+	--sink: #0e0e0c;
+	--ink: #f0eee8;
+	--graphite: #948f84;
+	--brass: #e8a33d;
+	--brass-ink: #1b1206;
+	--wash: rgba(232, 163, 61, 0.1);
+	--rule: #2e2c28;
+	--rule-firm: #433f39;
+	color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--paper: #131311;
+		--leaf: #1c1b18;
+		--sink: #0e0e0c;
+		--ink: #f0eee8;
+		--graphite: #948f84;
+		--brass: #e8a33d;
+		--brass-ink: #1b1206;
+		--wash: rgba(232, 163, 61, 0.1);
+		--rule: #2e2c28;
+		--rule-firm: #433f39;
+		color-scheme: dark;
 	}
 }
 
@@ -85,35 +94,21 @@
 *::after {
 	box-sizing: border-box;
 }
-html {
-	scroll-behavior: smooth;
-}
-@media (prefers-reduced-motion: reduce) {
-	html {
-		scroll-behavior: auto;
-	}
-	* {
-		animation-duration: 0.01ms !important;
-		transition-duration: 0.01ms !important;
-	}
-}
 body {
 	margin: 0;
-	background: var(--bg);
+	background: var(--paper);
 	color: var(--ink);
 	font-family: var(--font);
-	font-size: 16px;
-	line-height: 1.6;
+	font-size: var(--step-1);
+	line-height: 1.65;
 	-webkit-font-smoothing: antialiased;
-	text-rendering: optimizeLegibility;
 }
-/* Bangla needs a little more leading than latin at the same size. */
 html[lang='bn'] body {
-	line-height: 1.78;
+	line-height: 1.82;
 }
 
-/* Both languages ship in the HTML and CSS hides one. No flash, works without JS,
-   and display:none keeps the hidden copy out of the accessibility tree. */
+/* Both languages ship in the HTML and CSS hides one. No flash, works without
+   JavaScript, and display:none keeps the hidden copy out of the accessibility tree. */
 html[lang='bn'] .l-en,
 html[lang='en'] .l-bn {
 	display: none !important;
@@ -121,238 +116,317 @@ html[lang='en'] .l-bn {
 
 h1,
 h2,
-h3,
-h4 {
-	margin: 0 0 0.5em;
-	line-height: 1.18;
+h3 {
+	margin: 0;
 	font-weight: 600;
-	letter-spacing: -0.018em;
+	letter-spacing: -0.025em;
+	line-height: 1.1;
 	text-wrap: balance;
 }
 html[lang='bn'] h1,
 html[lang='bn'] h2,
 html[lang='bn'] h3 {
 	letter-spacing: 0;
-	line-height: 1.38;
+	line-height: 1.4;
 }
 h1 {
-	font-size: clamp(2rem, 1.35rem + 2.9vw, 3.4rem);
+	font-size: var(--step-6);
 }
 h2 {
-	font-size: clamp(1.5rem, 1.2rem + 1.3vw, 2.1rem);
+	font-size: var(--step-5);
 }
 h3 {
-	font-size: 1.15rem;
+	font-size: var(--step-2);
+	letter-spacing: -0.012em;
+	line-height: 1.3;
 }
 p {
-	margin: 0 0 1em;
+	margin: 0;
 	text-wrap: pretty;
+	max-width: 68ch;
+}
+html[lang='bn'] p {
+	max-width: 58ch;
 }
 a {
-	color: var(--brass);
-	text-underline-offset: 3px;
-	text-decoration-thickness: 1px;
-}
-a:hover {
-	color: var(--ink);
+	color: inherit;
 }
 :focus-visible {
 	outline: 2px solid var(--brass);
 	outline-offset: 3px;
-	border-radius: 4px;
-}
-code,
-.mono,
-.num {
-	font-family: var(--mono);
-	font-size: 0.92em;
-	font-variant-numeric: tabular-nums;
-	letter-spacing: -0.01em;
-}
-hr {
-	border: 0;
-	border-top: 1px solid var(--line);
-	margin: 3rem 0;
+	border-radius: 3px;
 }
 img,
 svg {
 	max-width: 100%;
 }
+hr {
+	border: 0;
+	border-top: 1px solid var(--rule);
+	margin: 0;
+}
 
-.wrap {
+/* ---- rhythm ---- */
+.shell {
 	width: 100%;
 	max-width: var(--maxw);
 	margin-inline: auto;
-	padding-inline: 20px;
+	padding-inline: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
 }
-@media (max-width: 480px) {
-	.wrap {
-		padding-inline: 16px;
+.bay {
+	padding-block: var(--bay);
+}
+.bay + .bay {
+	border-top: 1px solid var(--rule);
+}
+.flow > * + * {
+	margin-top: 1.1rem;
+}
+.flow > * + h2,
+.flow > * + h3 {
+	margin-top: 2.2rem;
+}
+
+/* Prose left, measurement right — the page is laid out the way the product is:
+   the argument in words on one side, the numbers that back it on the other. */
+.split {
+	display: grid;
+	gap: var(--gap) clamp(2rem, 5vw, 4.5rem);
+	align-items: start;
+}
+/* Grid items default to min-width:auto, which lets a wide <pre> push the column
+   past the viewport instead of scrolling inside itself. */
+.split > * {
+	min-width: 0;
+}
+@media (min-width: 900px) {
+	.split {
+		grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+	}
+	.split--even {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }
-section {
-	padding-block: clamp(2.5rem, 6vw, 4.5rem);
-}
+
 .lede {
-	font-size: clamp(1.05rem, 0.98rem + 0.35vw, 1.25rem);
-	color: var(--muted);
+	font-size: var(--step-3);
+	line-height: 1.45;
+	letter-spacing: -0.012em;
+	color: var(--ink);
+	max-width: 46ch;
+}
+html[lang='bn'] .lede {
+	line-height: 1.65;
+	letter-spacing: 0;
+	max-width: 38ch;
+}
+.quiet {
+	color: var(--graphite);
+}
+.small {
+	font-size: var(--step-0);
+	color: var(--graphite);
+}
+.fine {
+	font-size: var(--step--1);
+	color: var(--graphite);
 	max-width: 62ch;
 }
-.eyebrow {
+
+code,
+.mono {
 	font-family: var(--mono);
-	font-size: 0.75rem;
-	text-transform: uppercase;
-	letter-spacing: 0.13em;
-	color: var(--brass);
-	margin: 0 0 0.85rem;
+	font-size: 0.88em;
+	letter-spacing: -0.01em;
 }
-html[lang='bn'] .eyebrow {
-	font-family: var(--font);
-	text-transform: none;
-	letter-spacing: 0.02em;
-	font-size: 0.85rem;
-}
-
-.card {
-	background: var(--raise);
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	padding: 1.4rem;
-}
-.grid {
-	display: grid;
-	gap: 1rem;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
-.stack > * + * {
-	margin-top: 1rem;
+pre {
+	margin: 0;
+	padding: 1.1rem 1.2rem;
+	background: var(--sink);
+	border: 1px solid var(--rule);
+	border-radius: 4px;
+	overflow-x: auto;
+	font-family: var(--mono);
+	font-size: var(--step--1);
+	line-height: 1.7;
 }
 
+/* ---- controls ---- */
 .btn {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.5rem;
-	padding: 0.7rem 1.15rem;
-	border-radius: 999px;
-	border: 1px solid var(--line);
+	padding: 0.68rem 1.15rem;
+	border: 1px solid var(--rule-firm);
+	border-radius: 3px;
 	background: transparent;
 	color: var(--ink);
 	font: inherit;
+	font-size: var(--step-0);
 	font-weight: 600;
-	font-size: 0.95rem;
 	text-decoration: none;
 	cursor: pointer;
 	transition:
-		background 0.15s ease,
-		border-color 0.15s ease;
+		background 160ms var(--ease),
+		border-color 160ms var(--ease);
 }
 .btn:hover {
-	background: var(--raise2);
-	color: var(--ink);
+	background: var(--leaf);
+	border-color: var(--ink);
 }
-.btn-primary {
+.btn--solid {
+	background: var(--ink);
+	border-color: var(--ink);
+	color: var(--paper);
+}
+.btn--solid:hover {
 	background: var(--brass);
 	border-color: var(--brass);
 	color: var(--brass-ink);
 }
-.btn-primary:hover {
-	background: var(--ink);
-	border-color: var(--ink);
-	color: var(--bg);
+.row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem;
 }
 
-/* Unmistakable placeholder. Dashed brass, a literal label, and it renders the same
-   in both themes so it cannot quietly blend into a finished-looking page. */
-.ph {
-	display: inline-flex;
-	align-items: baseline;
-	gap: 0.35rem;
-	padding: 0.05em 0.45em;
-	border: 1px dashed var(--brass);
-	border-radius: 6px;
-	background: var(--brass-soft);
+/* An inline link whose underline is the hover, so nothing moves on the page. */
+.tlink {
 	color: var(--ink);
+	text-decoration: none;
+	background-image: linear-gradient(var(--brass), var(--brass));
+	background-repeat: no-repeat;
+	background-position: 0 100%;
+	background-size: 100% 1px;
+	padding-bottom: 1px;
+	transition: background-size 180ms var(--ease);
 }
-.ph::after {
-	content: 'placeholder';
-	font-family: var(--mono);
-	font-size: 0.6em;
-	text-transform: uppercase;
-	letter-spacing: 0.08em;
+.tlink:hover {
+	background-size: 100% 2px;
 	color: var(--brass);
-	white-space: nowrap;
-}
-html[lang='bn'] .ph::after {
-	content: 'অনুমান';
-	font-family: var(--font);
-	text-transform: none;
 }
 
-.note {
-	border-left: 3px solid var(--brass);
-	background: var(--brass-soft);
-	padding: 0.9rem 1.1rem;
-	border-radius: 0 8px 8px 0;
-	font-size: 0.94rem;
+/* ---- panels ---- */
+.panel {
+	background: var(--leaf);
+	border: 1px solid var(--rule);
+	border-radius: 6px;
+	padding: clamp(1.1rem, 0.9rem + 0.6vw, 1.5rem);
 }
-.note p:last-child {
-	margin-bottom: 0;
+a.panel {
+	display: block;
+	text-decoration: none;
+	transition: border-color 170ms var(--ease);
+}
+a.panel:hover {
+	border-color: var(--ink);
 }
 
+/* ---- tables ---- */
 table {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: 0.92rem;
+	font-size: var(--step-0);
+}
+caption {
+	text-align: left;
+	color: var(--graphite);
+	font-size: var(--step--1);
+	padding-bottom: 0.6rem;
 }
 th,
 td {
 	text-align: left;
-	padding: 0.6rem 0.7rem;
-	border-bottom: 1px solid var(--line);
-	vertical-align: top;
+	padding: 0.62rem 0.8rem 0.62rem 0;
+	border-bottom: 1px solid var(--rule);
+	vertical-align: baseline;
 }
-th {
-	font-weight: 600;
-	color: var(--muted);
-	font-size: 0.8rem;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
+thead th {
+	font-weight: 500;
+	color: var(--graphite);
+	font-size: var(--step--1);
+	border-bottom-color: var(--rule-firm);
 }
-html[lang='bn'] th {
-	text-transform: none;
-	letter-spacing: 0;
-	font-size: 0.85rem;
+.figure {
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
 }
 .scroll-x {
 	overflow-x: auto;
-	-webkit-overflow-scrolling: touch;
 }
 
-pre {
-	background: var(--raise2);
-	border: 1px solid var(--line);
-	border-radius: 10px;
-	padding: 1rem;
-	overflow-x: auto;
-	font-family: var(--mono);
-	font-size: 0.82rem;
-	line-height: 1.65;
-	margin: 0 0 1rem;
+/* ---- indicative values ----------------------------------------------------
+   No price has been set. These read as real numbers so the page is a finished
+   design, and each one is captioned "Indicative" in the accent, on a brass wash,
+   against a brass edge — deliberate annotation rather than an error state. */
+.indic {
+	position: relative;
+	padding: 0.75rem 0 0.75rem 0.95rem;
+	background: var(--wash);
+	border-radius: 0 4px 4px 0;
 }
-pre code {
-	font-size: inherit;
+.indic::before {
+	content: '';
+	position: absolute;
+	inset-block: 0;
+	inset-inline-start: 0;
+	width: 2px;
+	background: var(--brass);
+	border-radius: 2px;
+}
+.indic__tag {
+	display: block;
+	font-size: var(--step--1);
+	font-weight: 600;
+	color: var(--brass);
+	margin-bottom: 0.1rem;
+}
+.indic__value {
+	font-size: var(--step-4);
+	font-weight: 600;
+	letter-spacing: -0.03em;
+	line-height: 1.1;
+}
+.indic__unit {
+	display: block;
+	font-size: var(--step-0);
+	color: var(--graphite);
+	margin-top: 0.15rem;
+}
+
+/* The only motion left is a response to something the reader did. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition: none !important;
+		animation: none !important;
+		scroll-behavior: auto !important;
+	}
+	.btn:hover {
+		transform: none;
+	}
 }
 
 .skip {
 	position: absolute;
 	left: -9999px;
 	top: 0;
-	background: var(--brass);
-	color: var(--brass-ink);
-	padding: 0.6rem 1rem;
-	border-radius: 0 0 8px 0;
 	z-index: 20;
+	background: var(--ink);
+	color: var(--paper);
+	padding: 0.6rem 1rem;
+	border-radius: 0 0 4px 0;
 }
 .skip:focus {
 	left: 0;
+}
+.vh {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
 }

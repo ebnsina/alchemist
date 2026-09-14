@@ -1,66 +1,75 @@
 # alchemist-web
 
-The public marketing site for Alchemist — video transcoding and delivery sold as an
-API, hosted inside BDIX, encoded for viewers who pay per megabyte.
+The public site for Alchemist — video hosting for apps and websites in Bangladesh.
 
-SvelteKit + TypeScript, `adapter-static`. The output in `build/` is plain files:
-copy it to any static host or serve it from nginx on a VPS.
+SvelteKit + TypeScript, `adapter-static`. The output in `build/` is plain files: copy
+it to any static host or serve it from nginx on a VPS.
 
 ```sh
 npm install
 npm run dev       # local development
 npm run build     # static output in build/
-npm run verify    # builds must exist first; see below
+npm run verify    # checks the built output; see below
 npm run check     # svelte-check
 ```
 
 ## Decisions worth knowing before you change something
 
-**No client framework ships.** `csr = false` in `src/routes/+layout.ts`. The only
-interactive things on the site are the language and theme toggles, and both are a
-dozen lines of delegated DOM in `src/app.html`. Shipping ~40 KB of hydration to a page
-whose whole argument is saving the viewer's data would be self-refuting. A first visit
-to the home page is about 60 KB gzipped including both fonts; every other route is
-about 9 KB once they are cached.
+**Write for the buyer, not the engineer.** The person deciding to use this runs a
+course platform or a news site. Outside `/docs/`, there is no encoding vocabulary on
+this site — no bitrate ladders, no adaptive streaming, no CMAF, no SAMPLE-AES, no
+just-in-time packaging. Those are all real and all beside the point to the reader.
+Say what they worry about instead: the video starts instead of buffering, it does not
+eat the viewer's data allowance, and the course they sell cannot simply be passed
+around. `/docs/` is the one page where precise terms are correct, because developers
+read it.
+
+**Almost no motion.** A hover state on links and buttons, and the focus ring. No
+entrance animations, no scroll-triggered anything, no libraries. `prefers-reduced-motion`
+removes what little there is, and `npm run verify` asserts that it actually does.
+
+**No client framework ships.** `csr = false` in `src/routes/+layout.ts`. The language
+and theme toggles are about twenty lines of delegated DOM in `src/app.html`. A first
+visit to the home page is about 57 KB gzipped including both fonts; every other page
+is about 9 KB once they are cached.
 
 **Both languages are in the HTML; CSS hides one.** `src/lib/T.svelte` renders the
-English and the Bangla, and `html[lang]` rules in `src/app.css` display one. There is
-no flash, it works with JavaScript off, and `display: none` keeps the hidden copy out
-of the accessibility tree. English is canonical and is what goes in `<head>` — a
-document has one title. Language is never guessed from IP or `navigator.language`; the
-toggle is the only thing that decides, and the choice is remembered in `localStorage`
-inside a `try`/`catch`.
+English and the Bangla, and `html[lang]` rules in `src/app.css` display one. No flash,
+works with JavaScript off, and `display: none` keeps the hidden copy out of the
+accessibility tree. English is canonical and is what goes in `<head>`. Language is
+never guessed from IP or `navigator.language`; the toggle decides, and the choice is
+remembered in `localStorage` inside a `try`/`catch`.
 
-**Fonts are self-hosted and subset to latin.** Google Sans Flex for UI, Geist Mono for
-numbers and code, 46 KB together. The `unicode-range` deliberately excludes Bengali
-codepoints so the browser never tries a latin face for them and falls through to the
-system's Noto Sans Bengali, which shapes যুক্তাক্ষর correctly. Same reasoning as
-`alchemist-player`'s `src/styles.ts`.
+**Fonts are self-hosted and subset to latin.** Google Sans Flex for text, Geist Mono
+for columns of figures and code, 46 KB together. The `unicode-range` deliberately
+excludes Bengali codepoints so the browser never tries a latin face for them and falls
+through to the system's Noto Sans Bengali, which shapes যুক্তাক্ষর correctly. Same
+reasoning as `alchemist-player`'s `src/styles.ts`.
 
-**Icons are hand-authored** on the Hugeicons 24px grid in `src/lib/icons.ts`. The free
-icon package is ~72 MB; fourteen path strings are under 2 KB.
-
-**Brass on near-black.** Alchemy is transmutation, the player already wears this
-palette, and it is not the blue every other video API reaches for.
+**Warm stone paper, warm near-black ink, one accent.** Light is the primary surface.
+Brass because alchemy is al-kimiya and because `alchemist-player` already wears it.
+Every text pair clears WCAG AA; the numbers are in the comment at the top of `app.css`.
 
 ## Rules this site holds itself to
 
 - No customer logos, testimonials, case studies, uptime figures or compliance badges.
   There are no customers yet, so there is nothing honest to put there.
 - No countdown timers, fake scarcity, pre-ticked boxes or asterisked promises.
-- Every price is a placeholder and is rendered inside `.ph`, which draws a dashed
-  brass box and the literal word "placeholder" in both themes and both languages.
-  Grep for `class="ph"` before launch.
+- Every price is an indicative example, rendered inside `.indic`, which draws a brass
+  edge and captions the figure "Indicative" in both languages. The pricing page also
+  opens with a notice saying no price has been set. Grep for `class="indic"`.
 - Every number is either measured, cited to whoever measured it, or marked as a
-  projection. Claims about BDIX describe what the system is being built to do; the
-  BDIX edge is not running yet and the site says so on four pages.
+  projection or an indicative example. Claims about servers inside Bangladesh describe
+  what the system is being built to do; those servers are not running, and the site
+  says so on four pages.
 
 ## Verification
 
-`npm run verify` serves `build/` and checks the things that can silently break: no
-horizontal scroll at 360px across every route in both languages and themes, no
-language leaking through the CSS swap, the toggles working and surviving a reload,
-no module script sneaking back in, and it prints the page weight.
+`npm run verify` serves `build/` and checks what can silently break: no horizontal
+scroll at 360px across every route in both languages and themes, no language leaking
+through the CSS swap, `prefers-reduced-motion` actually removing motion, the toggles
+working and surviving a reload, no module script sneaking back in. It prints the page
+weight at the end.
 
 ## Deploying
 
@@ -78,7 +87,11 @@ and 404 as well.
 
 ## Before this goes live
 
-Grep for `alchemist.example` — the domain, the contact address and the repository links
-are all placeholders. Replace `SITE.origin` in `src/lib/site.ts`, `static/robots.txt`,
-and set real prices in `src/routes/pricing/+page.svelte`, removing the `.ph` wrappers
-and the placeholder banner at the top of that page as you do.
+- **Set real prices.** Every figure on `/pricing/` is an indicative example worked out
+  from the cost model, not a decision. Replace them and remove the `.indic` wrappers
+  and the notice at the top of that page together, so a real price is never shown in
+  the indicative treatment or an indicative one without it.
+- **Register the domain.** Grep for `alchemist.example`: it is in `src/lib/site.ts`
+  (site origin, contact address, repository links) and `static/robots.txt`.
+- **Re-check the two dated figures**: the BTRC June 2026 user counts, and the ৳135 to
+  the euro conversion used on the pricing page.

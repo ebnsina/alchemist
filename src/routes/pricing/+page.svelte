@@ -1,308 +1,370 @@
 <script lang="ts">
 	import Seo from '$lib/Seo.svelte';
 	import T from '$lib/T.svelte';
-	import Icon from '$lib/Icon.svelte';
 </script>
 
 <Seo
-	title="Alchemist pricing — what gets billed, and what it costs us"
-	description="Three meters: ingest minutes, storage, delivery. No per-seat fee, no minimum, no overage penalty. The numbers on this page are placeholders and are marked as such — the cost basis behind them is not."
+	title="Alchemist pricing"
+	description="You pay for the video you send us, the video we hold, and the video people watch. No per-person fee, no minimum, no charge to leave. The figures shown are indicative examples — no price has been set — and what it costs us to run is published beside them."
 />
 
-<section class="top">
-	<div class="wrap">
-		<p class="eyebrow"><T en="Pricing" bn="মূল্য" /></p>
-		<h1><T as="span" en="Three meters, and nothing else." bn="তিনটি মিটার, আর কিছু নয়।" /></h1>
-		<div class="banner" role="note">
-			<Icon name="coins" size={22} />
-			<p>
+<section class="shell hero">
+	<div class="flow">
+		<h1><T as="span" en="Three things you pay for, and nothing else." bn="আপনি টাকা দেন তিনটি জিনিসের জন্য, আর কিছুর নয়।" /></h1>
+		<p class="lede quiet">
+			<T
+				as="span"
+				en="You pay for the minutes of video you send us, the gigabytes we hold, and the gigabytes people watch. Everything else is simply how the thing works, and is not charged for separately."
+				bn="আপনি টাকা দেন আমাদের কাছে পাঠানো ভিডিওর মিনিটের জন্য, আমরা যত গিগাবাইট রাখি তার জন্য, আর মানুষ যত গিগাবাইট দেখে তার জন্য। বাকি সবকিছু নিছক এর কাজ করার ধরন, আলাদা করে তার দাম নেই।"
+			/>
+		</p>
+	</div>
+	<div class="notice">
+		<p class="ntag"><T as="span" en="Indicative figures" bn="সম্ভাব্য হিসাব" /></p>
+		<p class="small">
+			<T
+				as="span"
+				en="Alchemist has not launched and no price has been set. The numbers here are worked examples, sized against what it costs us to run — shown further down — so you can see the real shape rather than blanks. Treat them as an illustration, not a quote."
+				bn="Alchemist এখনও চালু হয়নি, কোনো দামও নির্ধারিত হয়নি। এখানকার সংখ্যাগুলো উদাহরণ হিসেবে কষা — আমাদের চালাতে কত খরচ হয় তার সঙ্গে মিলিয়ে বসানো, যা নিচে দেখানো আছে — যাতে ফাঁকা ঘরের বদলে আসল আকারটা বুঝতে পারেন। এগুলোকে দৃষ্টান্ত ধরুন, দর নয়।"
+			/>
+		</p>
+	</div>
+</section>
+
+<section class="shell bay">
+	<div class="meters">
+		<article class="flow">
+			<h2><T as="span" en="Preparing your video" bn="ভিডিও তৈরি করা" /></h2>
+			<div class="indic">
+				<span class="indic__tag"><T as="span" en="Indicative" bn="সম্ভাব্য" /></span>
+				<span class="indic__value">৳2.00</span>
+				<span class="indic__unit">
+					<T as="span" en="for each minute of video you send · about $0.016" bn="আপনার পাঠানো ভিডিওর প্রতি মিনিটে · প্রায় $০.০১৬" />
+				</span>
+			</div>
+			<p class="small">
 				<T
 					as="span"
-					en="Every price on this page is a placeholder. Alchemist has not launched and no price has been set. The structure below is real and the cost basis further down is real; the numbers are not, and they are marked wherever they appear so they cannot be mistaken for a quote."
-					bn="এই পাতার প্রতিটি দাম অনুমান। Alchemist এখনও চালু হয়নি এবং কোনো দাম নির্ধারণ করা হয়নি। নিচের কাঠামোটা সত্যি, আর তারও নিচের খরচের হিসাবটাও সত্যি; শুধু সংখ্যাগুলো নয় — আর যেখানেই সেগুলো এসেছে, আলাদা করে চিহ্নিত করা আছে যাতে কেউ একে দর বলে ভুল না করে।"
+					en="Charged once, on the length of the video you send us. We make several sizes of it so it plays on any connection, and you are not charged for each one — a one-hour lecture is one hour."
+					bn="একবারই নেওয়া হয়, আপনার পাঠানো ভিডিওর দৈর্ঘ্যের উপর। যেকোনো সংযোগে যাতে চলে, সেজন্য আমরা কয়েকটি আকার বানাই — প্রতিটির জন্য আলাদা টাকা নেওয়া হয় না। এক ঘণ্টার লেকচার মানে এক ঘণ্টাই।"
+				/>
+			</p>
+		</article>
+
+		<article class="flow">
+			<h2><T as="span" en="Keeping it" bn="রেখে দেওয়া" /></h2>
+			<div class="indic">
+				<span class="indic__tag"><T as="span" en="Indicative" bn="সম্ভাব্য" /></span>
+				<span class="indic__value">৳1.20</span>
+				<span class="indic__unit">
+					<T as="span" en="per GB per month · about $0.010" bn="প্রতি জিবি প্রতি মাসে · প্রায় $০.০১০" />
+				</span>
+			</div>
+			<p class="small">
+				<T
+					as="span"
+					en="Counted on what we actually hold, which is less than you would guess. We do not keep your original file unless you ask us to, and the larger sizes only exist for videos somebody has watched."
+					bn="আমরা সত্যিই যতটা রাখি তার উপর হিসাব — আর সেটা আপনার ধারণার চেয়ে কম। আপনি না বললে আপনার মূল ফাইলটা আমরা রাখি না, আর বড় আকারগুলো কেবল সেই ভিডিওর জন্যই থাকে যা কেউ দেখেছেন।"
+				/>
+			</p>
+		</article>
+
+		<article class="flow">
+			<h2><T as="span" en="Sending it to viewers" bn="দর্শকের কাছে পাঠানো" /></h2>
+			<div class="indic">
+				<span class="indic__tag"><T as="span" en="Indicative" bn="সম্ভাব্য" /></span>
+				<span class="indic__value">৳0.35</span>
+				<span class="indic__unit">
+					<T as="span" en="for each GB watched inside Bangladesh · about $0.003" bn="বাংলাদেশের ভেতরে দেখা প্রতি জিবিতে · প্রায় $০.০০৩" />
+				</span>
+				<span class="indic__value second">৳1.20</span>
+				<span class="indic__unit">
+					<T as="span" en="for each GB watched anywhere else · about $0.010" bn="অন্য যেকোনো জায়গায় দেখা প্রতি জিবিতে · প্রায় $০.০১০" />
+				</span>
+			</div>
+			<p class="small">
+				<T
+					as="span"
+					en="Two rates because they cost us two different amounts. Reaching someone in Bangladesh is far cheaper than reaching someone abroad, and charging one flat rate would mean your Bangladeshi viewers quietly paying for the difference."
+					bn="দুটি আলাদা হার, কারণ আমাদের খরচও দুই রকম। বাংলাদেশের কারও কাছে পৌঁছানো বিদেশের কারও কাছে পৌঁছানোর চেয়ে অনেক সস্তা — একটাই হার রাখলে সেই ফারাকের টাকাটা চুপচাপ আপনার দেশি দর্শকরাই দিতেন।"
+				/>
+			</p>
+		</article>
+	</div>
+</section>
+
+<section class="shell bay">
+	<div class="split">
+		<div class="flow">
+			<h2>
+				<T
+					as="span"
+					en="What a mid-sized course platform would pay."
+					bn="মাঝারি আকারের একটি কোর্স প্ল্যাটফর্মের কত পড়ত।"
+				/>
+			</h2>
+			<p class="quiet">
+				<T
+					as="span"
+					en="Twenty hours of new lecture a month, five hundred gigabytes of videos held, and two hundred and fifty gigabytes watched by students in Bangladesh. That is the three rates above multiplied out, and nothing else — there is no monthly platform fee underneath."
+					bn="মাসে বিশ ঘণ্টা নতুন লেকচার, পাঁচশ গিগাবাইট ভিডিও রাখা, আর বাংলাদেশে শিক্ষার্থীদের দেখা আড়াইশ গিগাবাইট। এটা উপরের তিনটি হার গুণ করেই পাওয়া, আর কিছু নয় — নিচে কোনো মাসিক প্ল্যাটফর্ম ফি নেই।"
+				/>
+			</p>
+			<p class="fine">
+				<T
+					as="span"
+					en="An illustration at the indicative rates above, not a quotation. Your own numbers depend on how much your library is actually watched."
+					bn="উপরের সম্ভাব্য হারে কষা একটি দৃষ্টান্ত, কোনো দর নয়। আপনার নিজের হিসাব নির্ভর করবে আপনার লাইব্রেরি আসলে কতটা দেখা হয় তার উপর।"
 				/>
 			</p>
 		</div>
-	</div>
-</section>
 
-<section>
-	<div class="wrap">
-		<div class="grid">
-			<article class="card meter">
-				<p class="mlabel"><T en="Meter 1" bn="মিটার ১" /></p>
-				<h2><T as="span" en="Ingest" bn="ইনজেস্ট" /></h2>
-				<p class="price">
-					<span class="ph"><span class="num">0.00</span></span>
-					<span class="unit"
-						><T as="span" en="per minute of source video" bn="সোর্স ভিডিওর প্রতি মিনিটে" /></span
-					>
-				</p>
-				<p>
-					<T
-						as="span"
-						en="Charged once, on the duration of the file you send us — not on the number of renditions produced. Encoding a one-hour lecture into five rungs is one hour of ingest, not five."
-						bn="একবারই নেওয়া হয়, আপনি যে ফাইল পাঠাচ্ছেন তার দৈর্ঘ্যের উপর — কতগুলো রেন্ডিশন তৈরি হলো তার উপর নয়। এক ঘণ্টার লেকচার পাঁচটি ধাপে এনকোড করা মানে এক ঘণ্টার ইনজেস্ট, পাঁচ ঘণ্টার নয়।"
-					/>
-				</p>
-			</article>
-
-			<article class="card meter">
-				<p class="mlabel"><T en="Meter 2" bn="মিটার ২" /></p>
-				<h2><T as="span" en="Storage" bn="স্টোরেজ" /></h2>
-				<p class="price">
-					<span class="ph"><span class="num">0.00</span></span>
-					<span class="unit"><T as="span" en="per GB per month" bn="প্রতি জিবি প্রতি মাসে" /></span>
-				</p>
-				<p>
-					<T
-						as="span"
-						en="Measured on what is actually stored, which is less than you would expect: the original is dropped after the mezzanine is made unless you ask us to keep it, and the higher rungs only exist for content somebody has watched."
-						bn="যা সত্যিই জমা আছে তার উপর হিসাব — আর সেটা আপনার ধারণার চেয়ে কম: মেজানিন তৈরি হয়ে গেলে মূল ফাইল ফেলে দেওয়া হয়, যদি না আপনি রাখতে বলেন; আর উপরের ধাপগুলো শুধু সেই কনটেন্টের জন্যই থাকে যা কেউ দেখেছে।"
-					/>
-				</p>
-			</article>
-
-			<article class="card meter">
-				<p class="mlabel"><T en="Meter 3" bn="মিটার ৩" /></p>
-				<h2><T as="span" en="Delivery" bn="ডেলিভারি" /></h2>
-				<p class="price">
-					<span class="ph"><span class="num">0.00</span></span>
-					<span class="unit"
-						><T as="span" en="per GB delivered inside BDIX" bn="BDIX-এর ভেতরে প্রতি জিবিতে" /></span
-					>
-				</p>
-				<p class="price second">
-					<span class="ph"><span class="num">0.00</span></span>
-					<span class="unit"
-						><T as="span" en="per GB delivered internationally" bn="দেশের বাইরে প্রতি জিবিতে" /></span
-					>
-				</p>
-				<p>
-					<T
-						as="span"
-						en="Two rates because they are two different costs, and pretending otherwise would mean charging BD viewers for transit nobody paid for. BDIX delivery is the cheaper one and we intend to price it that way."
-						bn="দুটি আলাদা হার, কারণ এ দুটোর খরচই আলাদা — এক দেখানো মানে দেশের দর্শকদের এমন ট্রানজিটের জন্য টাকা নেওয়া যার খরচ কেউ দেয়নি। BDIX ডেলিভারির খরচ কম, আর আমরা দামও সেভাবেই রাখতে চাই।"
-					/>
-				</p>
-			</article>
-		</div>
-
-		<div class="nots">
-			<h2><T as="span" en="What you will never be billed for" bn="যেসবের বিল কখনও আসবে না" /></h2>
-			<ul>
-				<li><Icon name="check" size={17} /><T as="span" en="Seats. Add as many teammates as you like." bn="সিট। যত খুশি সহকর্মী যোগ করুন।" /></li>
-				<li><Icon name="check" size={17} /><T as="span" en="Renditions. One ingest, however many rungs your profile has." bn="রেন্ডিশন। একবার ইনজেস্ট, আপনার প্রোফাইলে যত ধাপই থাকুক।" /></li>
-				<li><Icon name="check" size={17} /><T as="span" en="API requests to the control plane." bn="কন্ট্রোল প্লেনে পাঠানো API রিকোয়েস্ট।" /></li>
-				<li><Icon name="check" size={17} /><T as="span" en="Webhook deliveries and retries." bn="ওয়েবহুক ডেলিভারি ও পুনঃচেষ্টা।" /></li>
-				<li><Icon name="check" size={17} /><T as="span" en="Encryption, signed URLs, or thumbnails. They are how the product works, not an upsell." bn="এনক্রিপশন, সাইন করা লিংক বা থাম্বনেইল। এগুলো প্রোডাক্টের কাজ করার ধরন, আলাদা করে বেচার জিনিস নয়।" /></li>
-			</ul>
-		</div>
-	</div>
-</section>
-
-<section class="alt">
-	<div class="wrap narrow">
-		<p class="eyebrow"><T en="The cost basis" bn="খরচের ভিত্তি" /></p>
-		<h2><T as="span" en="What this actually costs to run" bn="এটা চালাতে আসলে কত খরচ" /></h2>
-		<p>
-			<T
-				as="span"
-				en="We would rather show the cost model than hide behind a pricing page. These figures come from our own capacity planning, in euros, and they are modelled from hardware prices and measured encoder throughput — not billed revenue, because there is none yet."
-				bn="মূল্যতালিকার আড়ালে লুকানোর চেয়ে খরচের হিসাবটাই দেখানো ভালো মনে করি। এই সংখ্যাগুলো আমাদের নিজেদের ক্যাপাসিটি পরিকল্পনা থেকে নেওয়া, ইউরোতে, আর হিসাব করা হয়েছে হার্ডওয়্যারের দাম ও মেপে দেখা এনকোডার গতির উপর ভিত্তি করে — বিল করা আয়ের ভিত্তিতে নয়, কারণ সেটা এখনও নেই।"
-			/>
-		</p>
-		<div class="scroll-x">
+		<div class="indic bill">
+			<span class="indic__tag"><T as="span" en="Indicative" bn="সম্ভাব্য" /></span>
 			<table>
-				<thead>
-					<tr>
-						<th scope="col"><T en="Scenario" bn="পরিস্থিতি" /></th>
-						<th scope="col"><T en="Infrastructure" bn="অবকাঠামো" /></th>
-						<th scope="col"><T en="Cost per source hour" bn="প্রতি সোর্স ঘণ্টায় খরচ" /></th>
-					</tr>
-				</thead>
+				<caption class="vh"><T en="Worked monthly example" bn="মাসিক উদাহরণের হিসাব" /></caption>
 				<tbody>
 					<tr>
-						<th scope="row"><T as="span" en="2,000 hrs/month (start)" bn="২,০০০ ঘণ্টা/মাস (শুরু)" /></th>
-						<td><T as="span" en="3 machines · €350–500/mo" bn="৩টি মেশিন · €৩৫০–৫০০/মাস" /></td>
-						<td class="num">≈ €0.20</td>
+						<th scope="row"><T as="span" en="Preparing 20 hours of video" bn="২০ ঘণ্টা ভিডিও তৈরি" /></th>
+						<td class="figure">৳2,400</td>
 					</tr>
 					<tr>
-						<th scope="row"><T as="span" en="100,000 hrs/month (scaled)" bn="১,০০,০০০ ঘণ্টা/মাস (বড় পরিসরে)" /></th>
-						<td><T as="span" en="≈ €13,630/mo" bn="≈ €১৩,৬৩০/মাস" /></td>
-						<td class="num">≈ €0.14</td>
+						<th scope="row"><T as="span" en="Keeping 500 GB" bn="৫০০ জিবি রেখে দেওয়া" /></th>
+						<td class="figure">৳600</td>
+					</tr>
+					<tr>
+						<th scope="row"><T as="span" en="Sending 250 GB inside Bangladesh" bn="দেশের ভেতরে ২৫০ জিবি পাঠানো" /></th>
+						<td class="figure">৳88</td>
 					</tr>
 				</tbody>
+				<tfoot>
+					<tr>
+						<th scope="row"><T as="span" en="A month" bn="মাসে" /></th>
+						<td class="figure total">৳3,088</td>
+					</tr>
+				</tfoot>
 			</table>
+			<p class="fine conv">
+				<T as="span" en="About $25. Conversions on this page are approximate." bn="প্রায় $২৫। এই পাতার মুদ্রা রূপান্তরগুলো আনুমানিক।" />
+			</p>
 		</div>
-		<p class="small">
-			<T
-				as="span"
-				en="At roughly 135 BDT to the euro — verify the current rate — €0.14 is about 19 BDT per source hour ingested. Those are our costs, not your price. The gap between them is margin and it will be visible rather than hidden; we would rather set a number you can sanity-check than one you have to take on faith."
-				bn="প্রতি ইউরো মোটামুটি ১৩৫ টাকা ধরে — বর্তমান রেট যাচাই করে নেবেন — €০.১৪ মানে প্রতি সোর্স ঘণ্টায় প্রায় ১৯ টাকা। এটা আমাদের খরচ, আপনার দাম নয়। দুইয়ের মাঝের ফারাকটাই মুনাফা, আর সেটা লুকানো থাকবে না; বিশ্বাস করে মেনে নিতে হয় এমন সংখ্যার চেয়ে যাচাই করা যায় এমন সংখ্যাই আমরা দিতে চাই।"
-			/>
-		</p>
-		<div class="note">
-			<p>
+	</div>
+</section>
+
+<section class="shell bay">
+	<h2 class="wide"><T as="span" en="Things you will never see on an invoice." bn="যেগুলো কখনও বিলে দেখবেন না।" /></h2>
+	<ul class="never">
+		<li><T as="span" en="Seats. Add as many teammates as you like." bn="সিট। যত খুশি সহকর্মী যোগ করুন।" /></li>
+		<li><T as="span" en="The several sizes we make of each video so it plays everywhere." bn="সব জায়গায় যাতে চলে, সেজন্য প্রতিটি ভিডিওর যে কয়েকটি আকার বানানো হয়।" /></li>
+		<li><T as="span" en="Asking us questions — how many videos you have, how much you have used." bn="আমাদের কাছে জানতে চাওয়া — কতগুলো ভিডিও আছে, কতটা ব্যবহার হয়েছে।" /></li>
+		<li><T as="span" en="Us telling your system when a video is ready." bn="ভিডিও তৈরি হলে আপনার সিস্টেমকে জানানো।" /></li>
+		<li><T as="span" en="Scrambling, expiring links and preview images. They are the product, not an upgrade." bn="এলোমেলো করে রাখা, মেয়াদওয়ালা লিংক আর প্রিভিউ ছবি। এগুলোই পণ্য, আলাদা কোনো আপগ্রেড নয়।" /></li>
+		<li><T as="span" en="Leaving, and taking your files with you." bn="চলে যাওয়া, আর নিজের ফাইল সঙ্গে নিয়ে যাওয়া।" /></li>
+	</ul>
+</section>
+
+<section class="shell bay">
+	<div class="split">
+		<div class="flow">
+			<h2><T as="span" en="What this costs us to run." bn="এটা চালাতে আমাদের কত খরচ।" /></h2>
+			<p class="quiet">
 				<T
 					as="span"
-					en="For comparison, from published list prices recorded in our cost model and worth re-checking before you rely on them: Mux is around $0.05 per minute of encoding, roughly $3.00 per hour, plus delivery. Bunny Stream is around $0.005 per minute plus delivery. Neither of them can deliver inside BDIX."
-					bn="তুলনার জন্য, আমাদের খরচের হিসাবে লিখে রাখা প্রকাশ্য তালিকামূল্য — নির্ভর করার আগে আবার যাচাই করে নেওয়া ভালো: Mux-এ এনকোডিং প্রতি মিনিটে প্রায় $০.০৫, অর্থাৎ ঘণ্টায় প্রায় $৩.০০, তার উপর ডেলিভারির খরচ। Bunny Stream-এ প্রতি মিনিটে প্রায় $০.০০৫, সঙ্গে ডেলিভারি। তবে এদের কেউই BDIX-এর ভেতর থেকে দিতে পারে না।"
+					en="Showing you what it costs us is more use than hiding behind a price list. These figures are our own planning numbers, in euros, worked out from what the machines cost to rent and how much video one gets through. They are not revenue, because there is none yet."
+					bn="দামের তালিকার আড়ালে লুকানোর চেয়ে আমাদের কত খরচ হয় সেটা দেখানোই আপনার বেশি কাজে লাগবে। এই সংখ্যাগুলো আমাদের নিজেদের পরিকল্পনার হিসাব, ইউরোতে — মেশিন ভাড়ায় কত পড়ে আর একটা মেশিন কতটা ভিডিও সামলাতে পারে, তা থেকে কষা। এগুলো আয় নয়, কারণ আয় বলে এখনও কিছু নেই।"
+				/>
+			</p>
+			<p class="quiet">
+				<T
+					as="span"
+					en="The gap between that and the rates above is margin, and it stays visible. A number you can check is worth more than one you have to take on faith."
+					bn="ওটার সঙ্গে উপরের হারগুলোর যে ফারাক, সেটাই মুনাফা — আর সেটা চোখের সামনেই থাকবে। বিশ্বাস করে মেনে নিতে হয় এমন সংখ্যার চেয়ে যাচাই করা যায় এমন সংখ্যার দাম বেশি।"
+				/>
+			</p>
+		</div>
+		<div class="measure">
+			<div class="scroll-x">
+				<table>
+					<caption><T en="What our servers cost us, per hour of video prepared" bn="প্রতি ঘণ্টা ভিডিও তৈরিতে আমাদের সার্ভারের খরচ" /></caption>
+					<thead>
+						<tr>
+							<th scope="col"><T en="Volume" bn="পরিমাণ" /></th>
+							<th scope="col"><T en="Servers" bn="সার্ভার" /></th>
+							<th scope="col"><T en="Per hour" bn="ঘণ্টাপ্রতি" /></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<th scope="row"><T as="span" en="2,000 hours of video a month" bn="মাসে ২,০০০ ঘণ্টা ভিডিও" /></th>
+							<td><T as="span" en="3 machines, €350–500 a month" bn="৩টি মেশিন, মাসে €৩৫০–৫০০" /></td>
+							<td class="figure">€0.20</td>
+						</tr>
+						<tr>
+							<th scope="row"><T as="span" en="100,000 hours of video a month" bn="মাসে ১,০০,০০০ ঘণ্টা ভিডিও" /></th>
+							<td><T as="span" en="About €13,630 a month" bn="মাসে প্রায় €১৩,৬৩০" /></td>
+							<td class="figure">€0.14</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="fine">
+				<T
+					as="span"
+					en="At roughly ৳135 to the euro — worth checking the rate yourself — €0.14 is about ৳19 of server cost per hour of video. The time it takes to build and run the thing is not in these numbers, and it is the larger cost of the two."
+					bn="প্রতি ইউরো মোটামুটি ১৩৫ টাকা ধরে — রেটটা নিজে যাচাই করে নেওয়া ভালো — €০.১৪ মানে প্রতি ঘণ্টা ভিডিওতে প্রায় ১৯ টাকার সার্ভার খরচ। এটা বানাতে আর চালাতে যত সময় যায় সেটা এই হিসাবে নেই, অথচ দুটোর মধ্যে বড় খরচ সেটাই।"
 				/>
 			</p>
 		</div>
 	</div>
 </section>
 
-<section>
-	<div class="wrap narrow">
-		<h2><T as="span" en="How we intend to charge, in plain words" bn="সহজ কথায়, কীভাবে টাকা নেওয়ার ইচ্ছা" /></h2>
-		<ul class="plain">
-			<li>
+<section class="shell bay">
+	<div class="flow narrow">
+		<h2><T as="span" en="In plain words." bn="সহজ কথায়।" /></h2>
+		<dl class="plainly">
+			<dt><T as="span" en="Taka for Bangladeshi customers" bn="বাংলাদেশি গ্রাহকের জন্য টাকায়" /></dt>
+			<dd>
 				<T
 					as="span"
-					en="Prices in BDT for Bangladeshi customers, collected through bKash, Nagad or card — not a foreign currency charge with a bank's markup on top. USD for everyone else."
-					bn="বাংলাদেশি গ্রাহকের জন্য দাম টাকায়, আদায় হবে বিকাশ, নগদ বা কার্ডে — ব্যাংকের বাড়তি চার্জসহ বিদেশি মুদ্রার বিল নয়। বাকি সবার জন্য ডলারে।"
+					en="Collected through bKash, Nagad or card — not a foreign-currency charge with a bank's markup stacked on top. USD for everyone else."
+					bn="আদায় হবে বিকাশ, নগদ বা কার্ডে — ব্যাংকের বাড়তি চার্জ চাপানো বিদেশি মুদ্রার বিল নয়। বাকি সবার জন্য ডলারে।"
 				/>
-			</li>
-			<li>
+			</dd>
+			<dt><T as="span" en="You can check the numbers yourself" bn="সংখ্যাগুলো আপনি নিজেই যাচাই করতে পারবেন" /></dt>
+			<dd>
 				<T
 					as="span"
-					en="Usage is metered from the first request and the same numbers you are billed on are readable from the API at any time. If our invoice and your meter disagree, you should be able to prove it."
-					bn="প্রথম রিকোয়েস্ট থেকেই ব্যবহার মাপা হয়, আর যে সংখ্যার উপর বিল হবে সেই একই সংখ্যা যেকোনো সময় API থেকে দেখা যায়। আমাদের বিল আর আপনার হিসাব না মিললে আপনি সেটা প্রমাণ করতে পারবেন।"
+					en="Your usage is counted from the first day, and you can read the same numbers the bill is built from at any time. If our bill and your own figures disagree, you should be able to prove it."
+					bn="প্রথম দিন থেকেই আপনার ব্যবহারের হিসাব রাখা হয়, আর বিল যে সংখ্যাগুলোর উপর তৈরি সেই একই সংখ্যা আপনি যেকোনো সময় দেখতে পারেন। আমাদের বিল আর আপনার হিসাব না মিললে আপনি তা প্রমাণ করতে পারবেন।"
 				/>
-			</li>
-			<li>
+			</dd>
+			<dt><T as="span" en="No minimum, no setup fee, no exit fee" bn="ন্যূনতম নেই, সেটআপ ফি নেই, বেরোনোর ফি নেই" /></dt>
+			<dd>
 				<T
 					as="span"
-					en="No minimum commitment, no setup fee, no charge to leave and take your files. There will be no asterisk after any of those words."
-					bn="ন্যূনতম চুক্তি নেই, সেটআপ ফি নেই, ছেড়ে চলে যেতে বা নিজের ফাইল নিয়ে যেতে কোনো খরচ নেই। এর কোনোটির পাশেই তারকাচিহ্ন থাকবে না।"
+					en="There will be no asterisk after any of those words."
+					bn="এর কোনোটির পাশেই তারকাচিহ্ন থাকবে না।"
 				/>
-			</li>
-			<li>
+			</dd>
+			<dt><T as="span" en="Price changes arrive before they take effect" bn="দামের বদল কার্যকর হওয়ার আগেই জানানো হবে" /></dt>
+			<dd>
 				<T
 					as="span"
-					en="When a price changes, existing customers will be told before it takes effect, not after. Retaining a customer by making the exit confusing is not something we are willing to do."
-					bn="দাম বদলালে চালু গ্রাহকদের তা কার্যকর হওয়ার আগেই জানানো হবে, পরে নয়। বেরোনোর পথ জটিল করে গ্রাহক ধরে রাখা আমরা করব না।"
+					en="Not after. Keeping a customer by making the way out confusing is not something we are willing to do."
+					bn="পরে নয়। বেরোনোর পথটা জটিল করে গ্রাহক ধরে রাখা আমরা করব না।"
 				/>
-			</li>
-		</ul>
-		<p class="small">
-			<T
-				as="span"
-				en="Contact address, also a placeholder until the domain is registered:"
-				bn="যোগাযোগের ঠিকানা — ডোমেইন নিবন্ধন না হওয়া পর্যন্ত এটিও অনুমান:"
-			/>
-			<span class="ph"><span class="mono">hello@alchemist.example</span></span>
-		</p>
+			</dd>
+		</dl>
 	</div>
 </section>
 
 <style>
-	.top {
-		padding-block: clamp(2.5rem, 7vw, 4rem) 0;
+	.hero {
+		padding-block: clamp(2.5rem, 1.5rem + 4vw, 4.5rem) 0;
 	}
-	.banner {
-		display: flex;
-		gap: 0.9rem;
-		align-items: flex-start;
-		border: 1px dashed var(--brass);
-		background: var(--brass-soft);
-		border-radius: var(--radius);
-		padding: 1.1rem 1.2rem;
-		margin-top: 1.5rem;
+	.hero h1 {
+		max-width: 14ch;
 	}
-	.banner :global(svg) {
-		color: var(--brass);
-		flex: 0 0 auto;
-		margin-top: 0.2rem;
-	}
-	.banner p {
-		margin: 0;
-		font-size: 0.94rem;
-	}
-	.mlabel {
-		font-family: var(--mono);
-		font-size: 0.7rem;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--muted);
-		margin: 0 0 0.5rem;
-	}
-	.meter h2 {
-		font-size: 1.25rem;
-		margin-bottom: 0.8rem;
-	}
-	.price {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.35rem;
-		margin-bottom: 0.4rem;
-		font-size: 1.3rem;
-	}
-	.price.second {
-		margin-top: 0.5rem;
-	}
-	.price .unit {
-		font-size: 0.85rem;
-		color: var(--muted);
-	}
-	.meter > p:last-child {
-		color: var(--muted);
-		font-size: 0.92rem;
-		margin: 0.9rem 0 0;
-	}
-	.nots {
+	.notice {
 		margin-top: 2.5rem;
+		padding: 1.1rem 1.3rem;
+		background: var(--wash);
+		border-top: 2px solid var(--brass);
+		border-radius: 0 0 4px 4px;
 	}
-	.nots h2 {
-		font-size: 1.25rem;
+	.ntag {
+		font-weight: 600;
+		color: var(--brass);
+		margin-bottom: 0.25rem;
 	}
-	.nots ul {
+	.notice .small {
+		max-width: 78ch;
+	}
+
+	.meters {
+		display: grid;
+		gap: clamp(1.75rem, 4vw, 3rem);
+		grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+	}
+	.meters h2 {
+		font-size: var(--step-3);
+	}
+	.indic__value.second {
+		display: block;
+		margin-top: 0.7rem;
+	}
+
+	.measure {
+		border-top: 1px solid var(--rule-firm);
+		padding-top: 1.2rem;
+	}
+	.measure .fine {
+		margin-top: 1rem;
+	}
+	.bill table {
+		margin-top: 0.5rem;
+		font-size: var(--step-0);
+	}
+	.bill th {
+		font-weight: 400;
+		color: var(--graphite);
+	}
+	.bill td {
+		text-align: right;
+		padding-right: 0;
+	}
+	.bill tfoot th,
+	.bill tfoot td {
+		border-bottom: 0;
+		padding-top: 0.8rem;
+		font-weight: 600;
+		color: var(--ink);
+	}
+	.total {
+		font-size: var(--step-2);
+	}
+	.conv {
+		margin-top: 0.6rem;
+	}
+
+	.wide {
+		max-width: 20ch;
+		margin-bottom: 1.8rem;
+	}
+	.never {
 		list-style: none;
 		padding: 0;
 		margin: 0;
 		display: grid;
-		gap: 0.6rem;
+		gap: 0;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		column-gap: clamp(1.5rem, 4vw, 3rem);
 	}
-	.nots li {
-		display: flex;
-		gap: 0.6rem;
-		align-items: flex-start;
-		color: var(--muted);
-		font-size: 0.94rem;
+	.never li {
+		padding: 0.8rem 0;
+		border-top: 1px solid var(--rule);
+		color: var(--graphite);
+		font-size: var(--step-0);
 	}
-	.nots :global(svg) {
-		color: var(--save);
-		flex: 0 0 auto;
-		margin-top: 0.3rem;
-	}
-	.alt {
-		background: var(--raise);
-		border-block: 1px solid var(--line);
-	}
+
 	.narrow {
 		max-width: 760px;
 	}
-	.narrow > p {
-		color: var(--muted);
+	.plainly {
+		margin: 0;
 	}
-	.small {
-		font-size: 0.88rem;
-		color: var(--muted);
+	.plainly dt {
+		font-weight: 600;
+		padding-top: 1rem;
+		border-top: 1px solid var(--rule);
+		margin-bottom: 0.3rem;
 	}
-	.plain {
-		list-style: none;
-		padding: 0;
-		margin: 1.2rem 0 1.5rem;
-		display: grid;
-		gap: 1rem;
+	.plainly dt:first-of-type {
+		border-top-color: var(--rule-firm);
 	}
-	.plain li {
-		padding-inline-start: 1rem;
-		border-inline-start: 2px solid var(--line);
-		color: var(--muted);
-		font-size: 0.95rem;
+	.plainly dd {
+		margin: 0 0 1.4rem;
+		color: var(--graphite);
+		font-size: var(--step-0);
 	}
 </style>

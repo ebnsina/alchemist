@@ -1,192 +1,169 @@
 <script lang="ts">
 	import Seo from '$lib/Seo.svelte';
 	import T from '$lib/T.svelte';
-	import Icon from '$lib/Icon.svelte';
 </script>
 
 <Seo
-	title="Alchemist for course platforms — stop the leak, cut the data bill"
-	description="Per-viewer encrypted playback, a mobile-first ladder tuned for lectures and screen recordings, and delivery from inside BDIX so students' data quota survives the semester."
+	title="Alchemist for course platforms"
+	description="Lectures that play on a cheap phone without stalling, that do not drain a student's data, and that cannot simply be downloaded and passed around."
 />
 
-<section class="top">
-	<div class="wrap">
-		<p class="eyebrow"><T en="For course platforms" bn="কোর্স প্ল্যাটফর্মের জন্য" /></p>
-		<h1>
-			<T
-				as="span"
-				en="Your two real problems are piracy and your students' data bill."
-				bn="আপনার আসল সমস্যা দুটি — কনটেন্ট চুরি আর শিক্ষার্থীর ডেটার বিল।"
-			/>
-		</h1>
-		<p class="lede">
-			<T
-				as="span"
-				en="Everything else about hosting a lecture is solved. These two are not, and both of them are worse in Bangladesh than in the markets the big video platforms were designed for."
-				bn="লেকচার হোস্ট করার বাকি সব সমস্যার সমাধান হয়ে গেছে। এই দুটোর হয়নি — আর বড় ভিডিও প্ল্যাটফর্মগুলো যেসব বাজারের কথা ভেবে তৈরি, বাংলাদেশে এই দুটো সমস্যাই সেখানকার চেয়ে বেশি তীব্র।"
-			/>
-		</p>
-	</div>
+<section class="shell open">
+	<h1>
+		<T
+			as="span"
+			en="Your two real problems are copying and your students' data bill."
+			bn="আপনার আসল সমস্যা দুটি — কোর্স কপি হয়ে যাওয়া আর শিক্ষার্থীর ডেটার বিল।"
+		/>
+	</h1>
+	<p class="lede quiet lead">
+		<T
+			as="span"
+			en="Everything else about putting a lecture online has been solved for years. These two have not, and both are harder here than in the countries the big video companies designed for."
+			bn="লেকচার অনলাইনে তোলার বাকি সব সমস্যার সমাধান বহু আগেই হয়ে গেছে। এই দুটোর হয়নি — আর বড় ভিডিও কোম্পানিগুলো যেসব দেশের কথা ভেবে বানিয়েছে, সেখানকার চেয়ে এখানে দুটোই কঠিন।"
+		/>
+	</p>
 </section>
 
-<section class="alt">
-	<div class="wrap">
-		<div class="grid">
-			<article class="card">
-				<div class="ic"><Icon name="lock" size={24} /></div>
-				<h2><T as="span" en="Course piracy" bn="কোর্স চুরি" /></h2>
-				<p>
-					<T
-						as="span"
-						en="Media is packaged with SAMPLE-AES. The content key is served from an endpoint that requires the same short-lived signature as the manifest, and that signature is issued per playback rather than per course. A link shared in a Telegram group stops working within hours, not never."
-						bn="মিডিয়া প্যাকেজ করা হয় SAMPLE-AES দিয়ে। কনটেন্ট কি আসে এমন একটি এন্ডপয়েন্ট থেকে, যেটির জন্য ম্যানিফেস্টের মতো একই স্বল্পমেয়াদি সিগনেচার লাগে — আর সেই সিগনেচার দেওয়া হয় প্রতিটি প্লেব্যাকের জন্য আলাদা করে, পুরো কোর্সের জন্য একবার নয়। টেলিগ্রাম গ্রুপে শেয়ার করা লিংক কয়েক ঘণ্টার মধ্যেই অকেজো হয়ে যায় — চিরকাল চলে না।"
-					/>
-				</p>
-				<p class="caveat">
-					<T
-						as="span"
-						en="What it does not do: stop someone re-recording their own screen. Nothing short of studio DRM does, and studio DRM is not built here. We would rather say that than sell you a word like 'unbreakable'."
-						bn="যা এটি পারে না: কেউ নিজের স্ক্রিন রেকর্ড করলে তা ঠেকাতে। স্টুডিও DRM ছাড়া সেটা কেউই পারে না, আর স্টুডিও DRM এখানে তৈরি হয়নি। ‘ভাঙা অসম্ভব’ জাতীয় কথা বলার চেয়ে এটুকু সোজাসুজি বলাই ভালো মনে করি।"
-					/>
-				</p>
-			</article>
-			<article class="card">
-				<div class="ic save"><Icon name="coins" size={24} /></div>
-				<h2><T as="span" en="The data bill" bn="ডেটার বিল" /></h2>
-				<p>
-					<T
-						as="span"
-						en="A lecture is a slow-moving talking head or a screen recording. It compresses far better than the film footage most default encoding ladders are tuned against, and the default ladder here targets 360p at 0.6 Mbps rather than 1080p at 3.5."
-						bn="একটি লেকচার মানে ধীর গতির কথা বলা মুখ বা স্ক্রিন রেকর্ডিং। বেশিরভাগ ডিফল্ট এনকোডিং ল্যাডার যে সিনেমার ফুটেজ ধরে তৈরি, তার চেয়ে এসব কনটেন্ট অনেক ভালো কমপ্রেস হয়। এখানকার ডিফল্ট ল্যাডারের লক্ষ্য ৩৬০পি-তে ০.৬ Mbps, ১০৮০পি-তে ৩.৫ নয়।"
-					/>
-				</p>
-				<p class="caveat">
-					<T
-						as="span"
-						en="Our encoding notes expect lecture and screen content to land 40–60% below that table at equal quality once per-title analysis is tuned. That is a projection from the content type, not a measurement of your library — per-title analysis is not shipped yet, and we will not quote you a saving we have not measured on your files."
-						bn="আমাদের এনকোডিং নোট বলছে, পার-টাইটেল বিশ্লেষণ ঠিকমতো দাঁড়ালে একই মানে লেকচার ও স্ক্রিন কনটেন্ট ওই তালিকার চেয়ে ৪০–৬০% কম বিটরেটে নামবে। এটি কনটেন্টের ধরন দেখে করা হিসাব, আপনার লাইব্রেরিতে মেপে পাওয়া ফল নয় — পার-টাইটেল বিশ্লেষণ এখনও চালু হয়নি, আর আপনার ফাইলে না মেপে আমরা কোনো সাশ্রয়ের সংখ্যা বলব না।"
-					/>
-				</p>
-			</article>
-		</div>
-	</div>
-</section>
-
-<section>
-	<div class="wrap narrow">
-		<h2><T as="span" en="Things that matter more in a classroom than a cinema" bn="সিনেমার চেয়ে ক্লাসরুমে যেগুলো বেশি জরুরি" /></h2>
-		<ul class="pts">
-			<li>
-				<h3><T as="span" en="An audio-only rendition" bn="শুধু অডিও রেন্ডিশন" /></h3>
-				<p>
-					<T
-						as="span"
-						en="Most of a lecture is the audio. An audio-only track costs roughly a tenth of the data of video, and for revision it is often all a student wants. On a metered connection that is the difference between finishing the course and rationing it."
-						bn="লেকচারের বেশিরভাগটাই আসলে কথা। শুধু অডিও ট্র্যাকে ভিডিওর প্রায় দশ ভাগের এক ভাগ ডেটা লাগে, আর রিভিশনের সময় শিক্ষার্থীর প্রায়ই এটুকুই দরকার। মিটারড কানেকশনে এটাই ঠিক করে দেয় — কোর্সটা শেষ হবে, নাকি মেপে মেপে দেখতে হবে।"
-					/>
-				</p>
-			</li>
-			<li>
-				<h3><T as="span" en="Playable before it is finished" bn="পুরো শেষ হওয়ার আগেই চালানো যায়" /></h3>
-				<p>
-					<T
-						as="span"
-						en="An asset reaches partially_ready as soon as the low rungs exist, and that state is playable. A teacher who uploads at 11pm the night before class does not wait for the whole ladder."
-						bn="নিচের ধাপগুলো তৈরি হলেই অ্যাসেট partially_ready অবস্থায় পৌঁছে যায়, আর সেই অবস্থাতেই চালানো যায়। ক্লাসের আগের রাত ১১টায় আপলোড করা শিক্ষককে পুরো ল্যাডারের জন্য বসে থাকতে হয় না।"
-					/>
-				</p>
-			</li>
-			<li>
-				<h3><T as="span" en="Bangla that renders correctly" bn="বাংলা যেন ঠিকভাবে দেখায়" /></h3>
-				<p>
-					<T
-						as="span"
-						en="Bangla titles, filenames and subtitles survive the whole chain — database, object keys, manifest metadata, player. Conjuncts shape properly instead of breaking into boxes, which is a real failure mode with a careless font stack."
-						bn="বাংলা শিরোনাম, ফাইলের নাম আর সাবটাইটেল পুরো পথ ধরে অক্ষত থাকে — ডেটাবেজ, স্টোরেজ কি, ম্যানিফেস্ট মেটাডেটা, প্লেয়ার। যুক্তাক্ষর ভেঙে বাক্স হয়ে যায় না, ঠিকভাবেই বসে — অসতর্ক ফন্ট বাছাইয়ে এটা সত্যিই ঘটে।"
-					/>
-				</p>
-			</li>
-			<li>
-				<h3><T as="span" en="A Data Saver the student can see" bn="দর্শকের চোখে পড়ার মতো ডেটা সেভার" /></h3>
-				<p>
-					<T
-						as="span"
-						en="The player carries a visible Data Saver control that pins playback to 360p and shows the estimated megabytes per hour. Buried in a settings menu it would be a feature; on the bar it is a reason to trust you."
-						bn="প্লেয়ারে চোখে পড়ার মতো একটি ডেটা সেভার বোতাম আছে, যেটি প্লেব্যাক ৩৬০পি-তে বেঁধে রাখে আর ঘণ্টায় আনুমানিক কত মেগাবাইট লাগবে তা দেখায়। সেটিংস মেনুতে লুকানো থাকলে এটা নিছক একটা ফিচার হতো; সামনে থাকলে এটা আপনাকে বিশ্বাস করার একটা কারণ।"
-					/>
-				</p>
-			</li>
-		</ul>
-		<div class="note">
-			<p>
+<section class="shell bay">
+	<div class="split split--even">
+		<div class="flow">
+			<h2><T as="span" en="Courses getting copied" bn="কোর্স কপি হয়ে যাওয়া" /></h2>
+			<p class="quiet">
 				<T
 					as="span"
-					en="One more thing worth knowing before you plan a term around it: BDIX peering and the Dhaka edge node are the next phase of work and are not live. The latency and FUP advantages described across this site are properties of BDIX delivery, which is what the system is being built to do — not a measurement of Alchemist serving your students today."
-					bn="একটা সেমিস্টারের পরিকল্পনা করার আগে আরেকটি কথা জেনে রাখা দরকার: BDIX পিয়ারিং আর ঢাকার এজ নোড পরের ধাপের কাজ, এখনও চালু হয়নি। এই সাইটে বলা লেটেন্সি আর FUP-এর সুবিধাগুলো BDIX ডেলিভারির বৈশিষ্ট্য — সিস্টেমটা সেভাবেই তৈরি হচ্ছে — কিন্তু আজ Alchemist আপনার শিক্ষার্থীদের সেবা দিচ্ছে, এমন কোনো মাপা ফল নয়।"
+					en="Every video is scrambled, and the key to unscramble it is issued for one viewing rather than once per course. A link a student copies into a Telegram group stops working within hours instead of never."
+					bn="প্রতিটি ভিডিও এলোমেলো করে রাখা হয়, আর খোলার চাবি দেওয়া হয় একবার দেখার জন্য — পুরো কোর্সের জন্য একবার নয়। কোনো শিক্ষার্থী লিংক কপি করে টেলিগ্রাম গ্রুপে দিলে সেটা কয়েক ঘণ্টার মধ্যেই অকেজো হয়ে যায় — কখনওই নয়, এমনটা নয়।"
+				/>
+			</p>
+			<p class="cav">
+				<T
+					as="span"
+					en="It does not stop somebody recording their own screen. Only the copy protection the film studios use does, and we have not built that. We would rather tell you than sell you the word unbreakable."
+					bn="কেউ নিজের স্ক্রিন রেকর্ড করলে এটা ঠেকায় না। কেবল ফিল্ম স্টুডিওগুলোর কপি-সুরক্ষাই সেটা পারে, আর তা আমরা বানাইনি। ‘ভাঙা অসম্ভব’ শব্দটা বেচার চেয়ে আপনাকে কথাটা বলে দেওয়াই ভালো।"
 				/>
 			</p>
 		</div>
-		<div class="cta">
-			<a class="btn btn-primary" href="/docs/"><T en="See the API" bn="API দেখুন" /><Icon name="arrow" size={18} /></a>
-			<a class="btn" href="/pricing/"><T en="What gets billed" bn="কীসের বিল হয়" /></a>
+		<div class="flow">
+			<h2><T as="span" en="The data bill" bn="ডেটার বিল" /></h2>
+			<p class="quiet">
+				<T
+					as="span"
+					en="A lecture is a person talking or a screen being shared. It squeezes down much further than film footage does, and most video services are tuned for film. An hour of lecture at our default size costs a student about 270 MB."
+					bn="লেকচার মানে একজন মানুষ কথা বলছেন বা একটা স্ক্রিন দেখাচ্ছেন। সিনেমার ফুটেজের চেয়ে এটা অনেক বেশি চেপে ছোট করা যায়, অথচ বেশিরভাগ ভিডিও সার্ভিস তৈরি সিনেমার কথা ভেবে। আমাদের ডিফল্ট আকারে এক ঘণ্টার লেকচার দেখতে শিক্ষার্থীর লাগে প্রায় ২৭০ মেগাবাইট।"
+				/>
+			</p>
+			<p class="cav">
+				<T
+					as="span"
+					en="We expect lectures and screen recordings to come down another forty to sixty per cent once we finish sizing each video individually. That is what we expect from this kind of material, not something we have measured on your videos — that work is not finished, and we will not quote you a saving we have not measured."
+					bn="প্রতিটি ভিডিওর আকার আলাদা করে ঠিক করার কাজটা শেষ হলে লেকচার আর স্ক্রিন রেকর্ডিং আরও চল্লিশ থেকে ষাট শতাংশ নামবে বলে আশা করি। এটা এই ধরনের কনটেন্ট থেকে আমাদের প্রত্যাশা, আপনার ভিডিওতে মেপে পাওয়া ফল নয় — কাজটা শেষ হয়নি, আর না মেপে আমরা কোনো সাশ্রয়ের সংখ্যা বলব না।"
+				/>
+			</p>
+		</div>
+	</div>
+</section>
+
+<section class="shell bay">
+	<h2 class="wide"><T as="span" en="Things that matter in a classroom and nowhere else" bn="যেগুলো কেবল ক্লাসরুমেই জরুরি" /></h2>
+	<dl class="pts">
+		<div>
+			<dt><T as="span" en="Audio on its own" bn="শুধু অডিও" /></dt>
+			<dd>
+				<T
+					as="span"
+					en="Most of a lecture is the talking. A student revising can listen instead of watch, for roughly a tenth of the data. On a metered connection that is the difference between finishing the course and rationing it."
+					bn="লেকচারের বেশিরভাগটাই আসলে কথা। রিভিশনের সময় শিক্ষার্থী দেখার বদলে শুনতে পারেন, ডেটা লাগে প্রায় দশ ভাগের এক ভাগ। মিটারড কানেকশনে এটাই ঠিক করে দেয় — কোর্সটা শেষ হবে, নাকি মেপে মেপে দেখতে হবে।"
+				/>
+			</dd>
+		</div>
+		<div>
+			<dt><T as="span" en="Publishable before it is finished" bn="পুরো শেষ হওয়ার আগেই প্রকাশ করা যায়" /></dt>
+			<dd>
+				<T
+					as="span"
+					en="A video becomes watchable as soon as the smaller sizes are ready. A teacher uploading at eleven the night before class does not sit and wait for the rest."
+					bn="ছোট আকারগুলো তৈরি হলেই ভিডিও দেখার উপযোগী হয়ে যায়। ক্লাসের আগের রাত এগারোটায় আপলোড করা শিক্ষককে বাকিটার জন্য বসে থাকতে হয় না।"
+				/>
+			</dd>
+		</div>
+		<div>
+			<dt><T as="span" en="Bangla that displays properly" bn="বাংলা যেন ঠিকভাবে দেখায়" /></dt>
+			<dd>
+				<T
+					as="span"
+					en="Bangla titles, file names and subtitles survive from your upload to the student's screen. Conjunct letters keep their shape instead of turning into empty boxes, which is a real and common failure."
+					bn="বাংলা শিরোনাম, ফাইলের নাম আর সাবটাইটেল আপনার আপলোড থেকে শিক্ষার্থীর পর্দা পর্যন্ত অক্ষত থাকে। যুক্তাক্ষর ভেঙে ফাঁকা বাক্স হয়ে যায় না — এটা সত্যিই ঘটে, আর প্রায়ই ঘটে।"
+				/>
+			</dd>
+		</div>
+		<div>
+			<dt><T as="span" en="A data saver the student can see" bn="শিক্ষার্থীর চোখে পড়ার মতো ডেটা সেভার" /></dt>
+			<dd>
+				<T
+					as="span"
+					en="The player has a visible button that holds the video at the smaller size and shows what an hour will cost. Hidden in a settings menu it is a feature; in plain sight it is a reason to trust you."
+					bn="প্লেয়ারে চোখে পড়ার মতো একটি বোতাম আছে, যেটি ভিডিওকে ছোট আকারেই আটকে রাখে আর দেখায় এক ঘণ্টায় কত খরচ হবে। সেটিংস মেনুতে লুকানো থাকলে এটা নিছক ফিচার; সামনে থাকলে এটা আপনাকে বিশ্বাস করার কারণ।"
+				/>
+			</dd>
+		</div>
+	</dl>
+	<div class="tail flow">
+		<p class="fine">
+			<T
+				as="span"
+				en="Before you plan a term around this: the servers inside Bangladesh are the next piece of work and are not running yet. Everything on this site about videos starting instantly and not counting against a data allowance describes what those servers do. Today they would be served from abroad."
+				bn="একটা সেমিস্টারের পরিকল্পনা করার আগে: দেশের ভেতরের সার্ভারগুলো পরের ধাপের কাজ, এখনও চালু হয়নি। এই সাইটে ভিডিও সঙ্গে সঙ্গে চালু হওয়া আর ডেটা লিমিটের হিসাবে না আসা নিয়ে যা যা বলা, সবই ওই সার্ভারগুলোর কাজ। আজ ভিডিও যেত বিদেশ থেকেই।"
+			/>
+		</p>
+		<div class="row">
+			<a class="btn btn--solid" href="/pricing/"><T en="What it costs" bn="খরচ কত" /></a>
+			<a class="btn" href="/docs/"><T en="For developers" bn="ডেভেলপারদের জন্য" /></a>
 		</div>
 	</div>
 </section>
 
 <style>
-	.top {
-		padding-block: clamp(2.5rem, 7vw, 4.5rem) clamp(1.5rem, 4vw, 2.5rem);
-		background: radial-gradient(70ch 34ch at 10% -20%, var(--brass-soft), transparent 70%);
+	.open {
+		padding-block: clamp(2.5rem, 1.5rem + 4vw, 4.5rem) 0;
 	}
-	.top h1 {
-		max-width: 20ch;
+	.open h1 {
+		max-width: 17ch;
+		margin-bottom: 1.4rem;
 	}
-	.alt {
-		background: var(--raise);
-		border-block: 1px solid var(--line);
+	.lead {
+		max-width: 56ch;
 	}
-	.ic {
-		color: var(--brass);
-		margin-bottom: 0.6rem;
+	.cav {
+		padding-top: 1rem;
+		border-top: 1px solid var(--rule);
+		font-size: var(--step-0);
+		color: var(--graphite);
 	}
-	.ic.save {
-		color: var(--save);
-	}
-	.card h2 {
-		font-size: 1.2rem;
-	}
-	.card p {
-		color: var(--muted);
-		font-size: 0.94rem;
-	}
-	.caveat {
-		border-top: 1px dashed var(--line);
-		padding-top: 0.9rem;
-		margin-bottom: 0;
-		font-size: 0.88rem !important;
-	}
-	.narrow {
-		max-width: 760px;
+	.wide {
+		max-width: 22ch;
+		margin-bottom: 2rem;
 	}
 	.pts {
-		list-style: none;
-		padding: 0;
-		margin: 1.5rem 0 2rem;
-		display: grid;
-		gap: 1.5rem;
-	}
-	.pts h3 {
-		margin-bottom: 0.3rem;
-	}
-	.pts p {
-		color: var(--muted);
-		font-size: 0.94rem;
 		margin: 0;
+		display: grid;
+		gap: 0 clamp(1.5rem, 4vw, 3.5rem);
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 	}
-	.cta {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.7rem;
-		margin-top: 2rem;
+	.pts dt {
+		font-weight: 600;
+		padding-top: 1rem;
+		border-top: 1px solid var(--rule);
+		margin-bottom: 0.35rem;
+	}
+	.pts dd {
+		margin: 0 0 1.6rem;
+		color: var(--graphite);
+		font-size: var(--step-0);
+	}
+	.tail {
+		margin-top: 1.2rem;
+		padding-top: 1.4rem;
+		border-top: 1px solid var(--rule-firm);
 	}
 </style>

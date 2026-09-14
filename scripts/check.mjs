@@ -58,6 +58,23 @@ for (const scheme of ['dark', 'light']) {
 	}
 }
 
+// Reduced motion must actually remove motion, not merely shorten it.
+for (const motion of ['reduce', 'no-preference']) {
+	const c = await b.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: motion === 'reduce' ? 'reduce' : 'no-preference' });
+	const pg = await c.newPage();
+	await pg.goto(B + '/');
+	const durs = await pg.evaluate(() =>
+		[...document.querySelectorAll('.btn, nav a, a.panel, .seg button, .iconbtn, .tlink')].flatMap((e) => {
+			const cs = getComputedStyle(e);
+			return [cs.transitionDuration, cs.animationName === 'none' ? '0s' : cs.animationName];
+		})
+	);
+	const moving = durs.filter((d) => d !== '0s' && d !== '0.01s');
+	if (motion === 'reduce' && moving.length) problems.push(`reduced motion still animates: ${[...new Set(moving)].join(', ')}`);
+	if (motion === 'no-preference' && !moving.length) problems.push('hover transitions were removed entirely, not just under reduced motion');
+	await c.close();
+}
+
 // The toggles must work and persist with no framework on the page.
 const ctx = await b.newContext({ viewport: { width: 1280, height: 700 }, colorScheme: 'dark' });
 const p = await ctx.newPage();
@@ -96,4 +113,4 @@ if (problems.length) {
 	console.error('FAILED:\n' + problems.map((p) => '  - ' + p).join('\n'));
 	process.exit(1);
 }
-console.log('OK — no overflow at 360px, no language leakage, toggles persist, no framework JS shipped.');
+console.log('OK — no overflow at 360px, no language leakage, reduced motion respected, toggles persist, no framework JS shipped.');
