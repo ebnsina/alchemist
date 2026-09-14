@@ -43,7 +43,7 @@
 
 <section id="faq" class="mx-auto max-w-3xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="text-center" use:scrollReveal>
-		<p class="text-xs tracking-widest text-emerald-light uppercase">
+		<p class="text-xs tracking-widest text-brand-light uppercase">
 			Questions
 		</p>
 		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
@@ -56,7 +56,7 @@
 		{#each qs as q (q.qen)}
 			<details class="group">
 				<summary
-					class="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium transition-colors hover:text-emerald-light"
+					class="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium transition-colors hover:text-brand-light"
 				>
 					{q.qen}
 					<svg

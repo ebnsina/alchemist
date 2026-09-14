@@ -5,15 +5,15 @@
 	import ConversionFlow from './ConversionFlow.svelte';
 </script>
 
-<section class="relative overflow-hidden pt-32 pb-16 sm:pt-40 sm:pb-24">
+<section class="relative flex min-h-svh items-center overflow-hidden pt-32 pb-16 sm:pt-40 sm:pb-24">
 	<AuroraGradient />
 
-	<div class="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-14">
+	<div class="mx-auto w-full grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-14">
 		<div class="text-center lg:text-left">
 		<p
-			class="inline-flex items-center gap-2 rounded-full border border-emerald/35 bg-emerald/10 px-4 py-1.5 text-xs text-ink"
+			class="inline-flex items-center gap-2 rounded-full border border-brand-mid/35 bg-brand-mid/10 px-4 py-1.5 text-xs text-ink"
 		>
-			<HugeiconsIcon icon={Shield01Icon} size={15} strokeWidth={1.8} class="shrink-0 text-emerald-light" />
+			<HugeiconsIcon icon={Shield01Icon} size={15} strokeWidth={1.8} class="shrink-0 text-brand-light" />
 			Encrypted the whole way, and deleted after 24 hours
 		</p>
 
@@ -45,11 +45,11 @@
 			<!-- The right half of the hero is where the aurora has already faded out.
 			     These two layers light it: a tilted plate and a soft halo. -->
 			<div
-				class="pointer-events-none absolute -inset-5 -rotate-3 rounded-3xl border border-emerald/15 bg-gradient-to-br from-emerald/15 via-emerald/5 to-transparent sm:-inset-7"
+				class="pointer-events-none absolute -inset-5 -rotate-3 rounded-3xl border border-brand-mid/15 bg-gradient-to-br from-brand-mid/15 via-brand-mid/5 to-transparent sm:-inset-7"
 				aria-hidden="true"
 			></div>
 			<div
-				class="pointer-events-none absolute -inset-16 rounded-full bg-emerald/10 blur-3xl"
+				class="pointer-events-none absolute -inset-16 rounded-full bg-brand-mid/10 blur-3xl"
 				aria-hidden="true"
 			></div>
 			<ConversionFlow />

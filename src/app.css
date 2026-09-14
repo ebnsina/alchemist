@@ -1,26 +1,26 @@
 @import 'tailwindcss';
 
 /* Deep sea green. Alchemy: base metal in, refined metal out — white through
-   emerald to gold is the transformation, and it is the only gradient that carries
+   green to gold is the transformation, and it is the only gradient that carries
    meaning rather than decoration.
 
    Contrast computed against the onyx ground #0B0B0C, not eyeballed:
      text #e5e7eb ............ 15.59:1
      muted white @ 0.55 ...... 6.24:1   (the spec's 0.40 measures 3.80:1 and fails AA)
-     emerald #10b981 ......... 7.61:1
-     emerald light #34d399 ... 10.04:1
+     brand #047857 ........... 3.59:1   — a surface, never text on onyx
+     brand mid #10b981 ....... 7.76:1
+     brand light #34d399 ..... 10.23:1
      gold #fbbf24 ............ 11.57:1
-     seafoam #2dd4bf ......... 10.37:1
-   The emerald button carries #0B0B0C text; white on emerald is 2.54:1 and fails
-   and would fail. */
+   White on the brand button is 5.48:1; onyx on brand mid is 7.76:1, which is why
+   the badges and the check circle use mid rather than the brand itself. */
 @theme {
 	--color-body: #0B0B0C;
 	--color-card: #141416;
 	--color-elevated: #1C1C1F;
 	--color-deep: #064e3b;
-	--color-emerald: #10b981;
-	--color-emerald-deep: #047857;
-	--color-emerald-light: #34d399;
+	--color-brand-mid: #10b981;
+	--color-brand: #047857;
+	--color-brand-light: #34d399;
 	--color-gold: #fbbf24;
 	--color-seafoam: #2dd4bf;
 	--color-ink: #e5e7eb;
@@ -28,12 +28,12 @@
 	--color-hairline: rgba(255, 255, 255, 0.08);
 	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-		/* Oddval headings over Poppins body. The free Oddval on cdnfonts ships exactly
+		/* Oddval headings over Mona Sans body, which is also Oddval's fallback. The free Oddval on cdnfonts ships exactly
 	   one weight — SemiBold 600 — so every heading is 600; asking for 700 makes the
 	   browser synthesise bold and smear the stems. */
-	--font-sans: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-sans: 'Mona Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-heading: 'Oddval', var(--font-sans);
-	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
+	--font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @layer base {
@@ -85,12 +85,12 @@
 		line-height: 1.32;
 	}
 	:focus-visible {
-		outline: 2px solid var(--color-emerald-light);
+		outline: 2px solid var(--color-brand-light);
 		outline-offset: 2px;
 		border-radius: 4px;
 	}
 	::selection {
-		background: var(--color-emerald);
+		background: var(--color-brand-mid);
 		color: var(--color-body);
 	}
 }
@@ -99,7 +99,7 @@
    the aurora and background-clip:text trims descenders on its own. A solid accent
    reads better and cannot clip. */
 @utility gradient-text {
-	color: var(--color-emerald-light);
+	color: var(--color-brand-light);
 }
 
 
@@ -139,37 +139,65 @@
 	}
 }
 
+/* Buttons after the reference: square, fixed 46px, and hover handled by opacity
+   rather than a second colour, so one transition covers every variant. */
 @utility btn-primary {
+	font-family: var(--font-mono);
+	font-size: var(--step--1);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: -0.01em;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 0.5rem;
-	background: var(--color-emerald-deep);
-	color: #fff;
-	font-weight: 600;
+	gap: 0.625rem;
+	height: 46px;
+	padding-inline: 1.25rem;
+	border: 1px solid transparent;
 	border-radius: var(--radius-xl);
-	padding: 0.7rem 1.25rem;
-	transition: background 160ms ease;
+	background: var(--color-brand);
+	color: #fff;
+	transition:
+		opacity 160ms cubic-bezier(0.165, 0.84, 0.44, 1),
+		border-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1),
+		background-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1);
 	&:hover {
-		background: var(--color-emerald-light);
+		opacity: 0.88;
+	}
+	&:disabled,
+	&[aria-disabled='true'] {
+		pointer-events: none;
+		opacity: 0.4;
 	}
 }
 @utility btn-ghost {
+	font-family: var(--font-mono);
+	font-size: var(--step--1);
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: -0.01em;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 0.5rem;
+	gap: 0.625rem;
+	height: 46px;
+	padding-inline: 1.25rem;
 	border: 1px solid var(--color-hairline-strong);
-	color: var(--color-ink);
-	font-weight: 500;
 	border-radius: var(--radius-xl);
-	padding: 0.7rem 1.25rem;
+	background: transparent;
+	color: var(--color-ink);
 	transition:
-		background 160ms ease,
-		border-color 160ms ease;
+		opacity 160ms cubic-bezier(0.165, 0.84, 0.44, 1),
+		border-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1),
+		background-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1);
 	&:hover {
-		background: var(--color-card);
+		opacity: 0.88;
 		border-color: rgba(255, 255, 255, 0.24);
+	}
+	&:disabled,
+	&[aria-disabled='true'] {
+		pointer-events: none;
+		opacity: 0.4;
 	}
 }
 
@@ -290,7 +318,7 @@ details[open] > summary .chevron {
 	--ink-3: rgba(255, 255, 255, 0.55);
 	--rule: var(--color-hairline);
 	--rule-firm: var(--color-hairline-strong);
-	--brass: var(--color-emerald-light);
+	--brass: var(--color-brand-light);
 	--brass-hi: var(--color-seafoam);
 	--brass-ink: var(--color-body);
 	--wash: rgba(16, 185, 129, 0.08);
@@ -421,13 +449,13 @@ details[open] > summary .chevron {
 	border-color: rgba(255, 255, 255, 0.24);
 }
 .btn--solid {
-	background: var(--color-emerald);
+	background: var(--color-brand-mid);
 	border-color: transparent;
 	color: var(--color-body);
 	font-weight: 600;
 }
 .btn--solid:hover {
-	background: var(--color-emerald-light);
+	background: var(--color-brand-light);
 }
 .tlink {
 	color: var(--ink);

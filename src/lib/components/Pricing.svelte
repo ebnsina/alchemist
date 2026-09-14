@@ -61,7 +61,7 @@
 
 <section id="pricing" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
-		<p class="text-xs tracking-widest text-emerald-light uppercase">Pricing</p>
+		<p class="text-xs tracking-widest text-brand-light uppercase">Pricing</p>
 		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
 			Simple pricing.
 			<span class="gradient-text">No surprises.</span>
@@ -74,12 +74,12 @@
 	<div class="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each tiers as t, i (t.ten)}
 			<article
-				class="card relative flex flex-col px-6 py-8 {t.featured ? 'border-emerald/60 bg-card' : ''}"
+				class="card relative flex flex-col px-6 py-8 {t.featured ? 'border-brand-mid/60 bg-card' : ''}"
 				use:scrollReveal={{ delay: i * 80 }}
 			>
 				{#if t.featured}
 					<p
-						class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-emerald px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-body"
+						class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-mid px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-body"
 					>
 						Most popular
 					</p>
@@ -95,7 +95,7 @@
 				<ul class="mt-7 flex-1 space-y-3">
 					{#each t.rows as row (row)}
 						<li class="flex items-start gap-2.5 text-sm">
-							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="mt-1 flex-none text-emerald-light" aria-hidden="true"><path d="M4.6 12.5 9.4 17.3 19.4 6.9" /></svg>
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="mt-1 flex-none text-brand-light" aria-hidden="true"><path d="M4.6 12.5 9.4 17.3 19.4 6.9" /></svg>
 							<span>{row}</span>
 						</li>
 					{/each}

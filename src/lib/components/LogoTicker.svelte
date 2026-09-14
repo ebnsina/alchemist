@@ -58,7 +58,7 @@
 				{@const active = idx === i + CENTER}
 				<li
 					class="flex items-center justify-between rounded-lg px-3 text-sm whitespace-nowrap transition-colors duration-300"
-					class:bg-emerald={active}
+					class:bg-brand-mid={active}
 					class:text-body={active}
 					class:font-semibold={active}
 					class:text-muted={!active}
