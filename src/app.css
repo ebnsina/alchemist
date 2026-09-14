@@ -229,42 +229,6 @@ details[open] > summary .chevron {
 	}
 }
 
-/* Native range, themed. accent-color does the thumb and fill in one line. */
-/* Feature icons sit tilted and straighten when the card is hovered. */
-.tilt {
-	transform: rotate(-9deg);
-	transition: transform 260ms var(--ease, ease);
-}
-.card-hover:hover .tilt {
-	transform: rotate(0deg);
-}
-
-.range {
-	accent-color: var(--color-emerald);
-	height: 1.25rem;
-	cursor: pointer;
-}
-
-.chip {
-	border: 1px solid var(--color-hairline);
-	border-radius: var(--radius-lg, 0.5rem);
-	padding: 0.3rem 0.55rem;
-	font-size: var(--step--1);
-	color: var(--color-muted);
-	transition:
-		color 160ms ease,
-		border-color 160ms ease,
-		background 160ms ease;
-}
-.chip:hover {
-	color: var(--color-ink);
-	border-color: rgba(255, 255, 255, 0.18);
-}
-.chip[aria-pressed='true'] {
-	background: var(--color-emerald-deep);
-	border-color: transparent;
-	color: #fff;
-}
 
 .vh {
 	position: absolute;
