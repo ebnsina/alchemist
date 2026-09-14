@@ -34,14 +34,16 @@
 	<!-- relative, so the nav content paints above the absolutely-positioned
 	     backdrop. Without it the backdrop-filter treats the links and buttons as
 	     part of what it blurs. -->
-	<div class="relative z-10 mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+	<div
+		class="relative z-10 mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:px-6"
+	>
 		<a href="/" class="flex flex-none items-center gap-2 text-lg font-bold tracking-tight">
 			<Logo size={26} />
 			Alchemist
 		</a>
 
-		<nav aria-label="Sections" class="order-3 w-full sm:order-none sm:mx-auto sm:w-auto">
-			<ul class="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-hairline pt-2 sm:border-0 sm:pt-0">
+		<nav aria-label="Sections" class="order-3 w-full sm:order-none sm:w-auto sm:justify-self-center">
+			<ul class="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-hairline pt-2 sm:border-0 sm:pt-0">
 				{#each links as l (l.href)}
 					<li>
 						<a
@@ -54,7 +56,7 @@
 			</ul>
 		</nav>
 
-		<div class="ml-auto flex flex-none items-center gap-2">
+		<div class="ml-auto flex flex-none items-center gap-2 sm:ml-0 sm:justify-self-end">
 			<div
 				class="flex items-center gap-0.5 rounded-xl border border-hairline bg-card p-0.5"
 				role="group"
