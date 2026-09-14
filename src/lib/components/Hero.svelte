@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { Shield01Icon } from '@hugeicons/core-free-icons';
 	import AuroraGradient from './AuroraGradient.svelte';
 	import ConversionFlow from './ConversionFlow.svelte';
 </script>
@@ -9,22 +11,10 @@
 	<div class="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-14">
 		<div class="text-center lg:text-left">
 		<p
-			class="inline-flex items-center gap-2 rounded-lg border border-hairline bg-transparent px-3 py-1.5 text-xs text-muted"
+			class="inline-flex items-center gap-2 rounded-full border border-emerald/35 bg-emerald/10 px-4 py-1.5 text-xs text-ink"
 		>
-			<svg
-				class="h-3.5 w-3.5 shrink-0 text-emerald-light"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				<path d="M12 3v3m0 12v3m9-9h-3M6 12H3m12.4-5.4 2.1-2.1M6.5 17.5l-2.1 2.1m13 0-2.1-2.1M6.5 6.5 4.4 4.4" />
-				<circle cx="12" cy="12" r="3.25" />
-			</svg>
-			100 free videos every month · no card needed
+			<HugeiconsIcon icon={Shield01Icon} size={15} strokeWidth={1.8} class="shrink-0 text-emerald-light" />
+			Encrypted the whole way, and deleted after 24 hours
 		</p>
 
 		<h1 class="mt-7 text-4xl font-bold tracking-tight sm:text-5xl leading-[1.32]">
@@ -45,7 +35,7 @@
 
 		<ul class="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted lg:justify-start">
 			<li>Cancel any time</li>
-			<li>Files deleted after 24 hours</li>
+			<li>100 free videos a month, no card</li>
 			<li>Works on any phone</li>
 		</ul>
 
