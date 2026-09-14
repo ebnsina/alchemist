@@ -27,11 +27,11 @@
 	--color-hairline: rgba(255, 255, 255, 0.08);
 	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-	/* Matangi carries latin, latin-ext and devanagari — no Bengali — so Bangla falls
+	/* Spline Sans carries latin and latin-ext only — no Bengali — so Bangla falls
 	   through to the system's Noto Sans Bengali and the devanagari subset is never
-	   fetched. Latin is 21.8 KB on the variable axis. */
+	   fetched. Latin is 56 KB on the variable axis. */
 	--font-sans:
-		'Matangi', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		'Spline Sans', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
 }
 
