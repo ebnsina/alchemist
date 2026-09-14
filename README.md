@@ -268,13 +268,31 @@ Brass on near-black — the alchemist's gold, not another blue video player.
 | `#E8785F` | errors |
 | `#0C0C0E` / `#17171B` | surface, raised surface |
 
-Type is Mona Sans for UI, Geist Mono for timecodes and MB figures, with Bangla falling
-through to Noto Sans Bengali. **No webfont is downloaded.** Android has shipped Noto
-Sans Bengali since 4.1 and shapes conjuncts correctly with the system text engine, so
-the stack costs the viewer zero bytes and still renders যুক্তাক্ষর, শিক্ষা and বাংলাদেশ
-correctly. If you want Mona Sans on the wire, self-host the woff2 and add one
-`@font-face` to `src/styles.ts` — that is a deliberate decision to spend the viewer's
-data, so it is opt-in.
+Type is **Google Sans Flex** for UI, Geist Mono for timecodes and MB figures, with
+Bangla falling through to **Noto Sans Bengali**.
+
+Google Sans Flex is loaded as a single latin variable face (weights 400–700),
+`@font-face` inlined in `src/styles.ts` rather than linked from
+`fonts.googleapis.com`: that saves a cold BD mobile connection one round trip, and
+makes it impossible to accidentally pull the latin-ext, vietnamese, math or syriac
+subsets Google also serves off that family. **35 KB on the wire** (36,096 bytes woff2,
+already compressed — gzip adds nothing), cached a year, with a `preconnect` to
+`fonts.gstatic.com` in the page head.
+
+That 35 KB is more than twice the player chunk, so it is worth being honest about: it
+is a one-time, cache-for-a-year cost, it never blocks playback, and `font-display:
+swap` means text is readable in the system font from the first frame. If you decide a
+BD-mobile viewer should not pay it at all, delete the `@font-face` block in
+`src/styles.ts` — the stack degrades to `system-ui` with no other change.
+
+The face's `unicode-range` is latin only, and that is what protects the Bangla
+rendering: Bengali codepoints are not in the range, so the browser never tries Google
+Sans Flex for them and falls straight through to Noto Sans Bengali, which Android has
+shipped since 4.1 and which shapes conjuncts correctly with the system text engine. So
+Bangla still costs the viewer zero bytes and যুক্তাক্ষর, শিক্ষা and বাংলাদেশ still render
+correctly — verified after the font change, not assumed.
+
+Geist Mono is a fallback stack only; no mono webfont is downloaded.
 
 Icons are hand-authored inline SVG on the Hugeicons stroke grid (24px, 1.6 stroke,
 round caps). The icon package is 72 MB across 12,000 files; twelve paths are not worth

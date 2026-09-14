@@ -2,6 +2,24 @@
 // a single ES module with no CSS import ceremony for the host.
 
 export const CSS = `
+/* Google Sans Flex, latin only. Inlined rather than linked from
+   fonts.googleapis.com so a cold BD mobile connection pays one round trip instead of
+   two, and so the latin-ext / vietnamese / math / syriac subsets Google also serves
+   can never be pulled. 35 KB woff2, cached a year.
+
+   The unicode-range is what protects the Bangla rendering: Bengali codepoints are not
+   in it, so the browser never tries this face for them and falls straight through to
+   Noto Sans Bengali, which the system already has and which shapes conjuncts
+   correctly. font-display:swap means text is readable before the font arrives. */
+@font-face{
+  font-family:"Google Sans Flex";
+  font-style:normal;
+  font-weight:400 700;
+  font-stretch:100%;
+  font-display:swap;
+  src:url(https://fonts.gstatic.com/s/googlesansflex/v22/t5sEIQcYNIWbFgDgAAzZ34auoVyXkJCOvp3SFWJbN5hF8Ju1x6sKCyp0l9sI40swNJwInycYAJzz0m7kJ4qFQOJBOjLvDSndo0SKMpKSTzwliVdHAy4bxTDHg_ugnAakp8ubq8BIo1pdkkXZj4igdvKMDV8.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
 .alc{
   /* Alchemist: brass on near-black. Transmutation, not another blue video player. */
   --alc-bg:#0C0C0E;
@@ -14,7 +32,7 @@ export const CSS = `
   --alc-save:#3FBF8F;
   --alc-danger:#E8785F;
   --alc-radius:10px;
-  --alc-font:"Mona Sans","Noto Sans Bengali",system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+  --alc-font:"Google Sans Flex","Noto Sans Bengali",system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
   --alc-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,"Roboto Mono",monospace;
 
   position:relative;display:block;width:100%;background:var(--alc-bg);color:var(--alc-ink);

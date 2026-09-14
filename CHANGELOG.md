@@ -20,3 +20,6 @@ First release.
 - Scrub previews from the signed `sprite.vtt`, with the signature copied onto the
   sprite image the origin does not rewrite.
 - Keyboard shortcuts, ARIA labels in the active language, visible focus, captions.
+- UI typeface is Google Sans Flex, loaded as one inlined latin-only variable face
+  (35 KB, `font-display: swap`). Bangla continues to fall through to the system
+  Noto Sans Bengali at zero bytes.
