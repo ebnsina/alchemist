@@ -4,3 +4,4 @@ build
 docs
 data
 .DS_Store
+.env

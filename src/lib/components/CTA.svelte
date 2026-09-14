@@ -13,7 +13,7 @@
 			A hundred videos a month, free, with no card and nothing to install. See what comes back before you decide anything.
 		</p>
 		<div class="relative mt-8 flex flex-wrap justify-center gap-3">
-			<a href="/#pricing" class="btn-primary">Start free</a>
+			<a href="/signup/" class="btn-primary">Start free</a>
 			<a href="/#faq" class="btn-ghost">Read the questions</a>
 		</div>
 	</div>

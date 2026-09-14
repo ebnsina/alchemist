@@ -29,7 +29,7 @@
 		</p>
 
 		<div class="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
-			<a href="/#pricing" class="btn-primary">Start free</a>
+			<a href="/signup/" class="btn-primary">Start free</a>
 			<a href="/#how" class="btn-ghost">See how it works</a>
 		</div>
 

@@ -1,0 +1,64 @@
+import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
+
+// The API is the source of truth for what went wrong; this file only maps its stable
+// codes to sentences a person can act on. Raw server text never reaches the page.
+const MESSAGES: Record<string, string> = {
+	invalid_request: 'Something in that form did not come through. Try again.',
+	invalid_org: 'Tell us what to call your organisation.',
+	invalid_email: 'That email address does not look right.',
+	weak_password: 'Use at least 10 characters.',
+	email_taken: 'There is already an account with that email.',
+	invalid_credentials: 'That email and password do not match.',
+	no_session: 'You are not signed in.',
+	too_many_attempts: 'Too many tries. Wait a minute, then have another go.',
+	internal_error: 'Something went wrong on our side. Please try again.',
+	offline: 'We could not reach Alchemist. Check your connection and try again.'
+};
+
+export class ApiError extends Error {
+	code: string;
+	constructor(code: string) {
+		super(MESSAGES[code] ?? MESSAGES.internal_error);
+		this.code = code;
+	}
+}
+
+async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
+	if (!PUBLIC_ALCHEMIST_API) {
+		// A missing base URL is a build mistake, not a user error, and silently
+		// posting to the site's own origin would look like a server fault instead.
+		throw new Error('PUBLIC_ALCHEMIST_API is not set');
+	}
+	let res: Response;
+	try {
+		res = await fetch(PUBLIC_ALCHEMIST_API + path, {
+			...init,
+			credentials: 'include',
+			headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) }
+		});
+	} catch {
+		throw new ApiError('offline');
+	}
+	if (res.status === 204) return undefined as T;
+	const body = await res.json().catch(() => null);
+	if (!res.ok) throw new ApiError(body?.error?.code ?? 'internal_error');
+	return body as T;
+}
+
+export type SignupResult = { tenant_id: string; org: string; email: string; api_key: string };
+export type Session = { user_id: string; tenant_id: string; email: string; org: string };
+
+export const signup = (org: string, email: string, password: string) =>
+	call<SignupResult>('/v1/auth/signup', {
+		method: 'POST',
+		body: JSON.stringify({ org, email, password })
+	});
+
+export const login = (email: string, password: string) =>
+	call<{ tenant_id: string; email: string }>('/v1/auth/login', {
+		method: 'POST',
+		body: JSON.stringify({ email, password })
+	});
+
+export const logout = () => call<void>('/v1/auth/logout', { method: 'POST' });
+export const session = () => call<Session>('/v1/auth/session');

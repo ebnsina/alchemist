@@ -93,7 +93,7 @@
 						</li>
 					{/each}
 				</ul>
-				<a href="/#faq" class="mt-8 {t.featured ? 'btn-primary' : 'btn-ghost'}">
+				<a href="/signup/" class="mt-8 {t.featured ? 'btn-primary' : 'btn-ghost'}">
 					{t.cta_en}
 				</a>
 			</article>

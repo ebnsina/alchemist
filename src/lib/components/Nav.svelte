@@ -56,7 +56,8 @@
 		</nav>
 
 		<div class="ml-auto flex flex-none items-center gap-2 sm:ml-0 sm:justify-self-end">
-			<a href="/#pricing" class="btn-primary hidden text-sm sm:inline-flex">
+			<a href="/login/" class="nav-link hidden text-sm sm:inline-block">Sign in</a>
+			<a href="/signup/" class="btn-primary hidden text-sm sm:inline-flex">
 				Start free
 			</a>
 		</div>
