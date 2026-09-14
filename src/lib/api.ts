@@ -12,7 +12,10 @@ const MESSAGES: Record<string, string> = {
 	no_session: 'You are not signed in.',
 	too_many_attempts: 'Too many tries. Wait a minute, then have another go.',
 	internal_error: 'Something went wrong on our side. Please try again.',
-	offline: 'We could not reach Alchemist. Check your connection and try again.'
+	offline: 'We could not reach Alchemist. Check your connection and try again.',
+	upload_failed: 'The upload did not finish. Try it again.',
+	not_found: 'We could not find that.',
+	quota_exceeded: 'You have reached this month\u2019s limit. Upgrade or wait for the reset.'
 };
 
 export class ApiError extends Error {
@@ -62,3 +65,60 @@ export const login = (email: string, password: string) =>
 
 export const logout = () => call<void>('/v1/auth/logout', { method: 'POST' });
 export const session = () => call<Session>('/v1/auth/session');
+
+export type Asset = {
+	id: string;
+	state: string;
+	error_code: string | null;
+	duration_sec: number | null;
+	source_bytes: number | null;
+	height: number | null;
+	created_at: string;
+};
+export type ApiKey = {
+	id: string;
+	name: string;
+	created_at: string;
+	revoked_at: string | null;
+};
+export type UsageLine = { kind: string; quantity: number; unit: string };
+
+export const listAssets = () => call<{ assets: Asset[] }>('/v1/assets');
+export const listKeys = () => call<{ keys: ApiKey[] }>('/v1/keys');
+export const createKey = (name: string) =>
+	call<{ id: string; name: string; api_key: string }>('/v1/keys', {
+		method: 'POST',
+		body: JSON.stringify({ name })
+	});
+export const revokeKey = (id: string) => call<void>(`/v1/keys/${id}`, { method: 'DELETE' });
+export const usage = () => call<{ from: string; to: string; lines: UsageLine[] }>('/v1/usage');
+
+export const startUpload = () =>
+	call<{ asset_id: string; upload_url: string; expires_in_seconds: number }>('/v1/uploads', {
+		method: 'POST'
+	});
+export const completeUpload = (id: string) =>
+	call<{ asset_id: string; state: string }>(`/v1/assets/${id}/complete`, { method: 'POST' });
+export const importFromUrl = (url: string) =>
+	call<{ asset_id: string; state: string }>('/v1/assets', {
+		method: 'POST',
+		body: JSON.stringify({ url })
+	});
+
+// The browser PUTs the bytes straight to storage, so they never pass through the
+// API — and so progress is the only thing we can report while it happens.
+export function putFile(url: string, file: File, onProgress: (pct: number) => void) {
+	return new Promise<void>((resolve, reject) => {
+		const xhr = new XMLHttpRequest();
+		xhr.open('PUT', url);
+		xhr.upload.onprogress = (e) => {
+			if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+		};
+		xhr.onload = () =>
+			xhr.status >= 200 && xhr.status < 300
+				? resolve()
+				: reject(new ApiError('upload_failed'));
+		xhr.onerror = () => reject(new ApiError('upload_failed'));
+		xhr.send(file);
+	});
+}

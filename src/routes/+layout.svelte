@@ -1,9 +1,14 @@
 <script lang="ts">
 	import '../app.css';
+	import { page } from '$app/state';
 	import Nav from '$lib/components/Nav.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 
 	let { children } = $props();
+
+	// The dashboard brings its own frame. Without this it inherits the marketing
+	// header and footer as well, and the page opens with two Alchemist logos.
+	const chrome = $derived(!page.url.pathname.startsWith('/app'));
 </script>
 
 <a
@@ -13,6 +18,10 @@
 	Skip to content
 </a>
 
-<Nav />
+{#if chrome}
+	<Nav />
+{/if}
 <main id="main">{@render children()}</main>
-<Footer />
+{#if chrome}
+	<Footer />
+{/if}
