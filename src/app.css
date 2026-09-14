@@ -28,14 +28,18 @@
 	--color-hairline: rgba(255, 255, 255, 0.08);
 	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-		/* Kanchenjunga (body) serves latin and kirat-rai; Trench Slab (headings) latin
-	   only. Neither has Bengali, so Bangla still falls through to the system's Noto
-	   Sans Bengali and that chain is unchanged. Kanchenjunga has no variable axis —
-	   400 and 500 are requested as discrete faces. */
+		/* Anek Bangla covers U+0980-09FE, so Bangla is set type rather than whatever the
+	   OS happens to ship, and the taka sign comes from the same family as the digits
+	   instead of a fallback. Measured cost: the Bengali face is 152 KB and it loads
+	   on every visit, not only for Bangla readers — the page ships both languages in
+	   the DOM, so the glyphs are always needed. Fonts total 218 KB. Self-hosting a
+	   subset is the way down if that becomes the thing worth fixing.
+
+	   Trench Slab (headings) is latin only; Bengali headings fall to Anek Bangla. */
 	--font-sans:
-		'Kanchenjunga', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		'Anek Bangla', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-heading:
-		'Trench Slab', 'Noto Sans Bengali', Georgia, 'Times New Roman', serif;
+		'Trench Slab', 'Anek Bangla', Georgia, 'Times New Roman', serif;
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
 }
 
