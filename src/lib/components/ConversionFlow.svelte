@@ -121,7 +121,7 @@
 					<div class="flex h-full flex-col justify-center gap-4">
 						<div class="flex items-center gap-3">
 							<span
-								class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-brand-mid text-ink"
+								class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-brand-mid text-on-brand"
 								in:scale={{ start: 0.5, duration: 420, easing: cubicOut }}
 							>
 								<HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={2.6} />

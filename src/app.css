@@ -1,31 +1,57 @@
 @import 'tailwindcss';
 
-/* Deep sea green on paper. Alchemy: base metal in, refined metal out — the green
+/* Deep sea green on onyx. Alchemy: base metal in, refined metal out — the green
    is the only colour that carries meaning rather than decoration.
 
-   Light theme. Contrast computed against the paper ground #F6F6F3, not eyeballed:
-     ink #14171A ............. 16.62:1
-     muted black @ 0.62 ...... 6.09:1   (0.55 measures 4.65:1 — passes, but only just)
-     brand #047857 ........... 5.06:1
-     brand deep #065f46 ...... 7.10:1
-     brand mid #10b981 ....... 2.34:1   — a surface, never text on paper
-   White on the brand button is 5.48:1, and ink on brand mid is 7.46:1, which is why
-   the badges and the check circle carry ink rather than paper. */
+   Dark is the default because the aurora needs a dark ground to read as light
+   rather than as a tint, and because the emerald has somewhere to glow.
+
+   Contrast computed against the onyx ground #0B0B0C, not eyeballed:
+     ink #e5e7eb ............. 15.59:1
+     muted white @ 0.55 ...... 6.24:1   (0.40 measures 3.80:1 and fails AA)
+     brand #047857 ........... 3.59:1   — a surface, never text on onyx
+     brand mid #10b981 ....... 7.76:1
+     brand light #34d399 ..... 10.23:1
+   White on the brand button is 5.48:1, and --color-on-brand is what any fill of
+   brand mid carries: onyx here, ink on paper. Every surface below is a token, so
+   the light palette is the one override block at the end of this file rather than
+   a second pass over every component. */
 @theme {
-	--color-body: #F6F6F3;
-	--color-card: #ffffff;
-	--color-elevated: #ffffff;
+	--color-body: #0B0B0C;
+	--color-card: #141416;
+	--color-elevated: #1C1C1F;
 	--color-deep: #064e3b;
 	--color-brand-mid: #10b981;
 	--color-brand: #047857;
 	/* Named for where it sits, not how light it is: the accent that carries text. */
-	--color-brand-light: #065f46;
-	--color-gold: #b45309;
-	--color-seafoam: #0f766e;
-	--color-ink: #14171A;
-	--color-muted: rgba(0, 0, 0, 0.62);
-	--color-hairline: rgba(0, 0, 0, 0.09);
-	--color-hairline-strong: rgba(0, 0, 0, 0.16);
+	--color-brand-light: #34d399;
+	/* What text on a brand-mid fill has to be. Flips with the theme. */
+	--color-on-brand: #0B0B0C;
+	--color-gold: #fbbf24;
+	--color-seafoam: #2dd4bf;
+	--color-ink: #e5e7eb;
+	--color-muted: rgba(255, 255, 255, 0.55);
+	--color-hairline: rgba(255, 255, 255, 0.08);
+	--color-hairline-strong: rgba(255, 255, 255, 0.14);
+
+	/* Surfaces the theme owns, so components never name a raw colour. */
+	--card-stock: linear-gradient(180deg, #17171b, #121214);
+	--card-shadow: 0 1px 1px rgba(0, 0, 0, 0.5), 0 2px 8px -2px rgba(0, 0, 0, 0.6);
+	--card-shadow-hover: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 28px -10px rgba(0, 0, 0, 0.8);
+	--wash-1: rgba(16, 185, 129, 0.12);
+	--wash-2: rgba(4, 120, 87, 0.14);
+	--grain-blend: overlay;
+	--grain-opacity: 0.045;
+	--aurora-1: #1b4332;
+	--aurora-2: #2d6a4f;
+	--aurora-3: #40916c;
+	--aurora-4: #52b788;
+	--aurora-5: #74c69d;
+	--aurora-scrim-top: 46%;
+	--aurora-scrim-mid: 62%;
+	--aurora-scrim-bottom: 68%;
+	--aurora-grain-opacity: 0.25;
+	--aurora-grain-blend: overlay;
 
 		/* Oddval headings over Mona Sans body, which is also Oddval's fallback. The free Oddval on cdnfonts ships exactly
 	   one weight — SemiBold 600 — so every heading is 600; asking for 700 makes the
@@ -60,13 +86,13 @@
 	}
 	body::before {
 		background:
-			radial-gradient(70rem 45rem at 12% -10%, rgba(16, 185, 129, 0.14), transparent 62%),
-			radial-gradient(60rem 45rem at 45% 112%, rgba(4, 120, 87, 0.09), transparent 65%);
+			radial-gradient(70rem 45rem at 12% -10%, var(--wash-1), transparent 62%),
+			radial-gradient(60rem 45rem at 45% 112%, var(--wash-2), transparent 65%);
 	}
 	body::after {
 		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
-		opacity: 0.05;
-		mix-blend-mode: multiply;
+		opacity: var(--grain-opacity);
+		mix-blend-mode: var(--grain-blend);
 	}
 
 	/* Headings globally, not scoped to a wrapper. The previous rule lived under
@@ -90,7 +116,7 @@
 	}
 	::selection {
 		background: var(--color-brand-mid);
-		color: var(--color-ink);
+		color: var(--color-on-brand);
 	}
 }
 
@@ -116,22 +142,18 @@
 	/* A white stock over the paper ground, held by a hairline shadow rather than a
 	   border — a drawn edge on every card reads as a table. corner-shape falls
 	   back to a plain round where it is not supported yet. */
-	background: linear-gradient(180deg, #ffffff, #fcfcfa);
+	background: var(--card-stock);
 	border: 0;
 	border-radius: 18px;
 	corner-shape: squircle;
-	box-shadow:
-		0 1px 1px rgba(16, 24, 40, 0.04),
-		0 2px 6px -2px rgba(16, 24, 40, 0.08);
+	box-shadow: var(--card-shadow);
 	transition:
 		box-shadow 200ms ease,
 		transform 200ms ease;
 }
 @utility card-hover {
 	&:hover {
-		box-shadow:
-			0 1px 1px rgba(16, 24, 40, 0.05),
-			0 8px 20px -6px rgba(16, 24, 40, 0.12);
+		box-shadow: var(--card-shadow-hover);
 		transform: translateY(-2px);
 	}
 }
@@ -139,8 +161,8 @@
 /* The one card that has to stand out, now that no card has an edge. */
 @utility card-featured {
 	box-shadow:
-		0 0 0 2px var(--color-brand),
-		0 2px 8px -2px rgba(16, 24, 40, 0.12);
+		0 0 0 2px var(--color-brand-mid),
+		var(--card-shadow);
 }
 
 /* Pills at a fixed 46px, hover handled by opacity rather than a second colour so
@@ -192,7 +214,7 @@
 		background-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1);
 	&:hover {
 		opacity: 0.88;
-		border-color: rgba(0, 0, 0, 0.26);
+		border-color: rgba(255, 255, 255, 0.24);
 	}
 	&:disabled,
 	&[aria-disabled='true'] {
@@ -225,7 +247,7 @@
 		background: linear-gradient(
 			110deg,
 			transparent 35%,
-			rgba(255, 255, 255, 0.6) 50%,
+			rgba(255, 255, 255, 0.14) 50%,
 			transparent 65%
 		);
 		transform: translateX(-100%);
@@ -299,7 +321,7 @@ details[open] > summary .chevron {
 
 /* Nav sits over the aurora, where text-muted measures 4.24:1. */
 .nav-link {
-	color: rgba(0, 0, 0, 0.66);
+	color: rgba(255, 255, 255, 0.68);
 }
 
 .vh {
@@ -321,17 +343,17 @@ details[open] > summary .chevron {
 :root {
 	--paper: var(--color-body);
 	--leaf: var(--color-card);
-	--sink: #edf4ef;
+	--sink: #0e201a;
 	--ink: var(--color-ink);
-	--graphite: rgba(0, 0, 0, 0.68);
-	--ink-3: rgba(0, 0, 0, 0.58);
+	--graphite: rgba(255, 255, 255, 0.72);
+	--ink-3: rgba(255, 255, 255, 0.55);
 	--rule: var(--color-hairline);
 	--rule-firm: var(--color-hairline-strong);
 	--brass: var(--color-brand-light);
 	--brass-hi: var(--color-seafoam);
-	--brass-ink: #ffffff;
+	--brass-ink: var(--color-on-brand);
 	--wash: rgba(16, 185, 129, 0.08);
-	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 	--font: var(--font-sans);
 	--mono: var(--font-mono);
 	--ease: cubic-bezier(0.25, 0.8, 0.35, 1);
@@ -455,7 +477,7 @@ details[open] > summary .chevron {
 		border-color 150ms var(--ease);
 }
 .btn:hover {
-	border-color: rgba(0, 0, 0, 0.26);
+	border-color: rgba(255, 255, 255, 0.24);
 }
 .btn--solid {
 	background: var(--color-brand);
@@ -582,4 +604,44 @@ details[open] > summary .chevron {
 	.nav-shell::before {
 		transition: none;
 	}
+}
+
+
+/* ---------------------------------------------------------------------------
+   The light palette, whole, in one place. data-theme="light" on <html> flips
+   every surface; no component names a raw colour, so nothing else changes.
+   Contrast on the paper ground #F6F6F3: ink 16.62:1, muted 6.09:1,
+   brand-light #065f46 7.10:1.
+   --------------------------------------------------------------------------- */
+:root[data-theme='light'] {
+	--color-body: #F6F6F3;
+	--color-card: #ffffff;
+	--color-elevated: #ffffff;
+	--color-brand-light: #065f46;
+	--color-on-brand: #14171A;
+	--color-ink: #14171A;
+	--color-muted: rgba(0, 0, 0, 0.62);
+	--color-hairline: rgba(0, 0, 0, 0.09);
+	--color-hairline-strong: rgba(0, 0, 0, 0.16);
+	--card-stock: linear-gradient(180deg, #ffffff, #fcfcfa);
+	--card-shadow: 0 1px 1px rgba(16, 24, 40, 0.04), 0 2px 6px -2px rgba(16, 24, 40, 0.08);
+	--card-shadow-hover: 0 1px 1px rgba(16, 24, 40, 0.05), 0 8px 20px -6px rgba(16, 24, 40, 0.12);
+	--wash-1: rgba(16, 185, 129, 0.14);
+	--wash-2: rgba(4, 120, 87, 0.09);
+	--grain-blend: multiply;
+	--grain-opacity: 0.05;
+	--aurora-1: #a7d9bf;
+	--aurora-2: #bfe5ce;
+	--aurora-3: #d3eedd;
+	--aurora-4: #e3f4e9;
+	--aurora-5: #f1faf4;
+	--aurora-scrim-top: 30%;
+	--aurora-scrim-mid: 20%;
+	--aurora-scrim-bottom: 36%;
+	--aurora-grain-opacity: 0.16;
+	--aurora-grain-blend: multiply;
+	--graphite: rgba(0, 0, 0, 0.68);
+	--ink-3: rgba(0, 0, 0, 0.58);
+	--sink: #edf4ef;
+	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
