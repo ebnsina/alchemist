@@ -13,10 +13,10 @@
 			cta_en: 'Start free',
 			cta_bn: 'ফ্রি শুরু করুন',
 			rows: [
-				['100 videos a month', 'মাসে ১০০টি ভিডিও'],
-				['Up to 1080p', '১০৮০পি পর্যন্ত'],
-				['Files up to 2 GB', '২ জিবি পর্যন্ত ফাইল'],
-				['Deleted after 24 hours', '২৪ ঘণ্টা পর মুছে যায়']
+				'100 videos a month',
+				'Up to 1080p',
+				'Files up to 2 GB',
+				'Deleted after 24 hours'
 			]
 		},
 		{
@@ -31,11 +31,11 @@
 			cta_en: 'Choose Creator',
 			cta_bn: 'ক্রিয়েটর নিন',
 			rows: [
-				['Unlimited videos', 'যত খুশি ভিডিও'],
-				['Up to 4K', '৪কে পর্যন্ত'],
-				['Files up to 20 GB', '২০ জিবি পর্যন্ত ফাইল'],
-				['Batch up to 10 at once', 'একসঙ্গে ১০টি পর্যন্ত'],
-				['Shareable links', 'শেয়ার করার মতো লিংক']
+				'Unlimited videos',
+				'Up to 4K',
+				'Files up to 20 GB',
+				'Batch up to 10 at once',
+				'Shareable links'
 			]
 		},
 		{
@@ -49,11 +49,11 @@
 			cta_en: 'Choose Studio',
 			cta_bn: 'স্টুডিও নিন',
 			rows: [
-				['Everything in Creator', 'ক্রিয়েটরের সবকিছু'],
-				['Up to 8K', '৮কে পর্যন্ত'],
-				['Files up to 100 GB', '১০০ জিবি পর্যন্ত ফাইল'],
-				['Batch up to 50 at once', 'একসঙ্গে ৫০টি পর্যন্ত'],
-				['Priority queue', 'অগ্রাধিকারের সারি']
+				'Everything in Creator',
+				'Up to 8K',
+				'Files up to 100 GB',
+				'Batch up to 50 at once',
+				'Priority queue'
 			]
 		}
 	];
@@ -93,10 +93,10 @@
 				</p>
 				<p class="mt-2 text-sm text-muted">{t.den}</p>
 				<ul class="mt-6 flex-1 space-y-2.5">
-					{#each t.rows as [en, bn] (en)}
+					{#each t.rows as row (row)}
 						<li class="flex items-start gap-2.5 text-sm">
 							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="mt-1 flex-none text-emerald-light" aria-hidden="true"><path d="M4.6 12.5 9.4 17.3 19.4 6.9" /></svg>
-							
+							<span>{row}</span>
 						</li>
 					{/each}
 				</ul>
