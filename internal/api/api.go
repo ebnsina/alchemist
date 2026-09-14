@@ -95,9 +95,15 @@ func (s *Server) Routes() http.Handler {
 	// get a key — and mounted only when a browser origin is configured.
 	if s.authEnabled() {
 		r.Route("/v1/auth", func(r chi.Router) {
-			r.Use(s.cors, s.rateLimit)
-			r.Post("/signup", s.postSignup)
-			r.Post("/login", s.postLogin)
+			r.Use(s.cors)
+			// Only the two endpoints that take a password are rate limited. Session
+			// and logout are not: the dashboard asks who it is talking to on every
+			// page, and a 429 there logs the customer out of their own account.
+			r.Group(func(r chi.Router) {
+				r.Use(s.rateLimit)
+				r.Post("/signup", s.postSignup)
+				r.Post("/login", s.postLogin)
+			})
 			r.Post("/logout", s.postLogout)
 			r.Get("/session", s.getSession)
 		})

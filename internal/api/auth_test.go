@@ -151,3 +151,25 @@ func TestPreflightAllowsDashboardMethods(t *testing.T) {
 		}
 	}
 }
+
+// The dashboard asks who it is talking to on every page load. Rate limiting that
+// alongside password attempts means a busy customer gets signed out of their own
+// account, which looks exactly like a session bug and is not one.
+func TestSessionCheckIsNotRateLimited(t *testing.T) {
+	s := &Server{
+		webOrigins:  []string{"https://app.example"},
+		authLimiter: newAuthLimiter(2, time.Minute),
+	}
+	for i := 0; i < 6; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/v1/auth/session", nil)
+		req.RemoteAddr = "198.51.100.4:9000"
+		rec := httptest.NewRecorder()
+		func() {
+			defer func() { _ = recover() }() // no database in this test
+			s.Routes().ServeHTTP(rec, req)
+		}()
+		if rec.Code == http.StatusTooManyRequests {
+			t.Fatalf("session check rate limited on attempt %d", i+1)
+		}
+	}
+}
