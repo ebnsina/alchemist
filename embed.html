@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<!-- The host rewrites /e/{asset} to this file, so relative asset URLs must resolve
+     against the versioned bundle root rather than the pretty URL. -->
+<base href="/v1/">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Alchemist</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden}
+  #alc-root,#alc-root .alc,#alc-root .alc-stage{height:100%}
+  #alc-root .alc{border-radius:0}
+  #alc-root .alc-stage{aspect-ratio:auto}
+</style>
+</head>
+<body>
+<div id="alc-root"></div>
+<script type="module" src="./src/embed.ts"></script>
+</body>
+</html>

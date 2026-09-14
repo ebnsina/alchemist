@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alchemist Player — test bench</title>
+<style>
+  :root{
+    --bg:#0C0C0E; --raise:#17171B; --line:#2A2A31; --ink:#F4F1EC; --muted:#A19C94;
+    --brass:#E8A33D; --save:#3FBF8F;
+    --font:"Mona Sans","Noto Sans Bengali",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5}
+  .wrap{max-width:940px;margin:0 auto;padding:28px 18px 60px}
+  h1{font-size:19px;margin:0 0 2px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 22px;font-size:13px}
+  .card{background:var(--raise);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  .card h2{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  input[type=text],input[type=url]{
+    width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--line);
+    background:#0C0C0E;color:var(--ink);font-family:var(--mono);font-size:12.5px
+  }
+  input:focus-visible,button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}
+  button{
+    appearance:none;border:1px solid var(--line);background:#101014;color:var(--ink);
+    font:inherit;font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer
+  }
+  button.primary{background:var(--brass);color:#1A1206;border-color:transparent}
+  button:hover{filter:brightness(1.1)}
+  code,.mono{font-family:var(--mono);font-size:12px}
+  pre{
+    font-family:var(--mono);font-size:11.5px;background:#0A0A0C;border:1px solid var(--line);
+    border-radius:8px;padding:11px;max-height:220px;overflow:auto;margin:0;color:var(--muted)
+  }
+  .grid{display:grid;gap:18px;grid-template-columns:1fr}
+  @media(min-width:760px){.grid{grid-template-columns:1fr 1fr}}
+  .swatch{display:flex;gap:8px;align-items:center;margin-top:6px}
+  .dot{width:14px;height:14px;border-radius:50%}
+  .bn{font-size:26px;line-height:1.7;letter-spacing:0}
+  .bn small{display:block;font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0}
+  .ok{color:var(--save)} .warn{color:var(--brass)}
+  iframe{width:100%;aspect-ratio:16/9;border:1px solid var(--line);border-radius:12px;background:#000}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Alchemist Player — test bench</h1>
+  <p class="sub">
+    Runs against a local Alchemist at <code>http://localhost:8099</code>.
+    Get a signed URL with
+    <code>curl -H "Authorization: Bearer $KEY" http://localhost:8099/v1/assets/$ID</code>
+    and paste the <code>playback.hls</code> value below. The control plane sends no CORS
+    headers, so the page cannot fetch it for you — by design, the player never holds a key.
+  </p>
+
+  <div class="card">
+    <h2>Source</h2>
+    <label for="src">Signed playback URL (HLS or DASH)</label>
+    <input id="src" type="url" spellcheck="false"
+      placeholder="http://localhost:8099/playback/{tenant}/{asset}/master.m3u8?exp=…&kid=…&sig=…">
+    <div class="controls">
+      <button class="primary" id="load">Load in SDK player</button>
+      <button id="loadEmbed">Load in iframe embed</button>
+      <button id="bn">বাংলা</button>
+      <button id="en">English</button>
+      <button id="saver">Toggle Data Saver</button>
+      <button id="expire">Simulate expired signature</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>SDK player</h2>
+    <div id="host"></div>
+  </div>
+
+  <div class="card" id="embedCard" hidden>
+    <h2>Iframe embed — /e/{asset}?t=…</h2>
+    <iframe id="frame" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Events</h2>
+      <pre id="log">waiting…</pre>
+    </div>
+    <div class="card">
+      <h2>State</h2>
+      <pre id="stats">—</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Bangla conjunct rendering check</h2>
+    <p class="sub" style="margin:0 0 10px">
+      Each line must render as joined conjuncts, not boxes or split letters.
+      Compare against the codepoint breakdown underneath.
+    </p>
+    <div class="bn" id="conjuncts"></div>
+  </div>
+
+  <div class="card">
+    <h2>Palette</h2>
+    <div class="swatch"><span class="dot" style="background:#E8A33D"></span><span class="mono">#E8A33D brass — accent, progress, primary action</span></div>
+    <div class="swatch"><span class="dot" style="background:#3FBF8F"></span><span class="mono">#3FBF8F — Data Saver active</span></div>
+    <div class="swatch"><span class="dot" style="background:#E8785F"></span><span class="mono">#E8785F — error states</span></div>
+    <div class="swatch"><span class="dot" style="background:#0C0C0E;border:1px solid #2A2A31"></span><span class="mono">#0C0C0E — surface</span></div>
+  </div>
+</div>
+<script type="module" src="./src/testpage.ts"></script>
+</body>
+</html>
