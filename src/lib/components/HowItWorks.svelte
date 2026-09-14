@@ -41,7 +41,7 @@
 				<li class="card p-8" use:scrollReveal={{ delay: i * 90 }}>
 					<div class="flex items-start justify-between gap-5">
 						<h3 class="text-lg font-semibold tracking-tight">{s.ten}</h3>
-						<span class="flex-none text-2xl leading-none font-semibold text-brand-light" aria-hidden="true"
+						<span class="flex-none text-3xl leading-none font-semibold text-brand-light" aria-hidden="true"
 							>{i + 1}</span
 						>
 					</div>

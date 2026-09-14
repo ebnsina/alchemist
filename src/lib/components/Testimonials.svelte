@@ -44,7 +44,7 @@
 			<article class="card card-hover p-8" use:scrollReveal={{ delay: i * 90 }}>
 				<div class="flex items-start justify-between gap-5">
 					<h3 class="text-lg font-semibold tracking-tight">{u.ten}</h3>
-					<svg class="tilt flex-none text-brand-light" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={u.d} /></svg>
+					<svg class="tilt flex-none text-brand-light" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={u.d} /></svg>
 				</div>
 				<p class="mt-3.5 text-sm leading-[1.75] text-muted">{u.ben}</p>
 			</article>

@@ -13,7 +13,9 @@
 
 	const VISIBLE = 9;
 	const CENTER = 4;
-	const rows = [...kinds, ...kinds];
+	// Three copies, not two: the window is i..i+VISIBLE, so at the wrap index the
+	// second copy alone runs out of rows and the tail of the list goes blank.
+	const rows = [...kinds, ...kinds, ...kinds];
 
 	let i = $state(0);
 	let animate = $state(true);

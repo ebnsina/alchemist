@@ -22,15 +22,28 @@ let fails = 0, checked = 0;
 
 for (const route of PAGES) {
 	await p.goto('http://localhost:4321' + route, { waitUntil: 'networkidle' });
+	// Scroll-reveal starts elements at opacity 0. Jumping straight to an offset can
+	// outrun the observer, and an unrevealed card samples as bare page instead of
+	// its own surface. The resting state is the final state, so pin it.
+	await p.addStyleTag({ content: '.scroll-fade{opacity:1!important;transform:none!important}' });
 	await p.waitForTimeout(800);
 	const total = await p.evaluate(() => document.body.scrollHeight);
 
 	for (let top = 0; top < total; top += H) {
-		await p.evaluate(y => window.scrollTo(0, y), top);
+		// html has scroll-behavior: smooth, so a plain scrollTo is still animating
+		// when the screenshot lands and every sample reads the wrong row.
+		await p.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), top);
 		await p.waitForTimeout(350);
 
 		const spots = await p.evaluate(({ W, H }) => [...document.querySelectorAll('[class*="text-"], h1, h2, h3, p, li, a, span')]
 			.filter(e => e.textContent.trim() && e.children.length === 0)
+			// Drop anything another element paints over — the fixed header, a
+			// decorative plate — since the pixel there is not this element's ground.
+			.filter(e => {
+				const r = e.getBoundingClientRect();
+				const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+				return hit && (hit === e || e.contains(hit) || hit.contains(e));
+			})
 			.map(e => {
 				const r = e.getBoundingClientRect();
 				// Canvas resolves color-mix() and oklab() the way a regex cannot.
