@@ -62,9 +62,9 @@
 		</nav>
 	</div>
 	<div
-		class="mx-auto flex max-w-6xl flex-wrap gap-x-8 gap-y-2 border-t border-hairline px-4 py-6 text-xs text-muted sm:px-6"
+		class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-2 border-t border-hairline px-4 py-6 text-xs text-muted sm:px-6"
 	>
 		<p>© 2026 Alchemist</p>
-		<p>Files deleted 24 hours after you download them.</p>
+		<p>Made in Bangladesh</p>
 	</div>
 </footer>

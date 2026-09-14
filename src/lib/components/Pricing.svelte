@@ -71,15 +71,15 @@
 		</p>
 	</div>
 
-	<div class="mt-12 grid gap-4 lg:grid-cols-3">
+	<div class="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each tiers as t, i (t.ten)}
 			<article
-				class="card relative flex flex-col p-6 {t.featured ? 'border-emerald/60 bg-card' : ''}"
+				class="card relative flex flex-col px-6 py-8 {t.featured ? 'border-emerald/60 bg-card' : ''}"
 				use:scrollReveal={{ delay: i * 80 }}
 			>
 				{#if t.featured}
 					<p
-						class="absolute -top-3 left-6 rounded-full bg-emerald px-2.5 py-0.5 text-xs font-semibold text-body"
+						class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-emerald px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-body"
 					>
 						Most popular
 					</p>
@@ -87,12 +87,12 @@
 				<h3 class="text-sm font-semibold tracking-wide text-muted uppercase">
 					{t.ten}
 				</h3>
-				<p class="mt-3 flex items-baseline gap-1.5">
+				<p class="mt-4 flex items-baseline gap-1.5">
 					<span class="text-4xl font-bold tracking-tight">{t.price}</span>
 					<span class="text-sm text-muted">{t.pen}</span>
 				</p>
 				<p class="mt-2 text-sm text-muted">{t.den}</p>
-				<ul class="mt-6 flex-1 space-y-2.5">
+				<ul class="mt-7 flex-1 space-y-3">
 					{#each t.rows as row (row)}
 						<li class="flex items-start gap-2.5 text-sm">
 							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="mt-1 flex-none text-emerald-light" aria-hidden="true"><path d="M4.6 12.5 9.4 17.3 19.4 6.9" /></svg>
@@ -100,7 +100,7 @@
 						</li>
 					{/each}
 				</ul>
-				<a href="/#faq" class="mt-6 {t.featured ? 'btn-primary' : 'btn-ghost'}">
+				<a href="/#faq" class="mt-8 {t.featured ? 'btn-primary' : 'btn-ghost'}">
 					{t.cta_en}
 				</a>
 			</article>
