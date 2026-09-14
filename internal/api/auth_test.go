@@ -133,3 +133,21 @@ func TestSessionIgnoredWhenAccountsDisabled(t *testing.T) {
 		t.Fatal("session accepted with no configured origin")
 	}
 }
+
+// Preflight has to allow every method the dashboard actually uses. A missing DELETE
+// fails silently in the browser: the request is simply never sent, and the page sees
+// a network error with no server log to match it.
+func TestPreflightAllowsDashboardMethods(t *testing.T) {
+	req := httptest.NewRequest(http.MethodOptions, "/v1/keys/some-id", nil)
+	req.Header.Set("Origin", "https://app.example")
+	req.Header.Set("Access-Control-Request-Method", "DELETE")
+	rec := httptest.NewRecorder()
+	accountServer().Routes().ServeHTTP(rec, req)
+
+	allowed := rec.Header().Get("Access-Control-Allow-Methods")
+	for _, m := range []string{"GET", "POST", "DELETE"} {
+		if !strings.Contains(allowed, m) {
+			t.Fatalf("Allow-Methods %q is missing %s", allowed, m)
+		}
+	}
+}
