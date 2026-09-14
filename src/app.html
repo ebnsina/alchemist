@@ -43,10 +43,8 @@
 						return;
 					}
 					if (e.target.closest && e.target.closest('[data-toggle-theme]')) {
-						var dark =
-							d.dataset.theme === 'dark' ||
-							(!d.dataset.theme && !matchMedia('(prefers-color-scheme: light)').matches);
-						d.dataset.theme = dark ? 'light' : 'dark';
+						// Dark is the default, so anything that is not explicitly light is dark.
+						d.dataset.theme = d.dataset.theme === 'light' ? 'dark' : 'light';
 						put('alc-theme', d.dataset.theme);
 					}
 				});

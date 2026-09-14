@@ -7,7 +7,7 @@
 @font-face {
 	font-family: 'Google Sans Flex';
 	font-style: normal;
-	font-weight: 400 700;
+	font-weight: 400 600;
 	font-stretch: 100%;
 	font-display: swap;
 	src: url('/fonts/google-sans-flex-latin.woff2') format('woff2');
@@ -24,69 +24,65 @@
 		U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* Warm stone paper, warm near-black ink, one accent. Brass because alchemy is
-   al-kimiya and because alchemist-player already wears it, so the site and the
-   thing it sells read as one object. Light is the primary surface: the product's
-   argument is that less is sent, and a page that spends very little ink makes that
-   argument before a word is read. Every pair below clears WCAG AA. */
+/* Dark is the default and the surface this was designed against; light is an
+   explicit choice from the header, not the system's. Hierarchy is one ink at three
+   opacities rather than three colours, and the brass appears roughly once a screen.
+   Contrast against #08090A, computed not guessed: 0.95 -> 17.96:1, 0.63 -> 7.99:1,
+   0.48 -> 4.98:1. Tertiary sits at 0.48 and not the 0.44 it wants to be, because
+   0.44 measures 4.33:1 and fails AA. */
 :root {
-	--paper: #eeede9;
-	--leaf: #fbfaf7;
-	--sink: #e5e3dd;
-	--ink: #1b1a17;
-	--graphite: #6e6a61;
-	--brass: #8a5a0b;
-	--brass-ink: #fbfaf7;
-	--wash: rgba(138, 90, 11, 0.07);
-	--rule: #dcd9d1;
-	--rule-firm: #c3bfb4;
+	--paper: #08090a;
+	--leaf: #0f1011;
+	--sink: #141516;
+	--ink: rgba(255, 255, 255, 0.95);
+	--graphite: rgba(255, 255, 255, 0.63);
+	--ink-3: rgba(255, 255, 255, 0.48);
+	--rule: rgba(255, 255, 255, 0.07);
+	--rule-firm: rgba(255, 255, 255, 0.11);
+	--brass: #e8a33d;
+	--brass-ink: #08090a;
+	--wash: rgba(232, 163, 61, 0.08);
+	--glow: rgba(232, 163, 61, 0.1);
+	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
-	--step--1: 0.8125rem;
-	--step-0: 0.9375rem;
-	--step-1: 1.0625rem;
-	--step-2: 1.1875rem;
-	--step-3: 1.375rem;
-	--step-4: clamp(1.4rem, 1.22rem + 0.8vw, 1.75rem);
-	--step-5: clamp(1.625rem, 1.34rem + 1.25vw, 2.125rem);
-	--step-6: clamp(2.125rem, 1.5rem + 2.7vw, 3.25rem);
+	--step--1: 0.75rem;
+	--step-0: 0.8125rem;
+	--step-1: 0.9375rem;
+	--step-2: 1.0625rem;
+	--step-3: 1.25rem;
+	--step-4: clamp(1.375rem, 1.24rem + 0.6vw, 1.625rem);
+	--step-5: clamp(1.625rem, 1.4rem + 1vw, 2.125rem);
+	--step-6: clamp(2.125rem, 1.5rem + 2.6vw, 3.5rem);
 
-	--gap: clamp(1.25rem, 0.9rem + 1.5vw, 2rem);
-	--bay: clamp(3rem, 2rem + 5vw, 6rem);
-	--maxw: 1120px;
+	--gap: clamp(1rem, 0.8rem + 1vw, 1.5rem);
+	--bay: clamp(2.75rem, 2rem + 2.8vw, 4.5rem);
+	--maxw: 1100px;
+	--r: 8px;
+	--r-sm: 6px;
 
 	--font: 'Google Sans Flex', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto,
 		'Noto Sans', sans-serif;
 	--mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
-	--ease: cubic-bezier(0.22, 0.8, 0.28, 1);
-	color-scheme: light;
-}
-:root[data-theme='dark'] {
-	--paper: #131311;
-	--leaf: #1c1b18;
-	--sink: #0e0e0c;
-	--ink: #f0eee8;
-	--graphite: #948f84;
-	--brass: #e8a33d;
-	--brass-ink: #1b1206;
-	--wash: rgba(232, 163, 61, 0.1);
-	--rule: #2e2c28;
-	--rule-firm: #433f39;
+	--ease: cubic-bezier(0.25, 0.8, 0.35, 1);
 	color-scheme: dark;
 }
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme='light']) {
-		--paper: #131311;
-		--leaf: #1c1b18;
-		--sink: #0e0e0c;
-		--ink: #f0eee8;
-		--graphite: #948f84;
-		--brass: #e8a33d;
-		--brass-ink: #1b1206;
-		--wash: rgba(232, 163, 61, 0.1);
-		--rule: #2e2c28;
-		--rule-firm: #433f39;
-		color-scheme: dark;
-	}
+
+/* The inversion. Same structure, same opacities read against paper instead of ink. */
+:root[data-theme='light'] {
+	--paper: #fbfbfa;
+	--leaf: #f4f4f2;
+	--sink: #eeeeec;
+	--ink: rgba(16, 17, 18, 0.95);
+	--graphite: rgba(16, 17, 18, 0.66);
+	--ink-3: rgba(16, 17, 18, 0.62);
+	--rule: rgba(16, 17, 18, 0.09);
+	--rule-firm: rgba(16, 17, 18, 0.16);
+	--brass: #8a5a0b;
+	--brass-ink: #fbfbfa;
+	--wash: rgba(138, 90, 11, 0.07);
+	--glow: rgba(138, 90, 11, 0.07);
+	--lift: none;
+	color-scheme: light;
 }
 
 *,
@@ -100,11 +96,16 @@ body {
 	color: var(--ink);
 	font-family: var(--font);
 	font-size: var(--step-1);
-	line-height: 1.65;
+	font-weight: 400;
+	line-height: 1.6;
 	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
+/* Bengali needs a touch more size and leading than latin to stay comfortable, and
+   conjuncts need the room. */
 html[lang='bn'] body {
-	line-height: 1.82;
+	font-size: 1rem;
+	line-height: 1.78;
 }
 
 /* Both languages ship in the HTML and CSS hides one. No flash, works without
@@ -119,31 +120,34 @@ h2,
 h3 {
 	margin: 0;
 	font-weight: 600;
-	letter-spacing: -0.025em;
-	line-height: 1.1;
 	text-wrap: balance;
+}
+h1 {
+	font-size: var(--step-6);
+	letter-spacing: -0.032em;
+	line-height: 1.06;
+}
+h2 {
+	font-size: var(--step-5);
+	letter-spacing: -0.025em;
+	line-height: 1.14;
+}
+h3 {
+	font-size: var(--step-2);
+	font-weight: 500;
+	letter-spacing: -0.014em;
+	line-height: 1.35;
 }
 html[lang='bn'] h1,
 html[lang='bn'] h2,
 html[lang='bn'] h3 {
 	letter-spacing: 0;
-	line-height: 1.4;
-}
-h1 {
-	font-size: var(--step-6);
-}
-h2 {
-	font-size: var(--step-5);
-}
-h3 {
-	font-size: var(--step-2);
-	letter-spacing: -0.012em;
-	line-height: 1.3;
+	line-height: 1.38;
 }
 p {
 	margin: 0;
 	text-wrap: pretty;
-	max-width: 68ch;
+	max-width: 70ch;
 }
 html[lang='bn'] p {
 	max-width: 58ch;
@@ -153,45 +157,38 @@ a {
 }
 :focus-visible {
 	outline: 2px solid var(--brass);
-	outline-offset: 3px;
-	border-radius: 3px;
+	outline-offset: 2px;
+	border-radius: 4px;
 }
 img,
 svg {
 	max-width: 100%;
 }
-hr {
-	border: 0;
-	border-top: 1px solid var(--rule);
-	margin: 0;
-}
 
-/* ---- rhythm ---- */
 .shell {
 	width: 100%;
 	max-width: var(--maxw);
 	margin-inline: auto;
-	padding-inline: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
+	padding-inline: clamp(1rem, 0.5rem + 2vw, 2rem);
 }
 .bay {
 	padding-block: var(--bay);
 }
+/* Dividers you sense before you see: one hairline at 7% between sections. */
 .bay + .bay {
 	border-top: 1px solid var(--rule);
 }
 .flow > * + * {
-	margin-top: 1.1rem;
+	margin-top: 0.9rem;
 }
 .flow > * + h2,
 .flow > * + h3 {
-	margin-top: 2.2rem;
+	margin-top: 1.9rem;
 }
 
-/* Prose left, measurement right — the page is laid out the way the product is:
-   the argument in words on one side, the numbers that back it on the other. */
 .split {
 	display: grid;
-	gap: var(--gap) clamp(2rem, 5vw, 4.5rem);
+	gap: var(--gap) clamp(2rem, 4.5vw, 4rem);
 	align-items: start;
 }
 /* Grid items default to min-width:auto, which lets a wide <pre> push the column
@@ -211,44 +208,54 @@ hr {
 .lede {
 	font-size: var(--step-3);
 	line-height: 1.45;
-	letter-spacing: -0.012em;
-	color: var(--ink);
-	max-width: 46ch;
+	letter-spacing: -0.014em;
+	max-width: 48ch;
 }
 html[lang='bn'] .lede {
+	font-size: var(--step-2);
 	line-height: 1.65;
 	letter-spacing: 0;
-	max-width: 38ch;
+	max-width: 40ch;
 }
 .quiet {
 	color: var(--graphite);
 }
 .small {
 	font-size: var(--step-0);
+	line-height: 1.62;
 	color: var(--graphite);
 }
+html[lang='bn'] .small {
+	font-size: var(--step-1);
+}
 .fine {
-	font-size: var(--step--1);
-	color: var(--graphite);
-	max-width: 62ch;
+	font-size: var(--step-0);
+	line-height: 1.62;
+	color: var(--ink-3);
+	max-width: 64ch;
+}
+html[lang='bn'] .fine {
+	font-size: var(--step-1);
 }
 
 code,
 .mono {
 	font-family: var(--mono);
-	font-size: 0.88em;
+	font-size: 0.9em;
 	letter-spacing: -0.01em;
 }
 pre {
 	margin: 0;
-	padding: 1.1rem 1.2rem;
-	background: var(--sink);
+	padding: 1rem 1.1rem;
+	background: var(--leaf);
 	border: 1px solid var(--rule);
-	border-radius: 4px;
+	border-radius: var(--r);
+	box-shadow: var(--lift);
 	overflow-x: auto;
 	font-family: var(--mono);
 	font-size: var(--step--1);
-	line-height: 1.7;
+	line-height: 1.75;
+	color: var(--graphite);
 }
 
 /* ---- controls ---- */
@@ -256,70 +263,81 @@ pre {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.5rem;
-	padding: 0.68rem 1.15rem;
+	padding: 0.52rem 0.95rem;
 	border: 1px solid var(--rule-firm);
-	border-radius: 3px;
-	background: transparent;
+	border-radius: var(--r-sm);
+	/* A filled surface, not only a hairline: a 1px low-opacity border cannot reach
+	   the 3:1 a control boundary wants, so the fill carries identification too. */
+	background: var(--sink);
+	box-shadow: var(--lift);
 	color: var(--ink);
 	font: inherit;
 	font-size: var(--step-0);
-	font-weight: 600;
+	font-weight: 500;
 	text-decoration: none;
 	cursor: pointer;
 	transition:
-		background 160ms var(--ease),
-		border-color 160ms var(--ease);
+		background 140ms var(--ease),
+		border-color 140ms var(--ease),
+		color 140ms var(--ease);
+}
+html[lang='bn'] .btn {
+	font-size: var(--step-1);
 }
 .btn:hover {
-	background: var(--leaf);
-	border-color: var(--ink);
+	border-color: rgba(255, 255, 255, 0.2);
+	background: #1a1b1c;
+}
+:root[data-theme='light'] .btn:hover {
+	border-color: rgba(16, 17, 18, 0.28);
+	background: #e6e6e3;
 }
 .btn--solid {
 	background: var(--ink);
-	border-color: var(--ink);
+	border-color: transparent;
 	color: var(--paper);
+	box-shadow: none;
 }
 .btn--solid:hover {
-	background: var(--brass);
-	border-color: var(--brass);
-	color: var(--brass-ink);
+	background: #fff;
+	border-color: transparent;
+}
+:root[data-theme='light'] .btn--solid:hover {
+	background: #000;
 }
 .row {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 0.6rem;
+	gap: 0.5rem;
 }
 
-/* An inline link whose underline is the hover, so nothing moves on the page. */
 .tlink {
 	color: var(--ink);
 	text-decoration: none;
-	background-image: linear-gradient(var(--brass), var(--brass));
-	background-repeat: no-repeat;
-	background-position: 0 100%;
-	background-size: 100% 1px;
-	padding-bottom: 1px;
-	transition: background-size 180ms var(--ease);
+	box-shadow: inset 0 -1px 0 var(--rule-firm);
+	transition:
+		box-shadow 140ms var(--ease),
+		color 140ms var(--ease);
 }
 .tlink:hover {
-	background-size: 100% 2px;
 	color: var(--brass);
+	box-shadow: inset 0 -1px 0 var(--brass);
 }
 
-/* ---- panels ---- */
 .panel {
 	background: var(--leaf);
 	border: 1px solid var(--rule);
-	border-radius: 6px;
-	padding: clamp(1.1rem, 0.9rem + 0.6vw, 1.5rem);
+	border-radius: var(--r);
+	box-shadow: var(--lift);
+	padding: clamp(1rem, 0.85rem + 0.5vw, 1.35rem);
 }
 a.panel {
 	display: block;
 	text-decoration: none;
-	transition: border-color 170ms var(--ease);
+	transition: border-color 150ms var(--ease);
 }
 a.panel:hover {
-	border-color: var(--ink);
+	border-color: var(--rule-firm);
 }
 
 /* ---- tables ---- */
@@ -328,29 +346,43 @@ table {
 	border-collapse: collapse;
 	font-size: var(--step-0);
 }
+html[lang='bn'] table {
+	font-size: var(--step-1);
+}
 caption {
 	text-align: left;
-	color: var(--graphite);
+	color: var(--ink-3);
 	font-size: var(--step--1);
-	padding-bottom: 0.6rem;
+	letter-spacing: 0.04em;
+	padding-bottom: 0.75rem;
+}
+html[lang='bn'] caption {
+	letter-spacing: 0;
+	font-size: var(--step-0);
 }
 th,
 td {
 	text-align: left;
-	padding: 0.62rem 0.8rem 0.62rem 0;
+	padding: 0.55rem 0.8rem 0.55rem 0;
 	border-bottom: 1px solid var(--rule);
 	vertical-align: baseline;
+	font-weight: 400;
 }
 thead th {
-	font-weight: 500;
-	color: var(--graphite);
+	color: var(--ink-3);
 	font-size: var(--step--1);
-	border-bottom-color: var(--rule-firm);
+	letter-spacing: 0.04em;
+	padding-bottom: 0.5rem;
+}
+html[lang='bn'] thead th {
+	letter-spacing: 0;
+	font-size: var(--step-0);
 }
 .figure {
 	font-family: var(--mono);
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
+	color: var(--ink);
 }
 .scroll-x {
 	overflow-x: auto;
@@ -358,29 +390,27 @@ thead th {
 
 /* ---- indicative values ----------------------------------------------------
    No price has been set. These read as real numbers so the page is a finished
-   design, and each one is captioned "Indicative" in the accent, on a brass wash,
-   against a brass edge — deliberate annotation rather than an error state. */
+   design, and each is captioned "Indicative" in the accent against a brass edge —
+   deliberate annotation, not an error state. */
 .indic {
 	position: relative;
-	padding: 0.75rem 0 0.75rem 0.95rem;
+	padding: 0.7rem 0.9rem 0.75rem;
 	background: var(--wash);
-	border-radius: 0 4px 4px 0;
-}
-.indic::before {
-	content: '';
-	position: absolute;
-	inset-block: 0;
-	inset-inline-start: 0;
-	width: 2px;
-	background: var(--brass);
-	border-radius: 2px;
+	border: 1px solid var(--rule);
+	border-inline-start: 2px solid var(--brass);
+	border-radius: 0 var(--r-sm) var(--r-sm) 0;
 }
 .indic__tag {
 	display: block;
 	font-size: var(--step--1);
-	font-weight: 600;
+	font-weight: 500;
+	letter-spacing: 0.04em;
 	color: var(--brass);
-	margin-bottom: 0.1rem;
+	margin-bottom: 0.3rem;
+}
+html[lang='bn'] .indic__tag {
+	letter-spacing: 0;
+	font-size: var(--step-0);
 }
 .indic__value {
 	font-size: var(--step-4);
@@ -392,10 +422,12 @@ thead th {
 	display: block;
 	font-size: var(--step-0);
 	color: var(--graphite);
-	margin-top: 0.15rem;
+	margin-top: 0.2rem;
+}
+html[lang='bn'] .indic__unit {
+	font-size: var(--step-1);
 }
 
-/* The only motion left is a response to something the reader did. */
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,
@@ -403,9 +435,6 @@ thead th {
 		transition: none !important;
 		animation: none !important;
 		scroll-behavior: auto !important;
-	}
-	.btn:hover {
-		transform: none;
 	}
 }
 
@@ -416,8 +445,8 @@ thead th {
 	z-index: 20;
 	background: var(--ink);
 	color: var(--paper);
-	padding: 0.6rem 1rem;
-	border-radius: 0 0 4px 0;
+	padding: 0.55rem 1rem;
+	border-radius: 0 0 var(--r-sm) 0;
 }
 .skip:focus {
 	left: 0;

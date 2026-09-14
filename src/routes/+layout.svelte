@@ -102,21 +102,21 @@
 		position: sticky;
 		top: 0;
 		z-index: 10;
-		background: color-mix(in srgb, var(--paper) 92%, transparent);
-		backdrop-filter: blur(8px);
+		background: color-mix(in srgb, var(--paper) 80%, transparent);
+		backdrop-filter: blur(12px) saturate(160%);
 		border-bottom: 1px solid var(--rule);
 	}
 	.bar {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
-		min-height: 62px;
+		gap: 0.9rem;
+		min-height: 52px;
 		flex-wrap: wrap;
 	}
 	.brand {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.55rem;
+		gap: 0.5rem;
 		font-weight: 600;
 		font-size: var(--step-2);
 		letter-spacing: -0.03em;
@@ -135,101 +135,87 @@
 		flex-wrap: wrap;
 		margin: 0;
 		padding: 0;
-		gap: 0 1.35rem;
+		gap: 0 1.15rem;
 	}
 	nav a {
-		position: relative;
 		display: block;
-		padding: 0.5rem 0;
+		padding: 0.45rem 0;
 		color: var(--graphite);
 		text-decoration: none;
 		font-size: var(--step-0);
+		transition: color 140ms var(--ease);
 	}
-	nav a::after {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 0.28rem;
-		height: 1px;
-		background: currentColor;
-		transform: scaleX(0);
-		transform-origin: left;
-		transition: transform 170ms var(--ease);
+	html[lang='bn'] nav a {
+		font-size: var(--step-1);
 	}
 	nav a:hover {
 		color: var(--ink);
 	}
-	nav a:hover::after {
-		transform: scaleX(1);
-	}
 	nav a[aria-current='page'] {
 		color: var(--ink);
-	}
-	nav a[aria-current='page']::after {
-		background: var(--brass);
-		transform: scaleX(1);
 	}
 	.tools {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.4rem;
 	}
 	.seg {
 		display: inline-flex;
-		border: 1px solid var(--rule-firm);
-		border-radius: 3px;
-		overflow: hidden;
+		border: 1px solid var(--rule);
+		border-radius: var(--r-sm);
+		background: var(--leaf);
+		padding: 2px;
+		gap: 2px;
 	}
 	.seg button {
 		border: 0;
+		border-radius: 4px;
 		background: transparent;
-		color: var(--graphite);
+		color: var(--ink-3);
 		font: inherit;
 		font-size: var(--step--1);
-		padding: 0.3rem 0.6rem;
+		font-weight: 500;
+		padding: 0.22rem 0.5rem;
 		cursor: pointer;
-		transition: color 150ms var(--ease);
+		transition:
+			color 140ms var(--ease),
+			background 140ms var(--ease);
+	}
+	html[lang='bn'] .seg button {
+		font-size: var(--step-0);
 	}
 	.seg button:hover {
 		color: var(--ink);
 	}
 	.seg button[aria-pressed='true'] {
-		background: var(--ink);
-		color: var(--paper);
+		background: var(--sink);
+		color: var(--ink);
+		box-shadow: var(--lift);
 	}
 	.iconbtn {
 		display: inline-grid;
 		place-items: center;
-		width: 31px;
-		height: 31px;
-		border: 1px solid var(--rule-firm);
-		border-radius: 3px;
-		background: transparent;
+		width: 29px;
+		height: 29px;
+		border: 1px solid var(--rule);
+		border-radius: var(--r-sm);
+		background: var(--leaf);
 		color: var(--graphite);
 		cursor: pointer;
-		transition: color 150ms var(--ease);
+		transition: color 140ms var(--ease);
 	}
 	.iconbtn:hover {
 		color: var(--ink);
 	}
-	/* The button shows the theme you are in, so the icon follows the theme. */
-	.i-moon {
+	/* The button shows the theme you are in. Dark is the default, so the moon is. */
+	.i-sun {
 		display: none;
 	}
-	:global(html[data-theme='dark']) .i-sun {
-		display: none;
-	}
-	:global(html[data-theme='dark']) .i-moon {
+	:global(html[data-theme='light']) .i-sun {
 		display: block;
 	}
-	@media (prefers-color-scheme: dark) {
-		:global(html:not([data-theme='light'])) .i-sun {
-			display: none;
-		}
-		:global(html:not([data-theme='light'])) .i-moon {
-			display: block;
-		}
+	:global(html[data-theme='light']) .i-moon {
+		display: none;
 	}
 	@media (max-width: 820px) {
 		nav {
@@ -239,8 +225,8 @@
 			border-top: 1px solid var(--rule);
 		}
 		nav ul {
-			gap: 0 1.1rem;
-			padding-block: 0.15rem 0.4rem;
+			gap: 0 1rem;
+			padding-block: 0.1rem 0.35rem;
 		}
 		.tools {
 			margin-inline-start: auto;
@@ -248,7 +234,7 @@
 	}
 	footer {
 		border-top: 1px solid var(--rule);
-		padding-block: 3rem 3.5rem;
+		padding-block: 2.5rem 3rem;
 		margin-top: var(--bay);
 	}
 	.fgrid {
@@ -258,24 +244,32 @@
 		justify-content: space-between;
 	}
 	.fname {
-		font-weight: 600;
-		margin-bottom: 0.35rem;
+		font-weight: 500;
+		margin-bottom: 0.3rem;
+	}
+	.fgrid .small {
+		max-width: 44ch;
 	}
 	.flinks {
 		flex-direction: column;
-		gap: 0.35rem;
+		gap: 0.3rem;
 	}
 	.flinks a {
-		color: var(--graphite);
+		color: var(--ink-3);
 		text-decoration: none;
 		font-size: var(--step-0);
+		transition: color 140ms var(--ease);
+	}
+	html[lang='bn'] .flinks a {
+		font-size: var(--step-1);
 	}
 	.flinks a:hover {
 		color: var(--ink);
 	}
 	.disclaim {
-		margin-top: 2.5rem;
-		padding-top: 1.2rem;
+		margin-top: 2.2rem;
+		padding-top: 1.1rem;
 		border-top: 1px solid var(--rule);
+		max-width: 74ch;
 	}
 </style>

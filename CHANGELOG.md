@@ -10,10 +10,17 @@
   both languages wherever a figure appears, plus a worked monthly example.
 - Dark and light themes, remembered per visitor.
 - Open Graph and Twitter metadata on every route, a sitemap, `robots.txt` and a 404.
-- `npm run verify`: overflow, language-swap, reduced-motion, toggle-persistence and
-  page-weight checks.
+- `npm run verify`: contrast, overflow, language-swap, reduced-motion,
+  toggle-persistence and page-weight checks. Contrast is recomputed for every visible
+  text node against its real composited background, in both themes.
 
 ### Changed
+- Rebuilt the visual system dark-first: `#08090A` ground, one ink at three opacities
+  instead of separate text colours, hairline borders at 7% and 11%, 8px radii, large
+  negatively-tracked headings over 15px body, and a single soft radial gradient behind
+  the opening of the home page. Light is now an explicit choice rather than the
+  system's preference.
+- Tertiary text is 0.48 opacity, not 0.44, because 0.44 fails WCAG AA on this ground.
 - Rewrote every page outside `/docs/` in plain language. No encoding or delivery
   vocabulary reaches a reader who is not a developer.
 - New visual system: warm stone paper with warm near-black ink and a single brass

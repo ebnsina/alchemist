@@ -24,9 +24,11 @@ eat the viewer's data allowance, and the course they sell cannot simply be passe
 around. `/docs/` is the one page where precise terms are correct, because developers
 read it.
 
-**Almost no motion.** A hover state on links and buttons, and the focus ring. No
-entrance animations, no scroll-triggered anything, no libraries. `prefers-reduced-motion`
-removes what little there is, and `npm run verify` asserts that it actually does.
+**Almost no motion.** A hover state on links and buttons, and the focus ring, all at
+140ms. No entrance animations, no scroll-triggered anything, no libraries. One soft
+radial gradient sits behind the opening of the home page; it is two declarations of
+CSS and costs about 120 bytes. `prefers-reduced-motion` removes what motion there is,
+and `npm run verify` asserts that it actually does.
 
 **No client framework ships.** `csr = false` in `src/routes/+layout.ts`. The language
 and theme toggles are about twenty lines of delegated DOM in `src/app.html`. A first
@@ -46,9 +48,22 @@ excludes Bengali codepoints so the browser never tries a latin face for them and
 through to the system's Noto Sans Bengali, which shapes যুক্তাক্ষর correctly. Same
 reasoning as `alchemist-player`'s `src/styles.ts`.
 
-**Warm stone paper, warm near-black ink, one accent.** Light is the primary surface.
-Brass because alchemy is al-kimiya and because `alchemist-player` already wears it.
-Every text pair clears WCAG AA; the numbers are in the comment at the top of `app.css`.
+**Dark first.** `#08090A` ground, `#0F1011` raised, `#141516` elevated. Light is an
+explicit choice from the header, not the system's — there is no
+`prefers-color-scheme` block, which is one less thing to keep in sync and a few bytes
+less CSS.
+
+**Hierarchy is one ink at three opacities, not three colours.** Primary 0.95,
+secondary 0.63, tertiary 0.48. Tertiary sits at 0.48 rather than the 0.44 the look
+wants because 0.44 measures 4.33:1 against `#08090A` and fails AA; 0.48 is 4.98:1.
+Borders are 0.07 and 0.11 — dividers you sense before you see. The brass appears
+about once a screen: a link, the focus ring, the default row of the data table.
+`npm run verify` recomputes every visible text/background pair in both themes and
+fails the build under AA, so this cannot drift.
+
+**Type carries it.** Headings are large and negatively tracked (h1 -0.032em at
+34–56px, line-height 1.06); body is small at 15px/1.6; weights are 400, 500 and 600
+only. Bangla gets 16px and more leading, because Bengali needs the room.
 
 ## Rules this site holds itself to
 
@@ -65,11 +80,17 @@ Every text pair clears WCAG AA; the numbers are in the comment at the top of `ap
 
 ## Verification
 
-`npm run verify` serves `build/` and checks what can silently break: no horizontal
-scroll at 360px across every route in both languages and themes, no language leaking
-through the CSS swap, `prefers-reduced-motion` actually removing motion, the toggles
-working and surviving a reload, no module script sneaking back in. It prints the page
-weight at the end.
+`npm run verify` serves `build/` and checks what can silently break: WCAG AA contrast
+for every visible text node against its actual composited background in both themes,
+no horizontal scroll at 360px across every route in both languages and themes, no
+language leaking through the CSS swap, `prefers-reduced-motion` actually removing
+motion, the toggles working and surviving a reload, and no module script sneaking back
+in. It prints the page weight at the end.
+
+The contrast check composites translucent ancestors down to the first opaque one, and
+handles `color(srgb …)` as well as `rgb()` — `color-mix()` computes to the former with
+0–1 channels, and reading those as 0–255 turns a pale translucent header into
+near-black and invents failures that are not there.
 
 ## Deploying
 

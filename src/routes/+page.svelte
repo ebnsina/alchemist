@@ -259,22 +259,35 @@
 </section>
 
 <style>
+	/* One soft light source behind the opening, as a gradient rather than an image —
+	   two lines of CSS, no bytes on the wire beyond them. */
 	.open {
-		padding-block: clamp(2.5rem, 1.5rem + 4vw, 4.5rem) 0;
+		position: relative;
+		padding-block: clamp(3rem, 2rem + 4vw, 6rem) clamp(2.5rem, 2rem + 2vw, 4rem);
+	}
+	.open::before {
+		content: '';
+		position: absolute;
+		inset: -30% 0 auto -10%;
+		height: 130%;
+		background: radial-gradient(46rem 26rem at 18% 12%, var(--glow), transparent 68%);
+		pointer-events: none;
+		z-index: -1;
 	}
 	.open h1 {
-		max-width: 20ch;
-		margin-bottom: 1.6rem;
+		max-width: 19ch;
+		margin-bottom: 1.3rem;
 	}
 	.lead {
-		max-width: 60ch;
+		max-width: 58ch;
 	}
 	.lead .row {
-		margin-top: 1.8rem;
+		margin-top: 1.6rem;
 	}
+
 	.measure {
 		border-top: 1px solid var(--rule-firm);
-		padding-top: 1.2rem;
+		padding-top: 1rem;
 	}
 	.ta-r,
 	.measure td {
@@ -284,14 +297,18 @@
 	.hi th,
 	.hi td {
 		color: var(--ink);
-		font-weight: 600;
+		font-weight: 500;
+	}
+	.hi td {
+		color: var(--brass);
 	}
 	.measure .fine {
-		margin-top: 1rem;
+		margin-top: 0.9rem;
 	}
+
 	.wide {
 		max-width: 20ch;
-		margin-bottom: 2.2rem;
+		margin-bottom: 1.8rem;
 	}
 	.steps {
 		list-style: none;
@@ -299,12 +316,12 @@
 		padding: 0;
 		margin: 0;
 		display: grid;
-		gap: 1.8rem clamp(1.5rem, 4vw, 3rem);
-		grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+		gap: 1.5rem clamp(1.25rem, 3vw, 2.5rem);
+		grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
 	}
 	.steps li {
 		counter-increment: s;
-		padding-top: 0.9rem;
+		padding-top: 0.75rem;
 		border-top: 1px solid var(--rule-firm);
 	}
 	.steps li::before {
@@ -312,16 +329,16 @@
 		display: block;
 		font-family: var(--mono);
 		font-size: var(--step--1);
-		color: var(--graphite);
-		margin-bottom: 0.6rem;
+		color: var(--ink-3);
+		margin-bottom: 0.5rem;
 	}
 	.steps h3 + p {
-		margin-top: 0.4rem;
+		margin-top: 0.35rem;
 	}
 	.closing h2 {
 		max-width: 22ch;
 	}
 	.closing .row {
-		margin-top: 1.6rem;
+		margin-top: 1.4rem;
 	}
 </style>
