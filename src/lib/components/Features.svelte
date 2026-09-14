@@ -52,7 +52,7 @@
 		<p class="text-xs tracking-widest text-emerald-light uppercase">
 			What you get
 		</p>
-		<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.32]">
+		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
 			Video made simple.
 			<span class="gradient-text">Really simple.</span>
 		</h2>
@@ -62,7 +62,7 @@
 		{#each features as f, i (f.ten)}
 			<article class="card card-hover p-8" use:scrollReveal={{ delay: (i % 3) * 80 }}>
 				<div class="flex items-start justify-between gap-5">
-					<h3 class="text-lg font-bold tracking-tight">{f.ten}</h3>
+					<h3 class="text-lg font-semibold tracking-tight">{f.ten}</h3>
 					<svg class="tilt flex-none text-emerald-light" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={f.d} /></svg>
 				</div>
 				<p class="mt-3.5 text-sm leading-[1.75] text-muted">{f.ben}</p>

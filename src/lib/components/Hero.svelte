@@ -17,7 +17,7 @@
 			Encrypted the whole way, and deleted after 24 hours
 		</p>
 
-		<h1 class="mt-7 text-4xl font-bold tracking-tight sm:text-5xl leading-[1.32]">
+		<h1 class="mt-7 text-4xl font-semibold tracking-tight sm:text-5xl leading-[1.32]">
 			Convert any video,
 			<span class="gradient-text block"
 				>into something magical.</span

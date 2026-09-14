@@ -36,7 +36,7 @@
 	<div
 		class="relative z-10 mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:px-6"
 	>
-		<a href="/" class="flex flex-none items-center gap-2 text-lg font-bold tracking-tight">
+		<a href="/" class="flex flex-none items-center gap-2 text-lg font-semibold tracking-tight">
 			<Logo size={26} />
 			Alchemist
 		</a>

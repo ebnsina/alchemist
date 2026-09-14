@@ -30,7 +30,7 @@
 			<p class="text-xs tracking-widest text-emerald-light uppercase">
 				How it works
 			</p>
-			<h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl leading-[1.32]">
+			<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
 				Three easy steps.
 				<span class="gradient-text">That's it.</span>
 			</h2>
@@ -40,8 +40,8 @@
 			{#each steps as s, i (s.ten)}
 				<li class="card p-8" use:scrollReveal={{ delay: i * 90 }}>
 					<div class="flex items-start justify-between gap-5">
-						<h3 class="text-lg font-bold tracking-tight">{s.ten}</h3>
-						<span class="flex-none text-2xl leading-none font-bold text-emerald-light" aria-hidden="true"
+						<h3 class="text-lg font-semibold tracking-tight">{s.ten}</h3>
+						<span class="flex-none text-2xl leading-none font-semibold text-emerald-light" aria-hidden="true"
 							>{i + 1}</span
 						>
 					</div>

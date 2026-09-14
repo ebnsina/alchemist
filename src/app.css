@@ -28,13 +28,11 @@
 	--color-hairline: rgba(255, 255, 255, 0.08);
 	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-		/* One family throughout. Miriam Libre ships 400 and 700 only — no variable axis
-	   and nothing above bold — so headings are 700; asking for 800 would have the
-	   browser synthesise it, which smears the stems. */
-	--font-sans:
-		'Miriam Libre', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-	--font-heading:
-		var(--font-sans);
+		/* Oddval headings over Poppins body. The free Oddval on cdnfonts ships exactly
+	   one weight — SemiBold 600 — so every heading is 600; asking for 700 makes the
+	   browser synthesise bold and smear the stems. */
+	--font-sans: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-heading: 'Oddval', var(--font-sans);
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
 }
 
@@ -77,8 +75,8 @@
 	   face never even downloaded. */
 	:is(h1, h2, h3, h4) {
 		font-family: var(--font-heading);
-		/* 700 is the family's heaviest real weight. */
-		font-weight: 700;
+		/* 600 is the only weight Oddval ships. */
+		font-weight: 600;
 		letter-spacing: -0.02em;
 		/* Measured, not chosen: Miriam Libre's ascenders and descenders are tall for
 		   its em, and anything under 1.32 clipped headings on this page. Vertical
@@ -318,7 +316,7 @@ details[open] > summary .chevron {
 .shell :is(h1, h2, h3) {
 	margin: 0;
 	font-family: var(--font-heading);
-	font-weight: 700;
+	font-weight: 600;
 	letter-spacing: -0.02em;
 	line-height: 1.18;
 	padding-bottom: 0.08em;
@@ -452,7 +450,7 @@ details[open] > summary .chevron {
 .price {
 	margin: 0.7rem 0 0.5rem;
 	font-size: var(--step-4);
-	font-weight: 700;
+	font-weight: 600;
 	letter-spacing: -0.03em;
 	line-height: 1.15;
 }
