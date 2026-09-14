@@ -24,6 +24,7 @@ type Config struct {
 	PlaybackKeys   []string
 	WorkDir        string
 	KEK            string
+	AdminKey       string
 	FetchAllowlist []string
 	EncodeWorkers  int
 }
@@ -53,6 +54,14 @@ func Load() (*Config, error) {
 	// "kid:secret,kid:secret" -- the first signs, all are accepted, so a key can be
 	// rolled out to every edge before it starts being used.
 	c.PlaybackKeys = strings.Split(get("ALCHEMIST_PLAYBACK_KEYS"), ",")
+
+	// Optional. When unset the admin surface returns 404 rather than existing
+	// unprotected, so forgetting to configure it cannot expose tenant creation.
+	c.AdminKey = os.Getenv("ALCHEMIST_ADMIN_KEY")
+	if c.AdminKey != "" && len(c.AdminKey) < minSecretBytes {
+		return nil, fmt.Errorf("ALCHEMIST_ADMIN_KEY must be at least %d bytes, got %d",
+			minSecretBytes, len(c.AdminKey))
+	}
 
 	// Optional, and only for local harnesses: exact "ip:port" pairs that bypass the
 	// SSRF address rules. Never set this in production.

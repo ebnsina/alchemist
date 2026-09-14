@@ -39,6 +39,17 @@ Prose still needs judgement. After changing behaviour, check:
 
 `docs/` and `data/` are gitignored — they are working references, not published.
 
+## Consumers talk to the API only
+
+`~/Sites/academy` and any other product integrate through the public API with an API
+key. No shared database, no direct object-storage reads, no internal endpoints. If
+something a consumer needs is not reachable through `api/openapi.yaml`, the gap is in
+the API and gets fixed there.
+
+This is what surfaced the deduplication bug: from the outside the API reported an
+asset `ready` while every playback URL returned 404. A consumer with database access
+would have seen rows and assumed it worked.
+
 ## Related repositories
 
 | Repo | What |
@@ -91,6 +102,17 @@ These were established by measurement and are expensive to rediscover.
 - **The original is deleted once the mezzanine is stored**, unless the tenant pays to
   retain it. Safe only because every rendition, including one generated on demand years
   later, is built from the mezzanine and never the original.
+- **Per-job working directories must be keyed by rung, not just by asset.** Deferred
+  rungs for one asset are queued together and run concurrently; a shared directory
+  means two jobs overwriting each other's mezzanine and chunks, and one's deferred
+  cleanup deleting the other's working files. It surfaces as unrelated-looking
+  stitch/encode/probe failures that pass on retry.
+- **The packager hoists width/height onto the AdaptationSet when there is exactly one
+  Representation.** Parsing an MPD for per-rendition height finds nothing in that
+  case, which silently drops deferred rungs from DASH.
+- **A deduplicated asset owns no media.** Playback resolves through
+  `deduplicated_from` to the canonical asset's storage prefix; copying the objects
+  instead would make deduplication pointless.
 - **JIT renditions must reuse the asset's existing content key and its stored
   complexity.** A fresh key produces a rung nothing can decrypt (and it fails looking
   like a corrupt file, not a key mismatch); skipping complexity leaves one asset with

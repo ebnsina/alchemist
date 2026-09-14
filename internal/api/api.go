@@ -18,6 +18,7 @@ import (
 	"github.com/ebnsina/alchemist/internal/platform/db"
 	"github.com/ebnsina/alchemist/internal/platform/httpx"
 	"github.com/ebnsina/alchemist/internal/platform/keys"
+	"github.com/ebnsina/alchemist/internal/platform/metrics"
 	"github.com/ebnsina/alchemist/internal/platform/storage"
 )
 
@@ -27,10 +28,13 @@ type Server struct {
 	river    *river.Client[pgx.Tx]
 	delivery *delivery.Module
 	keys     *keys.Wrapper
+	adminKey string
+	metrics  *metrics.Registry
 }
 
-func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper) *Server {
-	return &Server{db: database, store: store, river: rc, delivery: d, keys: kw}
+func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry) *Server {
+	return &Server{db: database, store: store, river: rc, delivery: d, keys: kw,
+		adminKey: adminKey, metrics: m}
 }
 
 type ctxKey string
@@ -43,6 +47,12 @@ func (s *Server) Routes() http.Handler {
 
 	r.Get("/healthz", s.health)
 
+	// Scrape endpoint. Not behind the customer API key: it carries no tenant data,
+	// and a scraper has no key. Bind it to an internal interface in production.
+	if s.metrics != nil {
+		r.Method("GET", "/metrics", s.metrics.Handler())
+	}
+
 	// Playback is public by signature, not by API key: a viewer has no key.
 	// Delivery owns the whole playback surface. Mounting it as a unit is what lets
 	// a standalone origin service mount exactly this and nothing else.
@@ -51,6 +61,16 @@ func (s *Server) Routes() http.Handler {
 	// Viewers post telemetry, authorized by the playback signature, not an API key.
 	r.Post("/playback/{tenant}/{asset}/beacon", s.postBeacon)
 	r.Options("/playback/{tenant}/{asset}/beacon", s.postBeacon)
+
+	// Operator surface, behind a separate credential so a leaked customer key cannot
+	// mint tenants or more keys.
+	r.Route("/admin", func(r chi.Router) {
+		r.Use(s.adminOnly)
+		r.Post("/tenants", s.createTenant)
+		r.Get("/tenants", s.listTenants)
+		r.Post("/tenants/{id}/keys", s.issueKey)
+		r.Delete("/keys/{keyID}", s.revokeKey)
+	})
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(s.authenticate)

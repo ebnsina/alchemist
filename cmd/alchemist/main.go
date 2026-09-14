@@ -21,6 +21,7 @@ import (
 	"github.com/ebnsina/alchemist/internal/platform/db"
 	"github.com/ebnsina/alchemist/internal/platform/fetch"
 	"github.com/ebnsina/alchemist/internal/platform/keys"
+	"github.com/ebnsina/alchemist/internal/platform/metrics"
 	"github.com/ebnsina/alchemist/internal/platform/signing"
 	"github.com/ebnsina/alchemist/internal/platform/storage"
 )
@@ -69,9 +70,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	reg := metrics.New()
+
 	workers := river.NewWorkers()
 	transcoder := &pipeline.TranscodeWorker{
-		DB: database, Store: store, Keys: keyWrapper, WorkDir: cfg.WorkDir,
+		DB: database, Store: store, Keys: keyWrapper, Metrics: reg, WorkDir: cfg.WorkDir,
 	}
 	river.AddWorker(workers, transcoder)
 	river.AddWorker(workers, &pipeline.WebhookWorker{DB: database})
@@ -80,6 +83,7 @@ func main() {
 	reconciler := &pipeline.ReconcileWorker{DB: database}
 	river.AddWorker(workers, reconciler)
 	river.AddWorker(workers, &pipeline.JITWorker{TranscodeWorker: transcoder})
+	river.AddWorker(workers, &pipeline.SweepWorker{DB: database, Store: store})
 
 	riverClient, err := river.NewClient(riverpgxv5.New(database.Pool()), &river.Config{
 		Queues: map[string]river.QueueConfig{
@@ -107,11 +111,12 @@ func main() {
 		adapters.ObjectStore{Store: store},
 		adapters.ContentKeys{DB: database, Wrapper: keyWrapper},
 		signer,
-	).WithObserver(adapters.LazyRenditions{DB: database, River: riverClient})
+	).WithObserver(adapters.LazyRenditions{DB: database, River: riverClient}).
+		WithResolver(adapters.DedupResolver{DB: database})
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           api.New(database, store, riverClient, deliveryModule, keyWrapper).Routes(),
+		Handler:           api.New(database, store, riverClient, deliveryModule, keyWrapper, cfg.AdminKey, reg).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

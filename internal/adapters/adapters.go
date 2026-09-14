@@ -129,3 +129,22 @@ func (l LazyRenditions) OnPlaybackStarted(ctx context.Context, tenantID, assetID
 		}, nil)
 	}
 }
+
+// DedupResolver points a deduplicated asset at the media it shares.
+type DedupResolver struct{ DB *db.DB }
+
+// StoragePrefix follows deduplicated_from so several assets can reference one copy of
+// the media. Resolving at read time rather than copying objects is the entire saving:
+// duplicating the files would make dedup pointless.
+func (d DedupResolver) StoragePrefix(ctx context.Context, tenantID, assetID string) (string, error) {
+	var canonical string
+	err := d.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx,
+			`select coalesce(deduplicated_from, id)::text from assets where id = $1`,
+			assetID).Scan(&canonical)
+	})
+	if err != nil {
+		return "", err
+	}
+	return "cmaf/" + tenantID + "/" + canonical, nil
+}

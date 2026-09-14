@@ -23,6 +23,65 @@ paths:
         "200": { description: Healthy }
         "503": { description: Database unavailable }
 
+  /admin/tenants:
+    get:
+      summary: List tenants
+      description: Operator surface. Requires ALCHEMIST_ADMIN_KEY, not a customer key.
+      responses:
+        "200": { description: Tenants }
+        "401": { description: invalid_admin_key }
+        "404": { description: Admin surface disabled (no admin key configured) }
+    post:
+      summary: Create a tenant
+      description: |
+        Operator surface, behind a separate credential so a leaked customer key cannot
+        mint tenants or keys.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                ladder_profile:
+                  type: string
+                  default: bd-mobile
+                  description: Must be an existing profile.
+      responses:
+        "201": { description: Tenant created }
+        "400": { description: invalid_request or invalid_ladder_profile }
+        "401": { description: invalid_admin_key }
+
+  /admin/tenants/{id}/keys:
+    post:
+      summary: Issue an API key for a tenant
+      description: |
+        The plaintext key is returned once and never again; only its hash is stored.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, default: default }
+      responses:
+        "201": { description: Key issued; api_key shown once }
+        "404": { description: tenant_not_found }
+
+  /admin/keys/{keyID}:
+    delete:
+      summary: Revoke an API key
+      description: Takes effect on the next request; there is no cached credential.
+      parameters:
+        - { name: keyID, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Revoked }
+        "404": { description: key_not_found }
+
   /v1/whoami:
     get:
       summary: Identify the authenticated tenant

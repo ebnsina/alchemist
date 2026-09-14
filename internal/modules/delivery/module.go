@@ -12,6 +12,7 @@ package delivery
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/go-chi/chi/v5"
@@ -42,6 +43,16 @@ type PlaybackObserver interface {
 	OnPlaybackStarted(ctx context.Context, tenantID, assetID string)
 }
 
+// AssetResolver maps a requested asset to the storage prefix that actually holds its
+// media.
+//
+// They differ when an asset was deduplicated: the media is stored once under the
+// first asset that carried that content, and every later asset with the same bytes
+// points at it. Without this the duplicate reports ready and every byte range 404s.
+type AssetResolver interface {
+	StoragePrefix(ctx context.Context, tenantID, assetID string) (string, error)
+}
+
 // Module is the delivery plane. Constructing it needs no database handle: storage
 // and key lookup arrive as interfaces, which is what makes it separable.
 type Module struct {
@@ -49,10 +60,28 @@ type Module struct {
 	keys     ContentKeys
 	signer   *signing.Keyring
 	observer PlaybackObserver
+	resolver AssetResolver
 }
 
 func New(store ObjectStore, keys ContentKeys, signer *signing.Keyring) *Module {
 	return &Module{store: store, keys: keys, signer: signer}
+}
+
+// WithResolver enables deduplicated assets to resolve to the media they share.
+// Without it, storage paths are taken literally from the request.
+func (m *Module) WithResolver(r AssetResolver) *Module {
+	m.resolver = r
+	return m
+}
+
+// prefix is where this asset's media actually lives.
+func (m *Module) prefix(ctx context.Context, tenantID, assetID string) string {
+	if m.resolver != nil {
+		if p, err := m.resolver.StoragePrefix(ctx, tenantID, assetID); err == nil && p != "" {
+			return p
+		}
+	}
+	return fmt.Sprintf("cmaf/%s/%s", tenantID, assetID)
 }
 
 // WithObserver attaches on-demand rendition generation. Optional by design.

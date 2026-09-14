@@ -22,6 +22,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
 	"github.com/ebnsina/alchemist/internal/adapters"
 	"github.com/ebnsina/alchemist/internal/modules/delivery"
@@ -70,11 +72,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	// The origin must queue deferred renditions too. Without this, an asset served
+	// only by a standalone origin stays on its low ladder forever -- which silently
+	// disables JIT in exactly the deployment this binary exists for.
+	riverClient, err := river.NewClient(riverpgxv5.New(database.Pool()), &river.Config{})
+	if err != nil {
+		log.Error("river", "err", err)
+		os.Exit(1)
+	}
+
 	module := delivery.New(
 		adapters.ObjectStore{Store: store},
 		adapters.ContentKeys{DB: database, Wrapper: keyWrapper},
 		signer,
-	)
+	).WithObserver(adapters.LazyRenditions{DB: database, River: riverClient}).
+		WithResolver(adapters.DedupResolver{DB: database})
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.RealIP, middleware.Recoverer)

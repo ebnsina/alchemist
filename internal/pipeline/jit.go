@@ -94,7 +94,12 @@ func (w *JITWorker) Work(ctx context.Context, job *river.Job[JITArgs]) error {
 		return river.JobCancel(fmt.Errorf("rung %d/%s is not in the profile", a.Height, a.Codec))
 	}
 
-	dir := filepath.Join(w.WorkDir, a.AssetID+"-jit")
+	// Keyed by rung, not just by asset. Deferred rungs for one asset are queued
+	// together and run concurrently, so a shared directory means two jobs downloading
+	// the mezzanine over each other, writing the same chunk filenames, and one's
+	// deferred cleanup deleting the directory the other is still working in.
+	dir := filepath.Join(w.WorkDir,
+		fmt.Sprintf("%s-jit-%d%s", a.AssetID, a.Height, a.Codec))
 	defer os.RemoveAll(dir)
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return err

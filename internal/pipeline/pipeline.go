@@ -19,6 +19,7 @@ import (
 	"github.com/ebnsina/alchemist/internal/platform/fetch"
 	"github.com/ebnsina/alchemist/internal/platform/keys"
 	"github.com/ebnsina/alchemist/internal/platform/media"
+	"github.com/ebnsina/alchemist/internal/platform/metrics"
 	"github.com/ebnsina/alchemist/internal/platform/storage"
 )
 
@@ -56,6 +57,7 @@ type TranscodeWorker struct {
 	Store   *storage.Store
 	Keys    *keys.Wrapper
 	River   *river.Client[pgx.Tx]
+	Metrics *metrics.Registry
 	WorkDir string
 	// MaxSourceBytes caps a pull-from-URL download.
 	MaxSourceBytes int64
@@ -138,6 +140,11 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 
 	w.setState(ctx, a, "encoding")
 
+	// Encode cost per source hour is the number the cost model turns on: a regression
+	// here shows up as a compute bill months before anyone notices it in a profile.
+	stop := w.observeEncode(a)
+	defer stop()
+
 	opts := media.DefaultOptions()
 	keyID, key, err := keys.Generate()
 	if err != nil {
@@ -197,6 +204,11 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 	}
 
 	// Only after the renditions and the mezzanine are safely stored.
+	// Captured now because it cannot be recovered later: the published media is
+	// encrypted and the packager cannot re-read it to rebuild a manifest.
+	reps, _ := media.VideoRepresentations(res.Manifest.MPD)
+	skeleton, _ := media.MPDSkeleton(res.Manifest.MPD)
+
 	w.applySourceRetention(ctx, a, deref(sourceKey), mezzKey)
 
 	if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
@@ -209,11 +221,12 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		if _, err := tx.Exec(ctx,
 			`update assets set state = $6::asset_state, duration_sec = $2, width = $3,
 			        height = $4, frame_rate = $5, mezzanine_key = $7,
-			        complexity = $8, source_sha256 = $9, updated_at = now()
+			        complexity = $8, source_sha256 = $9, dash_skeleton = $10,
+			        updated_at = now()
 			  where id = $1`,
 			a.AssetID, res.Probe.DurationSec, res.Probe.Width,
 			res.Probe.Height, res.Probe.FrameRate, state, mezzKey,
-			res.Complexity, sum); err != nil {
+			res.Complexity, sum, skeleton); err != nil {
 			return err
 		}
 		for _, r := range res.Rungs {
@@ -224,13 +237,13 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 			if _, err := tx.Exec(ctx,
 				`insert into renditions (asset_id, tenant_id, height, codec, bitrate_bps,
 				        encoder_version, params_hash, state, object_key, lazy,
-				        width, codec_string, avg_bandwidth_bps)
-				 values ($1,$2,$3,$4,$5,$6,$7,'ready',$8,false,$9,$10,$5)
+				        width, codec_string, avg_bandwidth_bps, dash_representation)
+				 values ($1,$2,$3,$4,$5,$6,$7,'ready',$8,false,$9,$10,$5,$11)
 				 on conflict (asset_id, height, codec) do update set state = 'ready'`,
 				a.AssetID, a.TenantID, r.Height, r.Codec, r.MaxrateBPS,
 				media.EncoderVersion, media.ParamsHash(r),
 				fmt.Sprintf("%s/%dp.cmfv", prefix, r.Height),
-				width, codecString(r)); err != nil {
+				width, codecString(r), reps[r.Height]); err != nil {
 				return err
 			}
 		}
@@ -490,14 +503,29 @@ func (w *TranscodeWorker) findDuplicate(ctx context.Context, a TranscodeArgs, su
 // may delete it independently; only the encoding work is skipped.
 func (w *TranscodeWorker) linkToDuplicate(ctx context.Context, a TranscodeArgs, existingID string, sum []byte) error {
 	err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx,
+		if _, err := tx.Exec(ctx,
 			`update assets dst set
 			     state = src.state, duration_sec = src.duration_sec,
 			     width = src.width, height = src.height, frame_rate = src.frame_rate,
 			     mezzanine_key = src.mezzanine_key, complexity = src.complexity,
+			     dash_skeleton = src.dash_skeleton,
 			     source_sha256 = $3, deduplicated_from = src.id, updated_at = now()
 			   from assets src
-			  where dst.id = $1 and src.id = $2`, a.AssetID, existingID, sum)
+			  where dst.id = $1 and src.id = $2`, a.AssetID, existingID, sum); err != nil {
+			return err
+		}
+		// Mirror the rendition rows. Without them the API reports an asset with no
+		// renditions while its playback URLs work, and nothing knows which rungs are
+		// still deferred.
+		_, err := tx.Exec(ctx,
+			`insert into renditions (asset_id, tenant_id, height, codec, bitrate_bps,
+			        encoder_version, params_hash, state, object_key, lazy, width,
+			        codec_string, avg_bandwidth_bps, dash_representation)
+			 select $1, tenant_id, height, codec, bitrate_bps, encoder_version,
+			        params_hash, state, object_key, lazy, width, codec_string,
+			        avg_bandwidth_bps, dash_representation
+			   from renditions where asset_id = $2
+			 on conflict (asset_id, height, codec) do nothing`, a.AssetID, existingID)
 		return err
 	})
 	if err != nil {
@@ -549,4 +577,26 @@ func (w *TranscodeWorker) applySourceRetention(ctx context.Context, a TranscodeA
 			  where id = $1`, a.AssetID)
 		return err
 	})
+}
+
+// durationBuckets span a few seconds to a few hours: a short clip and a three-hour
+// lecture are both normal here.
+var durationBuckets = []float64{10, 30, 60, 300, 900, 1800, 3600, 7200}
+
+func (w *TranscodeWorker) observeEncode(a TranscodeArgs) func() {
+	if w.Metrics == nil {
+		return func() {}
+	}
+	return w.Metrics.Timer("alchemist_encode_seconds",
+		"wall time for a full transcode", durationBuckets, "tenant", a.TenantID)
+}
+
+// CountJob records a job outcome. Kept on the worker so every queue reports the same
+// shape, which is what makes a single alert rule cover all of them.
+func (w *TranscodeWorker) CountJob(kind, result string) {
+	if w.Metrics == nil {
+		return
+	}
+	w.Metrics.Inc("alchemist_jobs_total", "jobs processed by kind and result", 1,
+		"kind", kind, "result", result)
 }

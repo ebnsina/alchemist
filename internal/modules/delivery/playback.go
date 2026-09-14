@@ -34,7 +34,7 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := fmt.Sprintf("cmaf/%s/%s/%s", tenantID, assetID, file)
+	key := m.prefix(r.Context(), tenantID, assetID) + "/" + file
 	obj, err := m.store.GetPassthrough(r.Context(), key, r.Header.Get("Range"))
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {

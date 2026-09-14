@@ -81,5 +81,10 @@ func PeriodicJobs() []*river.PeriodicJob {
 			func() (river.JobArgs, *river.InsertOpts) { return ReconcileArgs{}, nil },
 			&river.PeriodicJobOpts{RunOnStart: true},
 		),
+		river.NewPeriodicJob(
+			river.PeriodicInterval(SweepInterval),
+			func() (river.JobArgs, *river.InsertOpts) { return SweepArgs{}, nil },
+			&river.PeriodicJobOpts{RunOnStart: true},
+		),
 	}
 }
