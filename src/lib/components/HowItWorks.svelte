@@ -36,15 +36,16 @@
 			</h2>
 		</div>
 
-		<ol class="mt-12 grid gap-4 md:grid-cols-3">
+		<ol class="mt-14 grid gap-5 md:grid-cols-3">
 			{#each steps as s, i (s.ten)}
-				<li class="card p-6" use:scrollReveal={{ delay: i * 90 }}>
-					<span
-						class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-body text-sm font-bold text-emerald-light"
-						aria-hidden="true">{i + 1}</span
-					>
-					<h3 class="mt-4 text-lg font-bold tracking-tight">{s.ten}</h3>
-					<p class="mt-2 text-sm leading-relaxed text-muted">{s.ben}</p>
+				<li class="card p-8" use:scrollReveal={{ delay: i * 90 }}>
+					<div class="flex items-start justify-between gap-5">
+						<h3 class="text-lg font-bold tracking-tight">{s.ten}</h3>
+						<span class="flex-none text-2xl leading-none font-bold text-emerald-light" aria-hidden="true"
+							>{i + 1}</span
+						>
+					</div>
+					<p class="mt-3.5 text-sm leading-[1.75] text-muted">{s.ben}</p>
 				</li>
 			{/each}
 		</ol>

@@ -58,14 +58,14 @@
 		</h2>
 	</div>
 
-	<div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+	<div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 		{#each features as f, i (f.ten)}
-			<article class="card card-hover p-6" use:scrollReveal={{ delay: (i % 3) * 80 }}>
-				<div class="flex items-start justify-between gap-4">
+			<article class="card card-hover p-8" use:scrollReveal={{ delay: (i % 3) * 80 }}>
+				<div class="flex items-start justify-between gap-5">
 					<h3 class="text-lg font-bold tracking-tight">{f.ten}</h3>
-					<svg class="tilt flex-none text-emerald-light" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={f.d} /></svg>
+					<svg class="tilt flex-none text-emerald-light" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={f.d} /></svg>
 				</div>
-				<p class="mt-2 text-sm leading-relaxed text-muted">{f.ben}</p>
+				<p class="mt-3.5 text-sm leading-[1.75] text-muted">{f.ben}</p>
 			</article>
 		{/each}
 	</div>

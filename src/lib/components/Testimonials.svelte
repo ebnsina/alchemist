@@ -39,17 +39,14 @@
 		</h2>
 	</div>
 
-	<div class="mt-12 grid gap-4 md:grid-cols-3">
+	<div class="mt-14 grid gap-5 md:grid-cols-3">
 		{#each uses as u, i (u.ten)}
-			<article class="card card-hover p-6" use:scrollReveal={{ delay: i * 90 }}>
-				<span
-					class="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-hairline bg-body text-emerald-light"
-					aria-hidden="true"
-				>
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d={u.d} /></svg>
-				</span>
-				<h3 class="text-lg font-bold tracking-tight">{u.ten}</h3>
-				<p class="mt-2 text-sm leading-relaxed text-muted">{u.ben}</p>
+			<article class="card card-hover p-8" use:scrollReveal={{ delay: i * 90 }}>
+				<div class="flex items-start justify-between gap-5">
+					<h3 class="text-lg font-bold tracking-tight">{u.ten}</h3>
+					<svg class="tilt flex-none text-emerald-light" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={u.d} /></svg>
+				</div>
+				<p class="mt-3.5 text-sm leading-[1.75] text-muted">{u.ben}</p>
 			</article>
 		{/each}
 	</div>
