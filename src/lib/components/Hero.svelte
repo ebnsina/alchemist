@@ -3,10 +3,11 @@
 	import ConversionFlow from './ConversionFlow.svelte';
 </script>
 
-<section class="relative overflow-hidden pt-36 pb-20 sm:pt-44 sm:pb-28">
+<section class="relative overflow-hidden pt-32 pb-16 sm:pt-40 sm:pb-24">
 	<AuroraGradient />
 
-	<div class="mx-auto max-w-6xl px-4 text-center sm:px-6">
+	<div class="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-14">
+		<div class="text-center lg:text-left">
 		<p
 			class="inline-flex items-center gap-2 rounded-lg border border-hairline bg-transparent px-3 py-1.5 text-xs text-muted"
 		>
@@ -26,27 +27,29 @@
 			100 free videos every month · no card needed
 		</p>
 
-		<h1 class="mx-auto mt-8 max-w-5xl text-4xl font-bold tracking-tight sm:text-6xl leading-[1.32]">
+		<h1 class="mt-7 text-4xl font-bold tracking-tight sm:text-5xl leading-[1.32]">
 			Convert any video,
 			<span class="gradient-text block"
 				>into something magical.</span
 			>
 		</h1>
 
-		<p class="mx-auto mt-5 max-w-xl text-base text-muted sm:text-lg">
+		<p class="mx-auto mt-5 max-w-xl text-base text-muted sm:text-lg lg:mx-0">
 			Drop in a video and get back one that plays anywhere, loads fast, and is a fraction of the size. No settings to learn, nothing to install.
 		</p>
 
-		<div class="mt-8 flex flex-wrap justify-center gap-3">
+		<div class="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
 			<a href="/#pricing" class="btn-primary">Start free</a>
 			<a href="/#how" class="btn-ghost">See how it works</a>
 		</div>
 
-		<ul class="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted">
+		<ul class="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted lg:justify-start">
 			<li>Cancel any time</li>
 			<li>Files deleted after 24 hours</li>
 			<li>Works on any phone</li>
 		</ul>
+
+		</div>
 
 		<ConversionFlow />
 	</div>
