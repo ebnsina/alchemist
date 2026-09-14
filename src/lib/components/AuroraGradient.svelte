@@ -1,5 +1,5 @@
 <!--
-  Hero background: a linear aurora in five greens with grain.
+  Hero background: a linear aurora in five pale greens with grain.
 
   Pure CSS. The previous WebGL shader is gone with it — a linear blend needs no
   vertex displacement, so a canvas, a render loop and 9 KB of GLSL bought nothing
@@ -22,11 +22,11 @@
 		pointer-events: none;
 		background: linear-gradient(
 			160deg,
-			#1b4332 0%,
-			#2d6a4f 26%,
-			#40916c 50%,
-			#52b788 74%,
-			#74c69d 100%
+			#a7d9bf 0%,
+			#bfe5ce 26%,
+			#d3eedd 50%,
+			#e3f4e9 74%,
+			#f1faf4 100%
 		);
 		/* Fades into the onyx page rather than ending on a hard edge, so the hero has
 		   no seam at its base the way the header no longer has one at its top. */
@@ -34,26 +34,26 @@
 		mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
 	}
 
-	/* The gradient's lighter stops reach rgb(64,142,106), where even pure white
-	   measures 3.96:1 — so no text colour can pass AA against it and the surface
-	   itself has to come down. The scrim darkens toward onyx while keeping the hue,
-	   and is weakest at the very top where no text sits. */
+	/* On paper the danger runs the other way: the gradient's darkest stop is
+	   #a7d9bf, where ink #14171A still measures 11.4:1, so the scrim is not
+	   protecting text — it is keeping the wash from shouting. It thins toward the
+	   top, where the header glass already sits. */
 	.aurora__scrim {
 		position: absolute;
 		inset: 0;
 		background: linear-gradient(
 			to bottom,
-			color-mix(in srgb, var(--color-body) 46%, transparent) 0%,
-			color-mix(in srgb, var(--color-body) 62%, transparent) 38%,
-			color-mix(in srgb, var(--color-body) 68%, transparent) 100%
+			color-mix(in srgb, var(--color-body) 30%, transparent) 0%,
+			color-mix(in srgb, var(--color-body) 20%, transparent) 38%,
+			color-mix(in srgb, var(--color-body) 36%, transparent) 100%
 		);
 	}
 
 	.aurora__grain {
 		position: absolute;
 		inset: 0;
-		opacity: 0.25;
-		mix-blend-mode: overlay;
+		opacity: 0.16;
+		mix-blend-mode: multiply;
 		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.78'/%3E%3C/svg%3E");
 		background-repeat: repeat;
 		background-size: 160px 160px;

@@ -55,12 +55,12 @@
 				<span
 					class="h-1.5 w-1.5 rounded-full transition-all duration-500 {i <= stage
 						? 'bg-brand-mid'
-						: 'bg-white/15'}"
+						: 'bg-black/15'}"
 					class:scale-150={i === stage}
 				></span>
 				{s.label}
 				{#if i < steps.length - 1}
-					<span class="ml-1 hidden h-px w-5 bg-white/10 sm:inline-block sm:w-8" aria-hidden="true"></span>
+					<span class="ml-1 hidden h-px w-5 bg-black/10 sm:inline-block sm:w-8" aria-hidden="true"></span>
 				{/if}
 			</li>
 		{/each}
@@ -78,7 +78,7 @@
 						class="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-hairline"
 					>
 						<div
-							class="flex items-center gap-3 rounded-lg border border-hairline bg-body px-3 py-2"
+							class="flex items-center gap-3 rounded-lg border border-hairline bg-card px-3 py-2"
 							in:fly={{ y: -26, duration: 560, delay: 260, easing: cubicOut }}
 						>
 							<svg class="h-5 w-5 flex-none text-brand-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h11a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM17.5 10.5l4-2.5v8l-4-2.5z" /></svg>
@@ -95,7 +95,7 @@
 							<p class="text-sm">Making the sizes your viewers need</p>
 							<p class="tabular-nums text-xs text-muted">{progress}%</p>
 						</div>
-						<div class="h-1.5 overflow-hidden rounded-full bg-white/10">
+						<div class="h-1.5 overflow-hidden rounded-full bg-black/10">
 							<div
 								class="h-full rounded-full bg-brand-mid transition-[width] duration-100 ease-linear"
 								style="width: {progress}%"
@@ -119,7 +119,7 @@
 					<div class="flex h-full flex-col justify-center gap-4">
 						<div class="flex items-center gap-3">
 							<span
-								class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-brand-mid text-body"
+								class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-brand-mid text-ink"
 								in:scale={{ start: 0.5, duration: 420, easing: cubicOut }}
 							>
 								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" /></svg>
@@ -130,7 +130,7 @@
 							</div>
 						</div>
 						<div
-							class="flex items-center gap-2 rounded-lg border border-hairline bg-body px-3 py-2"
+							class="flex items-center gap-2 rounded-lg border border-hairline bg-card px-3 py-2"
 							in:fly={{ y: 12, duration: 420, delay: 180, easing: cubicOut }}
 						>
 							<svg class="h-4 w-4 flex-none text-brand-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 14.5a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14.5 9.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>

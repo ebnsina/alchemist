@@ -1,32 +1,31 @@
 @import 'tailwindcss';
 
-/* Deep sea green. Alchemy: base metal in, refined metal out — white through
-   green to gold is the transformation, and it is the only gradient that carries
-   meaning rather than decoration.
+/* Deep sea green on paper. Alchemy: base metal in, refined metal out — the green
+   is the only colour that carries meaning rather than decoration.
 
-   Contrast computed against the onyx ground #0B0B0C, not eyeballed:
-     text #e5e7eb ............ 15.59:1
-     muted white @ 0.55 ...... 6.24:1   (the spec's 0.40 measures 3.80:1 and fails AA)
-     brand #047857 ........... 3.59:1   — a surface, never text on onyx
-     brand mid #10b981 ....... 7.76:1
-     brand light #34d399 ..... 10.23:1
-     gold #fbbf24 ............ 11.57:1
-   White on the brand button is 5.48:1; onyx on brand mid is 7.76:1, which is why
-   the badges and the check circle use mid rather than the brand itself. */
+   Light theme. Contrast computed against the paper ground #F6F6F3, not eyeballed:
+     ink #14171A ............. 16.62:1
+     muted black @ 0.62 ...... 6.09:1   (0.55 measures 4.65:1 — passes, but only just)
+     brand #047857 ........... 5.06:1
+     brand deep #065f46 ...... 7.10:1
+     brand mid #10b981 ....... 2.34:1   — a surface, never text on paper
+   White on the brand button is 5.48:1, and ink on brand mid is 7.46:1, which is why
+   the badges and the check circle carry ink rather than paper. */
 @theme {
-	--color-body: #0B0B0C;
-	--color-card: #141416;
-	--color-elevated: #1C1C1F;
+	--color-body: #F6F6F3;
+	--color-card: #ffffff;
+	--color-elevated: #ffffff;
 	--color-deep: #064e3b;
 	--color-brand-mid: #10b981;
 	--color-brand: #047857;
-	--color-brand-light: #34d399;
-	--color-gold: #fbbf24;
-	--color-seafoam: #2dd4bf;
-	--color-ink: #e5e7eb;
-	--color-muted: rgba(255, 255, 255, 0.55);
-	--color-hairline: rgba(255, 255, 255, 0.08);
-	--color-hairline-strong: rgba(255, 255, 255, 0.14);
+	/* Named for where it sits, not how light it is: the accent that carries text. */
+	--color-brand-light: #065f46;
+	--color-gold: #b45309;
+	--color-seafoam: #0f766e;
+	--color-ink: #14171A;
+	--color-muted: rgba(0, 0, 0, 0.62);
+	--color-hairline: rgba(0, 0, 0, 0.09);
+	--color-hairline-strong: rgba(0, 0, 0, 0.16);
 
 		/* Oddval headings over Mona Sans body, which is also Oddval's fallback. The free Oddval on cdnfonts ships exactly
 	   one weight — SemiBold 600 — so every heading is 600; asking for 700 makes the
@@ -49,7 +48,7 @@
 		-webkit-font-smoothing: antialiased;
 	}
 
-	/* The page is onyx, not black. Two soft washes and a fine grain sit behind
+	/* The page is warm paper, not white. Two soft washes and a fine grain sit behind
 	   every section so long scrolls are not a flat field. */
 	body::before,
 	body::after {
@@ -61,13 +60,13 @@
 	}
 	body::before {
 		background:
-			radial-gradient(70rem 45rem at 12% -10%, rgba(16, 185, 129, 0.12), transparent 62%),
-			radial-gradient(60rem 45rem at 45% 112%, rgba(4, 120, 87, 0.14), transparent 65%);
+			radial-gradient(70rem 45rem at 12% -10%, rgba(16, 185, 129, 0.14), transparent 62%),
+			radial-gradient(60rem 45rem at 45% 112%, rgba(4, 120, 87, 0.09), transparent 65%);
 	}
 	body::after {
 		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
-		opacity: 0.045;
-		mix-blend-mode: overlay;
+		opacity: 0.05;
+		mix-blend-mode: multiply;
 	}
 
 	/* Headings globally, not scoped to a wrapper. The previous rule lived under
@@ -91,7 +90,7 @@
 	}
 	::selection {
 		background: var(--color-brand-mid);
-		color: var(--color-body);
+		color: var(--color-ink);
 	}
 }
 
@@ -114,15 +113,14 @@
 }
 
 @utility card {
-	/* A lit top edge and a soft drop keep cards off the ground rather than
-	   cut out of it. */
-	background: linear-gradient(180deg, #17171b, #121214);
+	/* A white stock over the paper ground, lifted by shadow rather than by a
+	   lighter fill — on paper there is nothing lighter to go to. */
+	background: linear-gradient(180deg, #ffffff, #fcfcfa);
 	border: 1px solid var(--color-hairline);
 	border-radius: var(--radius-xl);
 	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, 0.05),
-		0 1px 2px rgba(0, 0, 0, 0.4),
-		0 18px 40px -24px rgba(0, 0, 0, 0.9);
+		0 1px 2px rgba(16, 24, 40, 0.05),
+		0 14px 32px -20px rgba(16, 24, 40, 0.22);
 	transition:
 		border-color 200ms ease,
 		box-shadow 200ms ease,
@@ -132,9 +130,8 @@
 	&:hover {
 		border-color: var(--color-hairline-strong);
 		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.07),
-			0 1px 2px rgba(0, 0, 0, 0.4),
-			0 26px 50px -26px rgba(0, 0, 0, 0.95);
+			0 1px 2px rgba(16, 24, 40, 0.06),
+			0 22px 44px -22px rgba(16, 24, 40, 0.3);
 		transform: translateY(-2px);
 	}
 }
@@ -186,7 +183,7 @@
 		background-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1);
 	&:hover {
 		opacity: 0.88;
-		border-color: rgba(255, 255, 255, 0.24);
+		border-color: rgba(0, 0, 0, 0.26);
 	}
 	&:disabled,
 	&[aria-disabled='true'] {
@@ -219,7 +216,7 @@
 		background: linear-gradient(
 			110deg,
 			transparent 35%,
-			rgba(255, 255, 255, 0.14) 50%,
+			rgba(255, 255, 255, 0.6) 50%,
 			transparent 65%
 		);
 		transform: translateX(-100%);
@@ -293,7 +290,7 @@ details[open] > summary .chevron {
 
 /* Nav sits over the aurora, where text-muted measures 4.24:1. */
 .nav-link {
-	color: rgba(255, 255, 255, 0.68);
+	color: rgba(0, 0, 0, 0.66);
 }
 
 .vh {
@@ -315,17 +312,17 @@ details[open] > summary .chevron {
 :root {
 	--paper: var(--color-body);
 	--leaf: var(--color-card);
-	--sink: #0e201a;
+	--sink: #edf4ef;
 	--ink: var(--color-ink);
-	--graphite: rgba(255, 255, 255, 0.72);
-	--ink-3: rgba(255, 255, 255, 0.55);
+	--graphite: rgba(0, 0, 0, 0.68);
+	--ink-3: rgba(0, 0, 0, 0.58);
 	--rule: var(--color-hairline);
 	--rule-firm: var(--color-hairline-strong);
 	--brass: var(--color-brand-light);
 	--brass-hi: var(--color-seafoam);
-	--brass-ink: var(--color-body);
+	--brass-ink: #ffffff;
 	--wash: rgba(16, 185, 129, 0.08);
-	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 	--font: var(--font-sans);
 	--mono: var(--font-mono);
 	--ease: cubic-bezier(0.25, 0.8, 0.35, 1);
@@ -449,16 +446,16 @@ details[open] > summary .chevron {
 		border-color 150ms var(--ease);
 }
 .btn:hover {
-	border-color: rgba(255, 255, 255, 0.24);
+	border-color: rgba(0, 0, 0, 0.26);
 }
 .btn--solid {
-	background: var(--color-brand-mid);
+	background: var(--color-brand);
 	border-color: transparent;
-	color: var(--color-body);
+	color: #ffffff;
 	font-weight: 600;
 }
 .btn--solid:hover {
-	background: var(--color-brand-light);
+	opacity: 0.88;
 }
 .tlink {
 	color: var(--ink);
@@ -547,23 +544,29 @@ details[open] > summary .chevron {
 	content: '';
 	position: absolute;
 	inset: 0;
-	opacity: 0;
-	transition: opacity 200ms ease;
+	/* Blur is on from the first pixel, so the header always reads as glass over
+	   the hero. Only the paper tint waits for the scroll. */
+	-webkit-backdrop-filter: blur(14px) saturate(1.3);
+	backdrop-filter: blur(14px) saturate(1.3);
 	background: linear-gradient(
 		to bottom,
-		color-mix(in srgb, var(--color-body) 88%, transparent) 0%,
-		color-mix(in srgb, var(--color-body) 72%, transparent) 55%,
+		color-mix(in srgb, var(--color-body) 30%, transparent) 0%,
+		color-mix(in srgb, var(--color-body) 16%, transparent) 55%,
 		transparent 100%
 	);
+	transition: background 220ms ease;
 	-webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 	mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 	pointer-events: none;
 }
 
 .nav-shell[data-stuck='true']::before {
-	opacity: 1;
-	-webkit-backdrop-filter: blur(14px) saturate(1.4);
-	backdrop-filter: blur(14px) saturate(1.4);
+	background: linear-gradient(
+		to bottom,
+		color-mix(in srgb, var(--color-body) 90%, transparent) 0%,
+		color-mix(in srgb, var(--color-body) 74%, transparent) 55%,
+		transparent 100%
+	);
 }
 
 @media (prefers-reduced-motion: reduce) {

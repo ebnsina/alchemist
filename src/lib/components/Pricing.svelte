@@ -70,7 +70,7 @@
 			>
 				{#if t.featured}
 					<p
-						class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-mid px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-body"
+						class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-mid px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-ink"
 					>
 						Most popular
 					</p>
