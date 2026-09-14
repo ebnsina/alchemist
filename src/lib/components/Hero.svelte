@@ -14,7 +14,7 @@
 			100 free videos every month · no card needed
 		</p>
 
-		<h1 class="mx-auto mt-8 max-w-5xl text-5xl font-bold tracking-tight sm:text-7xl leading-[1.12]">
+		<h1 class="mx-auto mt-8 max-w-5xl text-5xl font-extrabold tracking-tight sm:text-7xl leading-[1.12]">
 			Convert any video,
 			<span class="gradient-text block"
 				>into something magical.</span
@@ -39,8 +39,8 @@
 		<!-- An illustration of what the tool does, not a screenshot of an app. -->
 		<figure class="card shine mx-auto mt-14 max-w-2xl p-4 text-left sm:p-6" use:scrollReveal>
 			<figcaption class="mb-5 flex items-center justify-between text-sm text-muted">
-				What one conversion looks like
-				Illustration
+				<span>What one conversion looks like</span>
+				<span>Illustration</span>
 			</figcaption>
 			<div class="flex items-center justify-between gap-4">
 				<div>

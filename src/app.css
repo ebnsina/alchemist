@@ -28,13 +28,13 @@
 	--color-hairline: rgba(255, 255, 255, 0.08);
 	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-		/* English only. Instrument Sans is a neutral workhorse under the slab headings;
-	   body text should not compete with a display face. Trench Slab is latin only,
-	   which is now all that is needed. */
+		/* One family for everything. Epilogue carries 400-800 on a variable axis, so
+	   headings and body differ by weight rather than by typeface — which is why the
+	   heading token points at the same stack. */
 	--font-sans:
-		'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		'Epilogue', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-heading:
-		'Trench Slab', Georgia, 'Times New Roman', serif;
+		var(--font-sans);
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
 }
 
@@ -55,11 +55,10 @@
 	   face never even downloaded. */
 	:is(h1, h2, h3, h4) {
 		font-family: var(--font-heading);
+		/* One typeface throughout, so weight carries the hierarchy the slab used to. */
+		font-weight: 800;
 		letter-spacing: -0.02em;
-		/* Trench Slab is a slab serif with deep descenders; at tight leading the
-		   tails of g, y and j are clipped by the line box at display sizes. */
-		line-height: 1.18;
-		padding-bottom: 0.06em;
+		line-height: 1.12;
 	}
 	:focus-visible {
 		outline: 2px solid var(--color-emerald-light);
@@ -295,8 +294,6 @@ details[open] > summary .chevron {
 	font-family: var(--font-heading);
 	font-weight: 700;
 	letter-spacing: -0.02em;
-	/* Trench Slab is a slab serif with deep descenders. At 1.1 the tails of g, y
-	   and j were being clipped by the line box on the largest sizes. */
 	line-height: 1.18;
 	padding-bottom: 0.08em;
 	text-wrap: balance;
