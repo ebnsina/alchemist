@@ -2,6 +2,9 @@ DB_ADMIN := postgres://$(USER)@localhost:5432/alchemist?sslmode=disable
 DB_APP   := postgres://alchemist_app:alchemist@localhost:5432/alchemist?sslmode=disable
 SEAWEED  := .local/seaweed
 
+# Local port map: alchemist 8090; SeaweedFS uses 8080 (volume), 8888 (filer),
+# 9000 (S3), 9333 (master). Do not put alchemist on 8080 -- it collides silently and
+# the health check answers from whatever got there first.
 build:
 	go build -o bin/ ./cmd/...
 
