@@ -31,6 +31,10 @@ end-to-end example using nothing but an API key: `test/journey.sh`.
 5. **Branch on `error.code`, never on `error.message`.** Codes are stable; messages
    are prose and are returned in Bangla when the request sends `Accept-Language: bn`.
 
+5. **Do not use `/v1/auth/*` from server code.** Those four endpoints back the
+   sign-up page in a browser: they set an HttpOnly session cookie. An integration
+   authenticates with the API key that signup returned once, as a Bearer token.
+
 ## Getting a key
 
 Operator-only, behind `ALCHEMIST_ADMIN_KEY` (a different credential from customer

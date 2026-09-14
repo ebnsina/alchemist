@@ -82,6 +82,49 @@ paths:
         "204": { description: Revoked }
         "404": { description: key_not_found }
 
+  /v1/auth/signup:
+    post:
+      summary: Create an organisation and its first account
+      security: []
+      description: |
+        Self-service. Creates the tenant, the owner, and one API key in a single
+        transaction, and starts a session. The API key is in the response and is
+        never shown again — only its hash is stored.
+
+        Mounted only when ALCHEMIST_WEB_ORIGINS names at least one browser origin.
+      responses:
+        "201": { description: Account created, session started, API key returned }
+        "400": { description: Missing org, malformed email, or password under 10 characters }
+        "409": { description: An account already exists for that email }
+        "429": { description: Too many attempts from this address }
+
+  /v1/auth/login:
+    post:
+      summary: Start a session
+      security: []
+      description: |
+        A wrong password and an unknown address answer identically, and take the
+        same time, so the endpoint cannot be used to find out who has an account.
+      responses:
+        "200": { description: Session started }
+        "401": { description: Email and password do not match }
+        "429": { description: Too many attempts from this address }
+
+  /v1/auth/logout:
+    post:
+      summary: End the current session
+      security: []
+      responses:
+        "204": { description: Session ended, cookie cleared }
+
+  /v1/auth/session:
+    get:
+      summary: Who the session belongs to
+      security: []
+      responses:
+        "200": { description: User, tenant, email and organisation name }
+        "401": { description: No live session }
+
   /v1/whoami:
     get:
       summary: Identify the authenticated tenant

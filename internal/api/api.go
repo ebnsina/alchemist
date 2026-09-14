@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -23,18 +24,35 @@ import (
 )
 
 type Server struct {
-	db       *db.DB
-	store    *storage.Store
-	river    *river.Client[pgx.Tx]
-	delivery *delivery.Module
-	keys     *keys.Wrapper
-	adminKey string
-	metrics  *metrics.Registry
+	db            *db.DB
+	store         *storage.Store
+	river         *river.Client[pgx.Tx]
+	delivery      *delivery.Module
+	keys          *keys.Wrapper
+	adminKey      string
+	metrics       *metrics.Registry
+	webOrigins    []string
+	sessionDomain string
+	sessionSecure bool
+	authLimiter   *authLimiter
 }
 
-func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry) *Server {
+// Accounts carries what the browser-facing signup and login surface needs. Zero
+// origins leaves that surface unmounted.
+type Accounts struct {
+	WebOrigins    []string
+	SessionDomain string
+	SessionSecure bool
+}
+
+func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry, acc Accounts) *Server {
 	return &Server{db: database, store: store, river: rc, delivery: d, keys: kw,
-		adminKey: adminKey, metrics: m}
+		adminKey: adminKey, metrics: m,
+		webOrigins: acc.WebOrigins, sessionDomain: acc.SessionDomain,
+		sessionSecure: acc.SessionSecure,
+		// Ten attempts a minute from one address: generous for a person, useless for
+		// a dictionary.
+		authLimiter: newAuthLimiter(10, time.Minute)}
 }
 
 type ctxKey string
@@ -71,6 +89,18 @@ func (s *Server) Routes() http.Handler {
 		r.Post("/tenants/{id}/keys", s.issueKey)
 		r.Delete("/keys/{keyID}", s.revokeKey)
 	})
+
+	// Accounts. Outside the API-key middleware by necessity — signing up is how you
+	// get a key — and mounted only when a browser origin is configured.
+	if s.authEnabled() {
+		r.Route("/v1/auth", func(r chi.Router) {
+			r.Use(s.cors, s.rateLimit)
+			r.Post("/signup", s.postSignup)
+			r.Post("/login", s.postLogin)
+			r.Post("/logout", s.postLogout)
+			r.Get("/session", s.getSession)
+		})
+	}
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(s.authenticate)

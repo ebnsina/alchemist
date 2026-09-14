@@ -38,6 +38,7 @@ Prose still needs judgement. After changing behaviour, check:
 | Routes | `api/openapi.yaml` (a test enforces this) |
 | Error codes | Bangla copy in `internal/platform/httpx/lang.go` |
 | Env vars | `.env.example`, `deploy/README.md` |
+| Account/session behaviour | `llms.txt`, `api/openapi.yaml`, `.claude/skills/alchemist-api/SKILL.md` |
 | Migrations | `deploy/README.md` |
 | Phase scope | `docs/04-roadmap.md` |
 | Asset states, URL TTLs, headers | `llms.txt` (claims are not test-enforced) |

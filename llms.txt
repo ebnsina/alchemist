@@ -42,6 +42,11 @@ Things that will otherwise surprise you:
 POST /admin/tenants            -> tenant_id          (operator, admin key)
 POST /admin/tenants/{id}/keys  -> api_key            (shown once)
 
+POST /v1/auth/signup           -> tenant + owner + first api_key, in one transaction
+POST /v1/auth/login            -> session cookie     (browser, not machine)
+POST /v1/auth/logout           -> revokes the session
+GET  /v1/auth/session          -> who the cookie belongs to
+
 POST /v1/uploads               -> presigned upload target + asset_id
 PUT  <upload_url>              -> the bytes, direct to storage
 POST /v1/assets/{id}/complete  -> queues processing
@@ -52,6 +57,11 @@ GET  /v1/assets/{id}           -> state, and playback URLs once playable
 POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready
 GET  /v1/usage                 -> billable aggregates
 ```
+
+The auth endpoints exist for the sign-up page, not for integrations: a session is a
+browser thing. Server-to-server code uses the API key from signup and never touches
+them. They are mounted only when `ALCHEMIST_WEB_ORIGINS` names a browser origin, so
+a deployment that has no web front end has no account surface at all.
 
 Webhook deliveries are signed: `X-Alchemist-Signature: sha256=<hmac of the raw body>`
 using the secret returned when the endpoint was registered. Verify it.

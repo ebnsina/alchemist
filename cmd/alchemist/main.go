@@ -116,7 +116,12 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           api.New(database, store, riverClient, deliveryModule, keyWrapper, cfg.AdminKey, reg).Routes(),
+		Handler:           api.New(database, store, riverClient, deliveryModule, keyWrapper, cfg.AdminKey, reg,
+			api.Accounts{
+				WebOrigins:    cfg.WebOrigins,
+				SessionDomain: cfg.SessionDomain,
+				SessionSecure: cfg.SessionSecure,
+			}).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

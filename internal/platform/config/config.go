@@ -27,6 +27,14 @@ type Config struct {
 	AdminKey       string
 	FetchAllowlist []string
 	EncodeWorkers  int
+	// WebOrigins are the browser origins allowed to call the account endpoints with
+	// credentials. Empty means the account surface is off, not open to everyone.
+	WebOrigins []string
+	// SessionDomain scopes the session cookie. Empty means host-only, which is
+	// correct for localhost and wrong the moment the site and the API differ.
+	SessionDomain string
+	// SessionSecure marks the cookie Secure. Off only for a local http harness.
+	SessionSecure bool
 }
 
 func Load() (*Config, error) {
@@ -62,6 +70,20 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("ALCHEMIST_ADMIN_KEY must be at least %d bytes, got %d",
 			minSecretBytes, len(c.AdminKey))
 	}
+
+	// Optional. Unset means no browser origin may call the account endpoints, which
+	// is the safe default: a wildcard with credentials is not something to arrive at
+	// by forgetting a variable.
+	if v := os.Getenv("ALCHEMIST_WEB_ORIGINS"); strings.TrimSpace(v) != "" {
+		for _, o := range strings.Split(v, ",") {
+			if o = strings.TrimSpace(o); o != "" {
+				c.WebOrigins = append(c.WebOrigins, o)
+			}
+		}
+	}
+	c.SessionDomain = strings.TrimSpace(os.Getenv("ALCHEMIST_SESSION_DOMAIN"))
+	// Defaults to on. Turning the Secure flag off has to be a deliberate act.
+	c.SessionSecure = strings.TrimSpace(os.Getenv("ALCHEMIST_SESSION_INSECURE")) == ""
 
 	// Optional, and only for local harnesses: exact "ip:port" pairs that bypass the
 	// SSRF address rules. Never set this in production.

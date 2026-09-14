@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -24,8 +25,12 @@ func TestOpenAPIMatchesRouter(t *testing.T) {
 	documented := parseSpecRoutes(string(raw))
 
 	// A server with nil dependencies is enough: only route registration is inspected.
+	// The accounts surface is mounted deliberately — without an origin it is absent
+	// from the router, and the spec drift it can carry would go unnoticed.
 	routes := map[string]bool{}
-	router, ok := (&Server{}).Routes().(chi.Routes)
+	srv := &Server{webOrigins: []string{"https://example.test"},
+		authLimiter: newAuthLimiter(10, time.Minute)}
+	router, ok := srv.Routes().(chi.Routes)
 	if !ok {
 		t.Fatal("router does not expose chi.Routes")
 	}
