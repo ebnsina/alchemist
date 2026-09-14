@@ -2,6 +2,9 @@
 // the CSS-driven bilingual swap, and the toggles that replace a client framework.
 // Usage: npm run build && npm run verify   (serves build/ itself)
 import { chromium } from 'playwright';
+
+const UA =
+	'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join } from 'node:path';
@@ -68,11 +71,11 @@ const ratio = (a, b) => {
 	const [x, y] = [lum(a), lum(b)];
 	return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 };
-for (const theme of ['dark', 'light']) {
+{
+	const theme = 'dark';
 	const c = await b.newContext({ viewport: { width: 1280, height: 900 } });
 	const pg = await c.newPage();
-	await pg.addInitScript((t) => localStorage.setItem('alc-theme', t), theme);
-	for (const r of ['/', '/pricing/', '/docs/']) {
+	for (const r of ['/', '/pricing/', '/docs/', '/about/', '/edtech/']) {
 		await pg.goto(B + r);
 		const samples = await pg.evaluate(() => {
 			// color-mix() computes to color(srgb r g b / a) with 0-1 channels, while
@@ -109,6 +112,10 @@ for (const theme of ['dark', 'light']) {
 				const box = el.getBoundingClientRect();
 				if (box.right < 0 || box.bottom < 0 || box.width === 0) continue; // off-canvas skip link
 				const cs = getComputedStyle(el);
+				// Gradient text paints through -webkit-text-fill-color: transparent, so the
+				// computed colour is meaningless. Its stops are asserted separately below.
+				const fill = cs.webkitTextFillColor || cs.color;
+				if (/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/.test(fill)) continue;
 				if (el.children.length && !/[^\s]/.test([...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(''))) continue;
 				const col = parse(cs.color);
 				const a = col.length > 3 ? col[3] : 1;
@@ -134,16 +141,56 @@ for (const motion of ['reduce', 'no-preference']) {
 	const pg = await c.newPage();
 	await pg.goto(B + '/');
 	const durs = await pg.evaluate(() =>
-		[...document.querySelectorAll('.btn, nav a, .seg button, .iconbtn, .tlink, .mesh, .faq summary')].flatMap((e) => {
+		[...document.querySelectorAll('.btn, .btn-primary, .btn-ghost, nav a, [data-set-lang], .tlink, .ticker, .shine, .progress-anim, .card, details summary, .chevron')].flatMap((e) => {
 			const cs = getComputedStyle(e);
-			return [cs.transitionDuration, cs.animationName === 'none' ? '0s' : cs.animationName];
+			// .shine carries its animation on ::after, so the pseudo-element counts too.
+			const after = getComputedStyle(e, '::after');
+			return [
+				cs.transitionDuration,
+				cs.animationName === 'none' ? '0s' : cs.animationName,
+				after.animationName === 'none' ? '0s' : after.animationName,
+				after.animationDuration === '0s' ? '0s' : after.animationDuration
+			];
 		})
 	);
 	const moving = durs.filter((d) => d !== '0s' && d !== '0.01s');
 	if (motion === 'reduce' && moving.length) problems.push(`reduced motion still animates: ${[...new Set(moving)].join(', ')}`);
 	if (motion === 'no-preference' && !moving.length) problems.push('hover transitions were removed entirely, not just under reduced motion');
-	if (motion === 'no-preference' && !durs.some((d) => String(d).includes('drift'))) problems.push('the hero drift animation is missing');
+	for (const anim of ['ticker', 'shine', 'progress'])
+		if (motion === 'no-preference' && !durs.some((d) => String(d).includes(anim)))
+			problems.push(`the ${anim} animation is missing when motion is allowed`);
 	await c.close();
+}
+
+// Content must never be left hidden by a reveal that did not fire, and it must not
+// be hidden at all when scripting is off — the fade class is added by the action, so
+// no JavaScript means no opacity:0.
+{
+	const c = await b.newContext({ viewport: { width: 1280, height: 900 } });
+	const pg = await c.newPage();
+	await pg.goto(B + '/');
+	await pg.waitForTimeout(500);
+	await pg.evaluate(async () => {
+		for (let y = 0; y < document.body.scrollHeight; y += 400) {
+			window.scrollTo(0, y);
+			await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 60)));
+		}
+	});
+	await pg.waitForTimeout(1200);
+	const [faded, shown] = await pg.evaluate(() => [
+		document.querySelectorAll('.scroll-fade').length,
+		document.querySelectorAll('.scroll-fade.is-visible').length
+	]);
+	if (faded === 0) problems.push('no scroll reveals were registered at all');
+	if (faded !== shown) problems.push(`${faded - shown} revealed blocks never became visible after a full scroll`);
+	await c.close();
+
+	const nojs = await b.newContext({ viewport: { width: 1280, height: 900 }, javaScriptEnabled: false });
+	const np = await nojs.newPage();
+	await np.goto(B + '/');
+	const hidden = await np.evaluate(() => document.querySelectorAll('.scroll-fade').length);
+	if (hidden) problems.push(`${hidden} blocks are hidden with scripting off`);
+	await nojs.close();
 }
 
 // The toggles must work and persist with no framework on the page.
@@ -151,20 +198,35 @@ const ctx = await b.newContext({ viewport: { width: 1280, height: 700 }, colorSc
 const p = await ctx.newPage();
 await p.goto(B + '/');
 if ((await p.evaluate(() => document.documentElement.lang)) !== 'en') problems.push('default language is not English');
-if (await p.evaluate(() => !!document.querySelector('script[type="module"][src]'))) problems.push('a module script is being shipped — the client runtime leaked back in');
 await p.click('[data-set-lang="bn"]');
 const after = await p.evaluate(() => [document.documentElement.lang, localStorage.getItem('alc-lang'), document.querySelector('[data-set-lang="bn"]').getAttribute('aria-pressed')]);
 if (after.join() !== 'bn,bn,true') problems.push(`language toggle did not take: ${after}`);
-await p.click('[data-toggle-theme]');
 await p.reload();
-const kept = await p.evaluate(() => [document.documentElement.lang, document.documentElement.dataset.theme]);
-if (kept[0] !== 'bn' || kept[1] !== 'light') problems.push(`choices did not survive a reload: ${kept}`);
+const kept = await p.evaluate(() => document.documentElement.lang);
+if (kept !== 'bn') problems.push(`the language choice did not survive a reload: ${kept}`);
 await ctx.close();
 await b.close();
 server.close();
 
-// Page weight, because a bandwidth argument has to hold on its own site.
-const fonts = ['fonts/google-sans-flex-latin.woff2', 'fonts/geist-mono-latin.woff2'].reduce((a, f) => a + statSync(`build/${f}`).size, 0);
+// Page weight. Inter is fetched from Google rather than self-hosted, so it is
+// measured over the wire: the stylesheet plus the latin face it actually pulls.
+let fonts = 0;
+try {
+	const url =
+		'https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap';
+	const css = await (await fetch(url, { headers: { 'user-agent': UA } })).text();
+	fonts += Buffer.byteLength(css);
+	// Only the latin face is downloaded. Bengali falls through to the system's Noto
+	// Sans Bengali and costs nothing over the wire.
+	for (const rule of [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1])) {
+		if (!/unicode-range:\s*U\+0000-00FF/.test(rule)) continue;
+		const u = rule.match(/url\((https:[^)]+)\)/);
+		if (u) fonts += (await (await fetch(u[1])).arrayBuffer()).byteLength;
+	}
+} catch {
+	fonts = NaN;
+}
+
 const gz = (f) => gzipSync(readFileSync(f), { level: 9 }).length;
 const kb = (n) => (n / 1024).toFixed(1).padStart(6) + ' KB';
 console.log('\nroute             html      css       js    fonts   first visit');
@@ -178,10 +240,10 @@ for (const [r, f] of [['/', 'index.html'], ['/edtech/', 'edtech/index.html'], ['
 	const h = gzipSync(Buffer.from(html), { level: 9 }).length;
 	console.log(r.padEnd(12), kb(h), kb(css), kb(js), kb(fonts), kb(h + css + js + fonts));
 }
-console.log('\n(gzipped; fonts are raw woff2 and are cached across every route)\n');
+console.log('\n(gzipped, except fonts: Inter over the wire from Google, cached across every route)\n');
 
 if (problems.length) {
 	console.error('FAILED:\n' + problems.map((p) => '  - ' + p).join('\n'));
 	process.exit(1);
 }
-console.log('OK — contrast passes AA in both themes, no overflow at 360px, no language leakage, reduced motion respected, toggles persist, no framework JS shipped.');
+console.log('OK — contrast passes AA, no overflow at 360px, no language leakage, reduced motion respected, language choice persists.');

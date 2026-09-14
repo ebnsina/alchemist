@@ -1,113 +1,67 @@
-/* Google Sans Flex, latin subset only, self-hosted. Same reasoning as the player:
-   one origin and one round trip on a cold BD mobile connection instead of a DNS +
-   TLS handshake to fonts.googleapis.com and then another to fonts.gstatic.com.
-   The unicode-range is what protects Bangla — Bengali codepoints are deliberately
-   absent, so the browser never tries this face for them and falls straight through
-   to Noto Sans Bengali, which shapes যুক্তাক্ষর correctly. 36 KB + 10 KB mono. */
-@font-face {
-	font-family: 'Google Sans Flex';
-	font-style: normal;
-	font-weight: 400 600;
-	font-stretch: 100%;
-	font-display: swap;
-	src: url('/fonts/google-sans-flex-latin.woff2') format('woff2');
-	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
-		U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-	font-family: 'Geist Mono';
-	font-style: normal;
-	font-weight: 400;
-	font-display: swap;
-	src: url('/fonts/geist-mono-latin.woff2') format('woff2');
-	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
-		U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
+@import 'tailwindcss';
 
-/* Dark is the default and the surface this was designed against; light is an
-   explicit choice from the header, not the system's. Hierarchy is one ink at three
-   opacities rather than three colours, and the brass appears roughly once a screen.
-   Contrast against #08090A, computed not guessed: 0.95 -> 17.96:1, 0.63 -> 7.99:1,
-   0.48 -> 4.98:1. Tertiary sits at 0.48 and not the 0.44 it wants to be, because
-   0.44 measures 4.33:1 and fails AA. */
-:root {
-	--paper: #08090a;
-	--leaf: #0f1011;
-	--sink: #141516;
-	--ink: rgba(255, 255, 255, 0.95);
-	--graphite: rgba(255, 255, 255, 0.63);
-	--ink-3: rgba(255, 255, 255, 0.48);
-	--rule: rgba(255, 255, 255, 0.07);
-	--rule-firm: rgba(255, 255, 255, 0.11);
-	--brass: #e8a33d;
-	--brass-hi: #f2b558;
-	--brass-ink: #08090a;
-	--wash: rgba(232, 163, 61, 0.08);
-	--glow: rgba(232, 163, 61, 0.1);
-	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+/* Deep sea green. Alchemy: base metal in, refined metal out — white through
+   emerald to gold is the transformation, and it is the only gradient that carries
+   meaning rather than decoration.
 
-	--step--1: 0.75rem;
-	--step-0: 0.8125rem;
-	--step-1: 0.9375rem;
-	--step-2: 1.0625rem;
-	--step-3: 1.25rem;
-	--step-4: clamp(1.375rem, 1.24rem + 0.6vw, 1.625rem);
-	--step-5: clamp(1.625rem, 1.4rem + 1vw, 2.125rem);
-	--step-6: clamp(2.125rem, 1.5rem + 2.6vw, 3.5rem);
+   Contrast computed against #06100d, not eyeballed:
+     text #e5e7eb ............ 15.59:1
+     muted white @ 0.55 ...... 6.24:1   (the spec's 0.40 measures 3.80:1 and fails AA)
+     emerald #10b981 ......... 7.61:1
+     emerald light #34d399 ... 10.04:1
+     gold #fbbf24 ............ 11.57:1
+     seafoam #2dd4bf ......... 10.37:1
+   The emerald button carries #06100d text (7.61:1); white on emerald is 2.54:1
+   and would fail. */
+@theme {
+	--color-body: #06100d;
+	--color-card: #0a1a16;
+	--color-deep: #064e3b;
+	--color-emerald: #10b981;
+	--color-emerald-light: #34d399;
+	--color-gold: #fbbf24;
+	--color-seafoam: #2dd4bf;
+	--color-ink: #e5e7eb;
+	--color-muted: rgba(255, 255, 255, 0.55);
+	--color-hairline: rgba(255, 255, 255, 0.08);
+	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-	--gap: clamp(1rem, 0.8rem + 1vw, 1.5rem);
-	--bay: clamp(2.75rem, 2rem + 2.8vw, 4.5rem);
-	--maxw: 1100px;
-	--r: 8px;
-	--r-sm: 6px;
-
-	--font: 'Google Sans Flex', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto,
-		'Noto Sans', sans-serif;
-	--mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
-	--ease: cubic-bezier(0.25, 0.8, 0.35, 1);
-	color-scheme: dark;
+	--font-sans:
+		'Inter', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
 }
 
-/* The inversion. Same structure, same opacities read against paper instead of ink. */
-:root[data-theme='light'] {
-	--paper: #fbfbfa;
-	--leaf: #f4f4f2;
-	--sink: #eeeeec;
-	--ink: rgba(16, 17, 18, 0.95);
-	--graphite: rgba(16, 17, 18, 0.66);
-	--ink-3: rgba(16, 17, 18, 0.62);
-	--rule: rgba(16, 17, 18, 0.09);
-	--rule-firm: rgba(16, 17, 18, 0.16);
-	--brass: #8a5a0b;
-	--brass-hi: #6f4708;
-	--brass-ink: #fbfbfa;
-	--wash: rgba(138, 90, 11, 0.07);
-	--glow: rgba(138, 90, 11, 0.07);
-	--lift: none;
-	color-scheme: light;
-}
-
-*,
-*::before,
-*::after {
-	box-sizing: border-box;
-}
-body {
-	margin: 0;
-	background: var(--paper);
-	color: var(--ink);
-	font-family: var(--font);
-	font-size: var(--step-1);
-	font-weight: 400;
-	line-height: 1.6;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-}
-/* Bengali needs a touch more size and leading than latin to stay comfortable, and
-   conjuncts need the room. */
-html[lang='bn'] body {
-	font-size: 1rem;
-	line-height: 1.78;
+@layer base {
+	html {
+		scroll-behavior: smooth;
+	}
+	body {
+		background: var(--color-body);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+		line-height: 1.65;
+		-webkit-font-smoothing: antialiased;
+	}
+	/* Bengali needs a little more size and leading than latin at the same step, and
+	   Inter has no Bengali, so these fall through to the system's Noto Sans Bengali. */
+	html[lang='bn'] body {
+		line-height: 1.85;
+	}
+	html[lang='bn'] h1,
+	html[lang='bn'] h2,
+	html[lang='bn'] h3 {
+		letter-spacing: 0;
+		line-height: 1.4;
+	}
+	:focus-visible {
+		outline: 2px solid var(--color-emerald-light);
+		outline-offset: 2px;
+		border-radius: 4px;
+	}
+	::selection {
+		background: var(--color-emerald);
+		color: var(--color-body);
+	}
 }
 
 /* Both languages ship in the HTML and CSS hides one. No flash, works without
@@ -117,54 +71,261 @@ html[lang='en'] .l-bn {
 	display: none !important;
 }
 
-h1,
-h2,
-h3 {
-	margin: 0;
+@utility gradient-text {
+	background: linear-gradient(135deg, #fff 0%, var(--color-emerald-light) 50%, var(--color-gold) 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	-webkit-text-fill-color: transparent;
+}
+
+@utility grid-bg {
+	background-image:
+		linear-gradient(var(--color-hairline) 1px, transparent 1px),
+		linear-gradient(90deg, var(--color-hairline) 1px, transparent 1px);
+	background-size: 56px 56px;
+	mask-image: radial-gradient(70% 55% at 50% 0%, #000 0%, transparent 78%);
+}
+
+@utility glow {
+	background: radial-gradient(closest-side, rgba(16, 185, 129, 0.22), transparent);
+}
+@utility glow-2 {
+	background: radial-gradient(closest-side, rgba(45, 212, 191, 0.16), transparent);
+}
+@utility glow-gold {
+	background: radial-gradient(closest-side, rgba(251, 191, 36, 0.12), transparent);
+}
+
+@utility card {
+	background: var(--color-card);
+	border: 1px solid var(--color-hairline);
+	border-radius: 14px;
+	transition:
+		border-color 200ms ease,
+		transform 200ms ease;
+}
+@utility card-hover {
+	&:hover {
+		border-color: var(--color-hairline-strong);
+		transform: translateY(-2px);
+	}
+}
+
+@utility btn-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	background: var(--color-emerald);
+	color: var(--color-body);
 	font-weight: 600;
+	border-radius: 10px;
+	padding: 0.7rem 1.25rem;
+	transition: background 160ms ease;
+	&:hover {
+		background: var(--color-emerald-light);
+	}
+}
+@utility btn-ghost {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	border: 1px solid var(--color-hairline-strong);
+	color: var(--color-ink);
+	font-weight: 500;
+	border-radius: 10px;
+	padding: 0.7rem 1.25rem;
+	transition:
+		background 160ms ease,
+		border-color 160ms ease;
+	&:hover {
+		background: var(--color-card);
+		border-color: rgba(255, 255, 255, 0.24);
+	}
+}
+
+/* Resting state is the final state, so removing the animation removes the motion
+   and leaves the element correct. */
+.scroll-fade {
+	opacity: 0;
+	transform: translateY(16px);
+	transition:
+		opacity 620ms cubic-bezier(0.22, 0.8, 0.28, 1),
+		transform 620ms cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+.scroll-fade.is-visible {
+	opacity: 1;
+	transform: none;
+}
+
+@utility shine {
+	position: relative;
+	overflow: hidden;
+	&::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			110deg,
+			transparent 35%,
+			rgba(255, 255, 255, 0.14) 50%,
+			transparent 65%
+		);
+		transform: translateX(-100%);
+		animation: shine 3.6s ease-in-out infinite;
+	}
+}
+@keyframes shine {
+	0%,
+	62% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+.ticker {
+	display: flex;
+	width: max-content;
+	animation: ticker 38s linear infinite;
+}
+@keyframes ticker {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}
+.ticker-mask {
+	mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.progress-anim {
+	animation: progress 4.2s cubic-bezier(0.3, 0.7, 0.3, 1) infinite;
+	transform-origin: left center;
+}
+@keyframes progress {
+	0% {
+		transform: scaleX(0.04);
+	}
+	72%,
+	100% {
+		transform: scaleX(1);
+	}
+}
+
+.chevron {
+	transition: transform 200ms ease;
+}
+details[open] > summary .chevron {
+	transform: rotate(180deg);
+}
+
+/* Every animation on this page is decoration. All of it stops. */
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
+	}
+	.scroll-fade {
+		opacity: 1;
+		transform: none;
+	}
+	.ticker {
+		animation: none;
+		transform: none;
+	}
+	.progress-anim {
+		transform: scaleX(1);
+	}
+}
+
+.vh {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   The six pages behind the landing page (course platforms, news, pricing,
+   developers, about, 404) were authored against an earlier token set. Aliasing
+   those names onto the sea-green theme re-skins all six for free instead of
+   rewriting them; the classes below are the handful they share.
+   Contrast on #06100d: --graphite 0.72 -> 9.87:1, --ink-3 0.55 -> 6.24:1.
+   --------------------------------------------------------------------------- */
+:root {
+	--paper: var(--color-body);
+	--leaf: var(--color-card);
+	--sink: #0e201a;
+	--ink: var(--color-ink);
+	--graphite: rgba(255, 255, 255, 0.72);
+	--ink-3: rgba(255, 255, 255, 0.55);
+	--rule: var(--color-hairline);
+	--rule-firm: var(--color-hairline-strong);
+	--brass: var(--color-emerald-light);
+	--brass-hi: var(--color-seafoam);
+	--brass-ink: var(--color-body);
+	--wash: rgba(16, 185, 129, 0.08);
+	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+	--font: var(--font-sans);
+	--mono: var(--font-mono);
+	--ease: cubic-bezier(0.25, 0.8, 0.35, 1);
+	--r: 14px;
+	--r-sm: 10px;
+	--maxw: 1100px;
+	--gap: clamp(1rem, 0.8rem + 1vw, 1.5rem);
+	--bay: clamp(2.75rem, 2rem + 2.8vw, 4.5rem);
+	--step--1: 0.75rem;
+	--step-0: 0.8125rem;
+	--step-1: 0.9375rem;
+	--step-2: 1.0625rem;
+	--step-3: 1.25rem;
+	--step-4: clamp(1.375rem, 1.24rem + 0.6vw, 1.625rem);
+	--step-5: clamp(1.625rem, 1.4rem + 1vw, 2.125rem);
+	--step-6: clamp(2.125rem, 1.5rem + 2.6vw, 3.5rem);
+}
+
+.shell :is(h1, h2, h3) {
+	margin: 0;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	line-height: 1.1;
 	text-wrap: balance;
 }
-h1 {
+.shell h1 {
 	font-size: var(--step-6);
-	letter-spacing: -0.032em;
-	line-height: 1.06;
 }
-h2 {
+.shell h2 {
 	font-size: var(--step-5);
-	letter-spacing: -0.025em;
-	line-height: 1.14;
+	line-height: 1.15;
 }
-h3 {
+.shell h3 {
 	font-size: var(--step-2);
-	font-weight: 500;
-	letter-spacing: -0.014em;
+	font-weight: 600;
 	line-height: 1.35;
 }
-html[lang='bn'] h1,
-html[lang='bn'] h2,
-html[lang='bn'] h3 {
-	letter-spacing: 0;
-	line-height: 1.38;
-}
-p {
+.shell p {
 	margin: 0;
-	text-wrap: pretty;
 	max-width: 70ch;
+	text-wrap: pretty;
 }
-html[lang='bn'] p {
+html[lang='bn'] .shell p {
 	max-width: 58ch;
 }
-a {
+.shell a:not([class]) {
 	color: inherit;
-}
-:focus-visible {
-	outline: 2px solid var(--brass);
-	outline-offset: 2px;
-	border-radius: 4px;
-}
-img,
-svg {
-	max-width: 100%;
 }
 
 .shell {
@@ -176,25 +337,20 @@ svg {
 .bay {
 	padding-block: var(--bay);
 }
-/* Dividers you sense before you see: one hairline at 7% between sections. */
 .bay + .bay {
 	border-top: 1px solid var(--rule);
 }
 .flow > * + * {
 	margin-top: 0.9rem;
 }
-.flow > * + h2,
-.flow > * + h3 {
+.flow > * + :is(h2, h3) {
 	margin-top: 1.9rem;
 }
-
 .split {
 	display: grid;
 	gap: var(--gap) clamp(2rem, 4.5vw, 4rem);
 	align-items: start;
 }
-/* Grid items default to min-width:auto, which lets a wide <pre> push the column
-   past the viewport instead of scrolling inside itself. */
 .split > * {
 	min-width: 0;
 }
@@ -206,185 +362,83 @@ svg {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }
-
 .lede {
 	font-size: var(--step-3);
 	line-height: 1.45;
 	letter-spacing: -0.014em;
 	max-width: 48ch;
 }
-html[lang='bn'] .lede {
-	font-size: var(--step-2);
-	line-height: 1.65;
-	letter-spacing: 0;
-	max-width: 40ch;
-}
 .quiet {
 	color: var(--graphite);
 }
 .small {
 	font-size: var(--step-0);
-	line-height: 1.62;
 	color: var(--graphite);
-}
-html[lang='bn'] .small {
-	font-size: var(--step-1);
 }
 .fine {
 	font-size: var(--step-0);
-	line-height: 1.62;
 	color: var(--ink-3);
 	max-width: 64ch;
 }
-html[lang='bn'] .fine {
+html[lang='bn'] :is(.small, .fine) {
 	font-size: var(--step-1);
-}
-
-code,
-.mono {
-	font-family: var(--mono);
-	font-size: 0.9em;
-	letter-spacing: -0.01em;
-}
-pre {
-	margin: 0;
-	padding: 1rem 1.1rem;
-	background: var(--leaf);
-	border: 1px solid var(--rule);
-	border-radius: var(--r);
-	box-shadow: var(--lift);
-	overflow-x: auto;
-	font-family: var(--mono);
-	font-size: var(--step--1);
-	line-height: 1.75;
-	color: var(--graphite);
-}
-
-/* ---- controls ---- */
-.btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.5rem;
-	padding: 0.52rem 0.95rem;
-	border: 1px solid var(--rule-firm);
-	border-radius: var(--r-sm);
-	/* A filled surface, not only a hairline: a 1px low-opacity border cannot reach
-	   the 3:1 a control boundary wants, so the fill carries identification too. */
-	background: var(--sink);
-	box-shadow: var(--lift);
-	color: var(--ink);
-	font: inherit;
-	font-size: var(--step-0);
-	font-weight: 500;
-	text-decoration: none;
-	cursor: pointer;
-	transition:
-		background 140ms var(--ease),
-		border-color 140ms var(--ease),
-		color 140ms var(--ease);
-}
-html[lang='bn'] .btn {
-	font-size: var(--step-1);
-}
-.btn:hover {
-	border-color: rgba(255, 255, 255, 0.2);
-	background: #1a1b1c;
-}
-:root[data-theme='light'] .btn:hover {
-	border-color: rgba(16, 17, 18, 0.28);
-	background: #e6e6e3;
-}
-.btn--solid {
-	background: var(--brass);
-	border-color: var(--brass);
-	color: var(--brass-ink);
-	box-shadow: none;
-	font-weight: 600;
-}
-.btn--solid:hover {
-	background: var(--brass-hi);
-	border-color: var(--brass-hi);
-	color: var(--brass-ink);
-}
-.btn--sm {
-	padding: 0.38rem 0.75rem;
-	font-size: var(--step--1);
-}
-html[lang='bn'] .btn--sm {
-	font-size: var(--step-0);
 }
 .row {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.5rem;
 }
-
+.btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.6rem 1.1rem;
+	border: 1px solid var(--rule-firm);
+	border-radius: var(--r-sm);
+	background: var(--leaf);
+	color: var(--ink);
+	font: inherit;
+	font-size: var(--step-0);
+	font-weight: 500;
+	text-decoration: none;
+	transition:
+		background 150ms var(--ease),
+		border-color 150ms var(--ease);
+}
+.btn:hover {
+	border-color: rgba(255, 255, 255, 0.24);
+}
+.btn--solid {
+	background: var(--color-emerald);
+	border-color: transparent;
+	color: var(--color-body);
+	font-weight: 600;
+}
+.btn--solid:hover {
+	background: var(--color-emerald-light);
+}
 .tlink {
 	color: var(--ink);
 	text-decoration: none;
 	box-shadow: inset 0 -1px 0 var(--rule-firm);
-	transition:
-		box-shadow 140ms var(--ease),
-		color 140ms var(--ease);
+	transition: box-shadow 150ms var(--ease);
 }
 .tlink:hover {
 	color: var(--brass);
 	box-shadow: inset 0 -1px 0 var(--brass);
 }
-
-/* ---- tables ---- */
-table {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: var(--step-0);
-}
-html[lang='bn'] table {
-	font-size: var(--step-1);
-}
-caption {
-	text-align: left;
-	color: var(--ink-3);
-	font-size: var(--step--1);
-	letter-spacing: 0.04em;
-	padding-bottom: 0.75rem;
-}
-html[lang='bn'] caption {
-	letter-spacing: 0;
-	font-size: var(--step-0);
-}
-th,
-td {
-	text-align: left;
-	padding: 0.55rem 0.8rem 0.55rem 0;
-	border-bottom: 1px solid var(--rule);
-	vertical-align: baseline;
-	font-weight: 400;
-}
-thead th {
-	color: var(--ink-3);
-	font-size: var(--step--1);
-	letter-spacing: 0.04em;
-	padding-bottom: 0.5rem;
-}
-html[lang='bn'] thead th {
-	letter-spacing: 0;
-	font-size: var(--step-0);
-}
 .figure {
 	font-family: var(--mono);
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
-	color: var(--ink);
 }
 .scroll-x {
 	overflow-x: auto;
 }
-
-/* ---- prices ---- */
 .price {
 	margin: 0.7rem 0 0.5rem;
 	font-size: var(--step-4);
-	font-weight: 600;
+	font-weight: 800;
 	letter-spacing: -0.03em;
 	line-height: 1.15;
 }
@@ -396,214 +450,44 @@ html[lang='bn'] thead th {
 	color: var(--graphite);
 	margin-top: 0.25rem;
 }
-html[lang='bn'] .price span {
-	font-size: var(--step-1);
-}
-.price + .price {
-	margin-top: 1rem;
-}
-
-/* ---- pieces the home page is built from ---------------------------------- */
-
-/* Status pill. Solid fill, no gradient, no glow. */
-.pill {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.5rem;
-	padding: 0.3rem 0.7rem 0.3rem 0.55rem;
-	border: 1px solid var(--rule-firm);
-	border-radius: 999px;
-	background: var(--leaf);
-	font-size: var(--step--1);
-	color: var(--graphite);
-}
-html[lang='bn'] .pill {
+.shell table {
+	width: 100%;
+	border-collapse: collapse;
 	font-size: var(--step-0);
 }
-.pill b {
-	display: inline-block;
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	background: var(--brass);
-}
-
-/* Three short facts under the hero buttons. */
-.assure {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem 1.6rem;
-	list-style: none;
-	padding: 0;
-	margin: 0;
-	font-size: var(--step-0);
+.shell caption {
+	text-align: left;
 	color: var(--ink-3);
+	font-size: var(--step--1);
+	padding-bottom: 0.7rem;
 }
-html[lang='bn'] .assure {
-	font-size: var(--step-1);
-}
-.assure li {
-	display: flex;
-	align-items: center;
-	gap: 0.45rem;
-}
-.assure svg {
-	color: var(--brass);
-	flex: 0 0 auto;
-}
-
-/* A framed, titled surface. Used for the data diagram and the worked examples. */
-.frame {
-	border: 1px solid var(--rule);
-	border-radius: var(--r);
-	background: var(--leaf);
-	box-shadow: var(--lift);
-	overflow: hidden;
-}
-.frame__bar {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 1rem;
-	flex-wrap: wrap;
-	padding: 0.7rem 1.1rem;
+.shell :is(th, td) {
+	text-align: left;
+	padding: 0.55rem 0.8rem 0.55rem 0;
 	border-bottom: 1px solid var(--rule);
-	background: var(--sink);
+	vertical-align: baseline;
+	font-weight: 400;
 }
-.frame__title {
-	font-size: var(--step-0);
-	font-weight: 500;
-}
-html[lang='bn'] .frame__title {
-	font-size: var(--step-1);
-}
-.frame__note {
-	font-size: var(--step--1);
+.shell thead th {
 	color: var(--ink-3);
+	font-size: var(--step--1);
 }
-html[lang='bn'] .frame__note {
-	font-size: var(--step-0);
-}
-.frame__body {
-	padding: clamp(1rem, 0.85rem + 0.6vw, 1.5rem);
-}
-
-/* Feature card. Flat surface, flat icon tile, no gradient anywhere. */
-.cards {
-	display: grid;
-	gap: var(--gap);
-	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-}
-.card {
+.shell pre {
+	margin: 0;
+	padding: 1rem 1.1rem;
 	background: var(--leaf);
 	border: 1px solid var(--rule);
-	border-radius: var(--r);
-	box-shadow: var(--lift);
-	padding: 1.15rem;
-}
-.card__icon {
-	display: grid;
-	place-items: center;
-	width: 32px;
-	height: 32px;
 	border-radius: var(--r-sm);
-	background: var(--sink);
-	border: 1px solid var(--rule);
-	color: var(--brass);
-	margin-bottom: 0.8rem;
-}
-.card h3 {
-	margin-bottom: 0.35rem;
-}
-.card p {
-	margin: 0;
-	font-size: var(--step-0);
-	line-height: 1.62;
-	color: var(--graphite);
-}
-html[lang='bn'] .card p {
-	font-size: var(--step-1);
-}
-
-/* Accordion. <details> is the whole mechanism — no script. */
-.faq {
-	border-top: 1px solid var(--rule);
-	max-width: 780px;
-}
-.faq details {
-	border-bottom: 1px solid var(--rule);
-}
-.faq summary {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 1rem;
-	padding: 0.95rem 0;
-	cursor: pointer;
-	list-style: none;
-	font-weight: 500;
-	transition: color 140ms var(--ease);
-}
-.faq summary::-webkit-details-marker {
-	display: none;
-}
-.faq summary:hover {
-	color: var(--brass);
-}
-.faq summary::after {
-	content: '+';
+	overflow-x: auto;
 	font-family: var(--mono);
-	color: var(--ink-3);
-	flex: 0 0 auto;
-	line-height: 1;
-}
-.faq details[open] summary::after {
-	content: '\2013';
-}
-.faq details[open] summary {
-	color: var(--ink);
-}
-.faq p {
-	margin: 0 0 1rem;
-	padding-right: 2rem;
-	font-size: var(--step-0);
+	font-size: var(--step--1);
+	line-height: 1.75;
 	color: var(--graphite);
-	max-width: 68ch;
 }
-html[lang='bn'] .faq p {
-	font-size: var(--step-1);
+.shell :is(code, .mono) {
+	font-family: var(--mono);
+	font-size: 0.9em;
 }
-
-/* The only motion is a response to something the reader did, plus one very slow
-   drift behind the hero. Both go when the reader asks for less. */
-@media (prefers-reduced-motion: reduce) {
-	*,
-	*::before,
-	*::after {
-		transition: none !important;
-		animation: none !important;
-		scroll-behavior: auto !important;
-	}
-}
-
-.skip {
-	position: absolute;
-	left: -9999px;
-	top: 0;
-	z-index: 20;
-	background: var(--ink);
-	color: var(--paper);
-	padding: 0.55rem 1rem;
-	border-radius: 0 0 var(--r-sm) 0;
-}
-.skip:focus {
-	left: 0;
-}
-.vh {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	overflow: hidden;
-	clip-path: inset(50%);
-	white-space: nowrap;
+.shell :is(dl, dd) {
+	margin: 0;
 }

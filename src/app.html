@@ -4,49 +4,38 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-		<link rel="preload" href="/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossorigin />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap"
+			rel="stylesheet"
+		/>
 		<script>
-			// The whole client runtime. Pre-paint so a remembered choice never flashes,
-			// then two delegated listeners. No IP or navigator.language guessing: the
-			// toggle is the only thing that decides the language.
+			// Pre-paint, so a remembered language never flashes the other one. No IP or
+			// navigator.language guessing: the toggle is the only thing that decides.
 			(function () {
 				var d = document.documentElement;
-				function get(k) {
-					try {
-						return localStorage.getItem(k);
-					} catch (e) {
-						return null;
-					}
-				}
 				function put(k, v) {
 					try {
 						localStorage.setItem(k, v);
 					} catch (e) {}
 				}
-				var lang = get('alc-lang');
-				if (lang === 'bn' || lang === 'en') d.lang = lang;
-				var theme = get('alc-theme');
-				if (theme === 'light' || theme === 'dark') d.dataset.theme = theme;
-
-				function paintLang() {
+				try {
+					var s = localStorage.getItem('alc-lang');
+					if (s === 'bn' || s === 'en') d.lang = s;
+				} catch (e) {}
+				function paint() {
 					var b = document.querySelectorAll('[data-set-lang]');
 					for (var i = 0; i < b.length; i++)
 						b[i].setAttribute('aria-pressed', b[i].dataset.setLang === d.lang ? 'true' : 'false');
 				}
-				document.addEventListener('DOMContentLoaded', paintLang);
+				document.addEventListener('DOMContentLoaded', paint);
 				document.addEventListener('click', function (e) {
 					var l = e.target.closest && e.target.closest('[data-set-lang]');
-					if (l) {
-						d.lang = l.dataset.setLang;
-						put('alc-lang', d.lang);
-						paintLang();
-						return;
-					}
-					if (e.target.closest && e.target.closest('[data-toggle-theme]')) {
-						// Dark is the default, so anything that is not explicitly light is dark.
-						d.dataset.theme = d.dataset.theme === 'light' ? 'dark' : 'light';
-						put('alc-theme', d.dataset.theme);
-					}
+					if (!l) return;
+					d.lang = l.dataset.setLang;
+					put('alc-lang', d.lang);
+					paint();
 				});
 			})();
 		</script>
