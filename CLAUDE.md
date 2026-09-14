@@ -56,6 +56,20 @@ This is what surfaced the deduplication bug: from the outside the API reported a
 asset `ready` while every playback URL returned 404. A consumer with database access
 would have seen rows and assumed it worked.
 
+## Agent-facing documentation
+
+Two files, different jobs, both hand-written and neither generated:
+
+- `llms.txt` — orientation. What this is, what surprises an integrator, links onward.
+- `.claude/skills/alchemist-api/SKILL.md` — the procedure. Concrete requests, webhook
+  verification, error handling. Loads automatically when an agent works on a video
+  integration. A copy is installed at `~/Sites/academy/.claude/skills/` so it loads
+  there too; that copy says where the original is.
+
+Their links are checked by `internal/docscheck`; their claims are not. When asset
+states, URL TTLs, header names, error codes or the lazy-rung threshold change, update
+both by hand — a wrong statement here propagates into someone else's code.
+
 ## Related repositories
 
 | Repo | What |
