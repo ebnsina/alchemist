@@ -19,6 +19,7 @@
 	--color-elevated: #1C1C1F;
 	--color-deep: #064e3b;
 	--color-emerald: #10b981;
+	--color-emerald-deep: #047857;
 	--color-emerald-light: #34d399;
 	--color-gold: #fbbf24;
 	--color-seafoam: #2dd4bf;
@@ -126,8 +127,8 @@ html[lang='en'] .l-bn {
 	align-items: center;
 	justify-content: center;
 	gap: 0.5rem;
-	background: var(--color-emerald);
-	color: var(--color-body);
+	background: var(--color-emerald-deep);
+	color: #fff;
 	font-weight: 600;
 	border-radius: var(--radius-xl);
 	padding: 0.7rem 1.25rem;
@@ -296,14 +297,14 @@ details[open] > summary .chevron {
 	--maxw: 1100px;
 	--gap: clamp(1rem, 0.8rem + 1vw, 1.5rem);
 	--bay: clamp(2.75rem, 2rem + 2.8vw, 4.5rem);
-	--step--1: 0.75rem;
-	--step-0: 0.8125rem;
-	--step-1: 0.9375rem;
-	--step-2: 1.0625rem;
-	--step-3: 1.25rem;
-	--step-4: clamp(1.375rem, 1.24rem + 0.6vw, 1.625rem);
-	--step-5: clamp(1.625rem, 1.4rem + 1vw, 2.125rem);
-	--step-6: clamp(2.125rem, 1.5rem + 2.6vw, 3.5rem);
+	--step--1: 0.8125rem;
+	--step-0: 0.9375rem;
+	--step-1: 1.0625rem;
+	--step-2: 1.1875rem;
+	--step-3: 1.4375rem;
+	--step-4: clamp(1.5rem, 1.3rem + 0.9vw, 1.875rem);
+	--step-5: clamp(1.875rem, 1.55rem + 1.5vw, 2.625rem);
+	--step-6: clamp(2.5rem, 1.7rem + 3.4vw, 4.25rem);
 }
 
 .shell :is(h1, h2, h3) {
