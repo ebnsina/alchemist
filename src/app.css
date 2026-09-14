@@ -46,6 +46,7 @@
 		background: var(--color-body);
 		color: var(--color-ink);
 		font-family: var(--font-sans);
+		font-size: var(--step-0);
 		line-height: 1.65;
 		-webkit-font-smoothing: antialiased;
 	}
@@ -283,14 +284,14 @@ details[open] > summary .chevron {
 	--maxw: 1100px;
 	--gap: clamp(1rem, 0.8rem + 1vw, 1.5rem);
 	--bay: clamp(2.75rem, 2rem + 2.8vw, 4.5rem);
-	--step--1: 0.8125rem;
-	--step-0: 0.9375rem;
-	--step-1: 1.0625rem;
-	--step-2: 1.1875rem;
-	--step-3: 1.4375rem;
-	--step-4: clamp(1.5rem, 1.3rem + 0.9vw, 1.875rem);
-	--step-5: clamp(1.875rem, 1.55rem + 1.5vw, 2.625rem);
-	--step-6: clamp(2.5rem, 1.7rem + 3.4vw, 4.25rem);
+	--step--1: 0.75rem;
+	--step-0: 0.875rem;
+	--step-1: 0.9375rem;
+	--step-2: 1.0625rem;
+	--step-3: 1.25rem;
+	--step-4: clamp(1.3125rem, 1.15rem + 0.7vw, 1.5rem);
+	--step-5: clamp(1.5rem, 1.28rem + 1.1vw, 2rem);
+	--step-6: clamp(1.9375rem, 1.4rem + 2.4vw, 3rem);
 }
 
 .shell :is(h1, h2, h3) {
