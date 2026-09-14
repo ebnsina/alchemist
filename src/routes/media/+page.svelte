@@ -62,7 +62,7 @@
 
 <style>
 	.open {
-		padding-block: clamp(2.5rem, 1.5rem + 4vw, 4.5rem) 0;
+		padding-block: clamp(7.5rem, 5.5rem + 7vw, 10rem) 0;
 	}
 	.open h1 {
 		max-width: 19ch;
