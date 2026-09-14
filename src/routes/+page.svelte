@@ -13,7 +13,7 @@
 
 <Seo
 	title="Alchemist — big videos in, small videos out"
-	description="Drop in a video and get back one that plays anywhere, loads fast, and is up to 95% smaller. 100 free videos a month, no card needed, files deleted after 24 hours."
+	description="Drop in a video and get back one that plays anywhere, loads fast, and is up to 95% smaller. 100 free videos a month, no card needed, and playback behind links that expire."
 />
 
 <Hero />

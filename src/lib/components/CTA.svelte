@@ -10,7 +10,7 @@
 			Ready to try the magic?
 		</h2>
 		<p class="relative mx-auto mt-4 max-w-md text-sm text-muted">
-			A hundred videos a month, free, with no card and no clock running. See what comes back before you decide anything.
+			A hundred videos a month, free, with no card and nothing to install. See what comes back before you decide anything.
 		</p>
 		<div class="relative mt-8 flex flex-wrap justify-center gap-3">
 			<a href="/#pricing" class="btn-primary">Start free</a>

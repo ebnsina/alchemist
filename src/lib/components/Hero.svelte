@@ -14,7 +14,7 @@
 			class="inline-flex items-center gap-2 rounded-full border border-brand-mid/35 bg-brand-mid/10 px-4 py-1.5 text-xs text-ink"
 		>
 			<HugeiconsIcon icon={Shield01Icon} size={15} strokeWidth={1.8} class="shrink-0 text-brand-light" />
-			Encrypted the whole way, and deleted after 24 hours
+			Signed links and encrypted playback
 		</p>
 
 		<h1 class="mt-7 text-4xl font-semibold tracking-tight sm:text-5xl leading-[1.32]">

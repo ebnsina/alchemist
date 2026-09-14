@@ -4,21 +4,15 @@
 	const steps = [
 		{
 			ten: 'Drop your video in',
-			tbn: 'ভিডিওটা রেখে দিন',
 			ben: 'Drag it onto the page, or pick it from your phone. Any format you have ever been handed is one we accept.',
-			bbn: 'পাতার উপর টেনে আনুন, বা ফোন থেকে বেছে নিন। এ যাবৎ আপনাকে যত রকম ফরম্যাট কেউ পাঠিয়েছে, সবই আমরা নিই।'
 		},
 		{
 			ten: 'We do the work',
-			tbn: 'কাজটা আমরা করি',
 			ben: 'Pick how you will use it — phone, web, or keep it big — and we handle the rest. There is nothing else to set.',
-			bbn: 'শুধু বলুন কোথায় ব্যবহার করবেন — ফোনে, ওয়েবে, নাকি বড় আকারেই রাখবেন — বাকিটা আমরা সামলাই। আর কিছু ঠিক করার নেই।'
 		},
 		{
-			ten: 'Take it away',
-			tbn: 'নিয়ে যান',
-			ben: 'Download it, or copy a link and send it. A day later we delete our copy, and that is the end of it.',
-			bbn: 'নামিয়ে নিন, বা লিংক কপি করে পাঠিয়ে দিন। একদিন পর আমাদের কপিটা আমরা মুছে ফেলি, ব্যস।'
+			ten: 'Share the link',
+			ben: 'Put the link in your course, your site or an email. It expires when you say it does, and every viewer gets the video encrypted.',
 		}
 	];
 </script>

@@ -4,30 +4,24 @@
 	const tiers = [
 		{
 			ten: 'Free',
-			tbn: 'ফ্রি',
 			price: '$0',
 			pen: 'forever',
-			pbn: 'সবসময়',
 			den: 'For trying it out and for the occasional video.',
-			dbn: 'একটু যাচাই করে দেখতে, আর মাঝেমধ্যে দু-একটা ভিডিওর জন্য।',
 			cta_en: 'Start free',
 			cta_bn: 'ফ্রি শুরু করুন',
 			rows: [
 				'100 videos a month',
 				'Up to 1080p',
 				'Files up to 2 GB',
-				'Deleted after 24 hours'
+				'Links that expire'
 			]
 		},
 		{
 			ten: 'Creator',
-			tbn: 'ক্রিয়েটর',
 			price: '$12',
 			pen: 'a month',
-			pbn: 'মাসে',
 			featured: true,
 			den: 'For anyone posting video as part of the job.',
-			dbn: 'যাঁদের কাজের অংশ হিসেবেই নিয়মিত ভিডিও দিতে হয়।',
 			cta_en: 'Choose Creator',
 			cta_bn: 'ক্রিয়েটর নিন',
 			rows: [
@@ -35,17 +29,14 @@
 				'Up to 4K',
 				'Files up to 20 GB',
 				'Batch up to 10 at once',
-				'Shareable links'
+				'Encrypted playback'
 			]
 		},
 		{
 			ten: 'Studio',
-			tbn: 'স্টুডিও',
 			price: '$39',
 			pen: 'a month',
-			pbn: 'মাসে',
 			den: 'For client work, long files and big finals.',
-			dbn: 'ক্লায়েন্টের কাজ, লম্বা ফাইল আর বড় ফাইনালের জন্য।',
 			cta_en: 'Choose Studio',
 			cta_bn: 'স্টুডিও নিন',
 			rows: [
