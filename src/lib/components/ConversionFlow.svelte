@@ -44,13 +44,8 @@
 	const progress = $derived(Math.min(100, Math.round((elapsed / 3200) * 100)));
 </script>
 
-<figure class="card shine relative w-full p-4 text-left sm:p-6">
-	<figcaption class="mb-5 flex items-center justify-between text-xs text-muted">
-		<span>What happens after you drop a file</span>
-		<span>Illustration</span>
-	</figcaption>
-
-	<ol class="mb-5 flex items-center gap-2.5 text-[11px] sm:gap-2 sm:text-xs">
+<div class="card shine relative w-full p-4 text-left sm:p-6">
+	<ol class="mb-5 flex items-center justify-center gap-2.5 text-[11px] sm:gap-2 sm:text-xs">
 		{#each steps as s, i (s.label)}
 			<li
 				class="flex items-center gap-2 whitespace-nowrap transition-colors duration-500"
@@ -147,4 +142,4 @@
 			</div>
 		{/key}
 	</div>
-</figure>
+</div>
