@@ -145,7 +145,7 @@
 		font-size: var(--step-0);
 		transition: color 140ms var(--ease);
 	}
-	html[lang='bn'] nav a {
+	:global(html[lang='bn']) nav a {
 		font-size: var(--step-1);
 	}
 	nav a:hover {
@@ -181,7 +181,7 @@
 			color 140ms var(--ease),
 			background 140ms var(--ease);
 	}
-	html[lang='bn'] .seg button {
+	:global(html[lang='bn']) .seg button {
 		font-size: var(--step-0);
 	}
 	.seg button:hover {
@@ -260,7 +260,7 @@
 		font-size: var(--step-0);
 		transition: color 140ms var(--ease);
 	}
-	html[lang='bn'] .flinks a {
+	:global(html[lang='bn']) .flinks a {
 		font-size: var(--step-1);
 	}
 	.flinks a:hover {
