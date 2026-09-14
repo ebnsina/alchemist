@@ -95,3 +95,41 @@ func TestLimiterIsPerAddress(t *testing.T) {
 		t.Fatal("a different address must not inherit the refusal")
 	}
 }
+
+// A session must not authorise a request that arrives from somewhere we did not
+// publish the dashboard. The cookie is attached by the browser regardless of who
+// asked, which is the whole shape of CSRF.
+func TestSessionRejectedFromUnlistedOrigin(t *testing.T) {
+	s := accountServer()
+	req := httptest.NewRequest(http.MethodGet, "/v1/keys", nil)
+	req.Header.Set("Origin", "https://evil.example")
+	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: "whatever"})
+
+	if _, ok := s.tenantFromSession(req); ok {
+		t.Fatal("session accepted from an unlisted origin")
+	}
+}
+
+// A cross-site GET carries Sec-Fetch-Site: cross-site and no Origin. Accepting it
+// because Origin was absent would undo the check above.
+func TestSessionRejectedForCrossSiteFetch(t *testing.T) {
+	s := accountServer()
+	req := httptest.NewRequest(http.MethodGet, "/v1/keys", nil)
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: "whatever"})
+
+	if _, ok := s.tenantFromSession(req); ok {
+		t.Fatal("session accepted for a cross-site fetch")
+	}
+}
+
+// With no accounts surface configured, a cookie means nothing at all.
+func TestSessionIgnoredWhenAccountsDisabled(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/v1/keys", nil)
+	req.Header.Set("Origin", "https://app.example")
+	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: "whatever"})
+
+	if _, ok := (&Server{}).tenantFromSession(req); ok {
+		t.Fatal("session accepted with no configured origin")
+	}
+}

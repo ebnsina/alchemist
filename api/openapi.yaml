@@ -143,6 +143,12 @@ paths:
         "429": { description: Concurrency or monthly quota reached }
 
   /v1/assets:
+    get:
+      summary: Recent assets for the tenant
+      description: Newest first. `limit` up to 100, default 25.
+      responses:
+        "200": { description: Assets with state, duration and size }
+        "401": { description: Missing or invalid credentials }
     post:
       summary: Import a video from a URL
       description: |
@@ -183,6 +189,31 @@ paths:
       responses:
         "202": { description: Queued for processing }
         "404": { description: No upload awaiting that id }
+
+  /v1/keys:
+    get:
+      summary: List this tenant's API keys
+      description: |
+        Names and dates only. Keys are stored hashed, so an existing key cannot be
+        shown again — a lost key is replaced, not recovered.
+      responses:
+        "200": { description: Keys, newest first }
+        "401": { description: Missing or invalid credentials }
+    post:
+      summary: Mint another API key
+      responses:
+        "201": { description: The new key, shown once }
+        "400": { description: Name too long }
+        "401": { description: Missing or invalid credentials }
+
+  /v1/keys/{id}:
+    delete:
+      summary: Revoke an API key
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Revoked }
+        "404": { description: No such key, or it was already revoked }
 
   /v1/webhooks:
     get:

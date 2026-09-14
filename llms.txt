@@ -53,14 +53,20 @@ POST /v1/assets/{id}/complete  -> queues processing
   or
 POST /v1/assets {"url":"..."}  -> import from a URL instead
 
+GET  /v1/assets                -> recent assets, newest first (dashboard listing)
 GET  /v1/assets/{id}           -> state, and playback URLs once playable
+GET  /v1/keys                  -> names and dates, never the key
+POST /v1/keys                  -> another key (shown once)
+DELETE /v1/keys/{id}           -> revoke
 POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready
 GET  /v1/usage                 -> billable aggregates
 ```
 
 The auth endpoints exist for the sign-up page, not for integrations: a session is a
 browser thing. Server-to-server code uses the API key from signup and never touches
-them. They are mounted only when `ALCHEMIST_WEB_ORIGINS` names a browser origin, so
+them. `/v1` accepts either credential — an API key, or that session cookie when the
+request comes from a configured browser origin, which is what the customer dashboard
+uses so a key never has to live in page script. They are mounted only when `ALCHEMIST_WEB_ORIGINS` names a browser origin, so
 a deployment that has no web front end has no account surface at all.
 
 Webhook deliveries are signed: `X-Alchemist-Signature: sha256=<hmac of the raw body>`

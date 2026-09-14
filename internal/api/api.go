@@ -103,17 +103,24 @@ func (s *Server) Routes() http.Handler {
 	}
 
 	r.Route("/v1", func(r chi.Router) {
+		if s.authEnabled() {
+			r.Use(s.cors)
+		}
 		r.Use(s.authenticate)
 		r.Get("/whoami", s.whoami)
 		r.Post("/uploads", s.createUpload)
 		r.Post("/assets/{id}/complete", s.completeUpload)
 		r.Get("/assets/{id}", s.getAsset)
+		r.Get("/assets", s.listAssets)
 		r.Post("/assets", s.createAssetFromURL)
 		r.Post("/webhooks", s.createWebhook)
 		r.Get("/webhooks", s.listWebhooks)
 		r.Get("/usage", s.getUsage)
 		r.Post("/bucket-sources", s.createBucketSource)
 		r.Get("/bucket-sources", s.listBucketSources)
+		r.Get("/keys", s.listKeys)
+		r.Post("/keys", s.createKey)
+		r.Delete("/keys/{id}", s.deleteKey)
 	})
 	return r
 }
@@ -133,6 +140,15 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if !ok || key == "" {
+			// No key: this may be the dashboard, which holds a cookie rather than a
+			// key. A session is accepted only from a configured origin, because a
+			// cookie is sent by the browser on any site's behalf and that is what
+			// CSRF is.
+			if tenantID, ok := s.tenantFromSession(r); ok {
+				ctx := context.WithValue(r.Context(), tenantKey, tenantID)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
 			writeErrFor(w, r, http.StatusUnauthorized, "missing_api_key",
 				"Include your API key as a Bearer token.")
 			return
