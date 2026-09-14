@@ -88,6 +88,7 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/tenants", s.listTenants)
 		r.Post("/tenants/{id}/keys", s.issueKey)
 		r.Delete("/keys/{keyID}", s.revokeKey)
+		r.Get("/contact", s.listContact)
 	})
 
 	// Accounts. Outside the API-key middleware by necessity — signing up is how you
@@ -99,6 +100,12 @@ func (s *Server) Routes() http.Handler {
 			r.Post("/login", s.postLogin)
 			r.Post("/logout", s.postLogout)
 			r.Get("/session", s.getSession)
+		})
+		// The contact form is not an account endpoint, but it is the same shape:
+		// a browser, no credential, and a reason to rate limit.
+		r.Group(func(r chi.Router) {
+			r.Use(s.cors, s.rateLimit)
+			r.Post("/v1/contact", s.postContact)
 		})
 	}
 

@@ -54,6 +54,14 @@ paths:
         "400": { description: invalid_request or invalid_ladder_profile }
         "401": { description: invalid_admin_key }
 
+  /admin/contact:
+    get:
+      summary: Read contact enquiries
+      description: Operator surface. Requires ALCHEMIST_ADMIN_KEY.
+      responses:
+        "200": { description: Enquiries, newest first }
+        "401": { description: Missing or invalid admin key }
+
   /admin/tenants/{id}/keys:
     post:
       summary: Issue an API key for a tenant
@@ -96,6 +104,22 @@ paths:
         "201": { description: Account created, session started, API key returned }
         "400": { description: Missing org, malformed email, or password under 10 characters }
         "409": { description: An account already exists for that email }
+        "429": { description: Too many attempts from this address }
+
+  /v1/contact:
+    post:
+      summary: Send an enquiry from the public site
+      security: []
+      description: |
+        No account needed — that is the point. Same origin check and rate limit as
+        signup. A filled `website` field is treated as a bot and answered as though
+        it worked.
+
+        Requests are readable only through the operator surface: the table has RLS
+        forced and no policy, so a tenant-scoped connection sees nothing.
+      responses:
+        "202": { description: Received }
+        "400": { description: Missing name, bad email, or a message under 10 characters }
         "429": { description: Too many attempts from this address }
 
   /v1/auth/login:

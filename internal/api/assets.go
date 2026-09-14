@@ -106,6 +106,19 @@ type playbackURLs struct {
 	Thumbnails string `json:"thumbnails"`
 }
 
+// rendition is one size of one video. Chunk counts are what makes progress
+// legible: an encode is a pile of chunks, and "12 of 40" says more than a state name.
+type rendition struct {
+	Height      int    `json:"height"`
+	Codec       string `json:"codec"`
+	BitrateBps  int    `json:"bitrate_bps"`
+	State       string `json:"state"`
+	ChunksDone  int    `json:"chunks_done"`
+	ChunksTotal int    `json:"chunks_total"`
+	Bytes       *int64 `json:"bytes"`
+	Lazy        bool   `json:"lazy"`
+}
+
 type assetResponse struct {
 	ID          string        `json:"id"`
 	State       string        `json:"state"`
@@ -113,6 +126,9 @@ type assetResponse struct {
 	DurationSec *float64      `json:"duration_seconds,omitempty"`
 	Width       *int          `json:"width,omitempty"`
 	Height      *int          `json:"height,omitempty"`
+	SourceBytes *int64        `json:"source_bytes,omitempty"`
+	CreatedAt   string        `json:"created_at,omitempty"`
+	Renditions  []rendition   `json:"renditions"`
 	Playback    *playbackURLs `json:"playback,omitempty"`
 }
 
@@ -121,12 +137,35 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	assetID := chi.URLParam(r, "id")
 
 	var resp assetResponse
+	resp.Renditions = []rendition{}
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
-		return tx.QueryRow(r.Context(),
-			`select id::text, state::text, error_code, duration_sec, width, height
+		var created time.Time
+		if err := tx.QueryRow(r.Context(),
+			`select id::text, state::text, error_code, duration_sec, width, height,
+			        source_bytes, created_at
 			   from assets where id = $1`, assetID).
 			Scan(&resp.ID, &resp.State, &resp.ErrorCode, &resp.DurationSec,
-				&resp.Width, &resp.Height)
+				&resp.Width, &resp.Height, &resp.SourceBytes, &created); err != nil {
+			return err
+		}
+		resp.CreatedAt = created.UTC().Format(time.RFC3339)
+
+		rows, err := tx.Query(r.Context(),
+			`select height, codec, bitrate_bps, state, chunks_done, chunks_total, bytes, lazy
+			   from renditions where asset_id = $1 order by height desc, codec`, assetID)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var d rendition
+			if err := rows.Scan(&d.Height, &d.Codec, &d.BitrateBps, &d.State,
+				&d.ChunksDone, &d.ChunksTotal, &d.Bytes, &d.Lazy); err != nil {
+				return err
+			}
+			resp.Renditions = append(resp.Renditions, d)
+		}
+		return rows.Err()
 	})
 	if err == pgx.ErrNoRows {
 		writeErrFor(w, r, http.StatusNotFound, "asset_not_found", "We couldn't find that video.")
