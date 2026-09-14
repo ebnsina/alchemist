@@ -367,7 +367,7 @@ func errorCode(err error) string {
 	case errorsIs(err, media.ErrNoVideoStream):
 		return "no_video_stream"
 	case errorsIs(err, media.ErrUnreadableSource):
-		return "unreadable_source"
+		return "source_unreadable"
 	case errorsIs(err, media.ErrStitchFailed):
 		return "stitch_failed"
 	case errorsIs(err, media.ErrPackageFailed):

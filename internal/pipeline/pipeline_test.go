@@ -72,7 +72,7 @@ func TestErrorCodeMapping(t *testing.T) {
 		want string
 	}{
 		{media.ErrNoVideoStream, "no_video_stream"},
-		{media.ErrUnreadableSource, "unreadable_source"},
+		{media.ErrUnreadableSource, "source_unreadable"},
 		{media.ErrStitchFailed, "stitch_failed"},
 		{media.ErrPackageFailed, "package_failed"},
 		{media.ErrEncodeFailed, "encode_failed"},
