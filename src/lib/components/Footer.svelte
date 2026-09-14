@@ -4,29 +4,26 @@
 	const cols = [
 		{
 			hen: 'Product',
-			hbn: 'পণ্য',
 			links: [
-				{ href: '/#features', en: 'Features', bn: 'যা যা আছে' },
-				{ href: '/#how', en: 'How it works', bn: 'কীভাবে কাজ করে' },
-				{ href: '/#pricing', en: 'Pricing', bn: 'দাম' }
+				{ href: '/#features', en: 'Features' },
+				{ href: '/#how', en: 'How it works' },
+				{ href: '/#pricing', en: 'Pricing' }
 			]
 		},
 		{
 			hen: 'Help',
-			hbn: 'সহায়তা',
 			links: [
-				{ href: '/#faq', en: 'Questions', bn: 'প্রশ্ন' },
-				{ href: '/docs/', en: 'For developers', bn: 'ডেভেলপারদের জন্য' },
-				{ href: '/about/', en: 'Why this exists', bn: 'কেন এটি আছে' }
+				{ href: '/#faq', en: 'Questions' },
+				{ href: '/contact/', en: 'Talk to us' },
+				{ href: '/app/docs/', en: 'API reference' }
 			]
 		},
 		{
-			hen: 'For teams',
-			hbn: 'টিমের জন্য',
+			hen: 'Account',
 			links: [
-				{ href: '/edtech/', en: 'Course platforms', bn: 'কোর্স প্ল্যাটফর্ম' },
-				{ href: '/media/', en: 'News and media', bn: 'সংবাদ ও মিডিয়া' },
-				{ href: '/pricing/', en: 'Platform pricing', bn: 'প্ল্যাটফর্মের দাম' }
+				{ href: '/signup/', en: 'Start free' },
+				{ href: '/login/', en: 'Sign in' },
+				{ href: '/app/', en: 'Dashboard' }
 			]
 		}
 	];

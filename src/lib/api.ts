@@ -15,6 +15,8 @@ const MESSAGES: Record<string, string> = {
 	offline: 'We could not reach Alchemist. Check your connection and try again.',
 	upload_failed: 'The upload did not finish. Try it again.',
 	not_found: 'We could not find that.',
+	invalid_message: 'Tell us a little more — a sentence or two is plenty.',
+	asset_not_found: 'We could not find that video.',
 	quota_exceeded: 'You have reached this month\u2019s limit. Upgrade or wait for the reset.'
 };
 
@@ -64,6 +66,16 @@ export const login = (email: string, password: string) =>
 	});
 
 export const logout = () => call<void>('/v1/auth/logout', { method: 'POST' });
+
+export type ContactRequest = {
+	name: string;
+	email: string;
+	org: string;
+	message: string;
+	website: string;
+};
+export const contact = (body: ContactRequest) =>
+	call<{ status: string }>('/v1/contact', { method: 'POST', body: JSON.stringify(body) });
 export const session = () => call<Session>('/v1/auth/session');
 
 export type Asset = {
@@ -122,3 +134,28 @@ export function putFile(url: string, file: File, onProgress: (pct: number) => vo
 		xhr.send(file);
 	});
 }
+
+export type Rendition = {
+	height: number;
+	codec: string;
+	bitrate_bps: number;
+	state: string;
+	chunks_done: number;
+	chunks_total: number;
+	bytes: number | null;
+	lazy: boolean;
+};
+export type AssetDetail = {
+	id: string;
+	state: string;
+	error_code?: string;
+	duration_seconds?: number;
+	width?: number;
+	height?: number;
+	source_bytes?: number;
+	created_at?: string;
+	renditions: Rendition[];
+	playback?: { hls: string; dash: string; poster: string; thumbnails: string };
+};
+
+export const getAsset = (id: string) => call<AssetDetail>(`/v1/assets/${id}`);

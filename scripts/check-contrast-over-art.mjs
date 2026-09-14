@@ -11,7 +11,7 @@
 import { chromium } from 'playwright';
 
 const W = 1280, H = 900;
-const PAGES = ['/', '/pricing'];
+const PAGES = ['/', '/contact/', '/login/', '/signup/'];
 
 const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
 const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
@@ -37,6 +37,12 @@ for (const route of PAGES) {
 
 		const spots = await p.evaluate(({ W, H }) => [...document.querySelectorAll('[class*="text-"], h1, h2, h3, p, li, a, span')]
 			.filter(e => e.textContent.trim() && e.children.length === 0)
+			// Screen-reader-only text is clipped to a pixel. It is never seen, and
+			// sampling it reads whatever is painted behind the clip.
+			.filter(e => {
+				const r = e.getBoundingClientRect();
+				return r.width > 4 && r.height > 4;
+			})
 			// Drop anything another element paints over — the fixed header, a
 			// decorative plate — since the pixel there is not this element's ground.
 			.filter(e => {

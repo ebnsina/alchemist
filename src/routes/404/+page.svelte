@@ -15,12 +15,9 @@
 		</p>
 		<ul class="ways">
 			<li><a class="tlink" href="/">Home</a></li>
-			<li><a class="tlink" href="/edtech/">Course platforms</a></li>
-			<li><a class="tlink" href="/media/">News and media</a></li>
-			<li><a class="tlink" href="/pricing/">Pricing</a></li>
-			<li><a class="tlink" href="/docs/">Docs</a></li>
-			<li><a class="tlink" href="/about/">About</a></li>
-		</ul>
+			<li><a class="tlink" href="/contact/">Talk to us</a></li>
+			<li><a class="tlink" href="/app/">Dashboard</a></li>
+			</ul>
 	</div>
 </section>
 

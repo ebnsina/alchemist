@@ -5,6 +5,7 @@
 	import { Tick02Icon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import AuthShell from '$lib/components/AuthShell.svelte';
+	import { goto } from '$app/navigation';
 	import { login, ApiError } from '$lib/api';
 
 	let email = $state('');
@@ -25,6 +26,8 @@
 		try {
 			await login(email.trim(), password);
 			done = true;
+			// Straight to the dashboard. The success card is what they see on the way.
+			goto('/app/');
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
 			password = '';
@@ -45,7 +48,7 @@
 				<HugeiconsIcon icon={Tick02Icon} size={20} strokeWidth={2.6} />
 			</span>
 			<p class="mt-4 text-sm text-muted">You are signed in as {email}.</p>
-			<a href="/docs/" class="btn-primary mt-6 w-full">Pick up where you left off</a>
+			<a href="/app/" class="btn-primary mt-6 w-full">Go to your dashboard</a>
 		</div>
 	{:else}
 		<form onsubmit={submit}>

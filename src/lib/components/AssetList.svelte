@@ -75,9 +75,11 @@
 			<tbody>
 				{#each assets as a (a.id)}
 					{@const state = STATE[a.state] ?? { label: a.state, tone: 'work' }}
-					<tr class="border-t border-hairline">
+					<tr class="border-t border-hairline transition-colors hover:bg-white/[0.03]">
 						<td class="px-5 py-3">
-							<code class="font-mono text-xs text-muted">{a.id.slice(0, 8)}</code>
+							<a href="/app/videos/{a.id}/" class="font-mono text-xs text-brand-light">
+								{a.id.slice(0, 8)}
+							</a>
 						</td>
 						<td class="px-5 py-3">
 							<span class="inline-flex items-center gap-2">

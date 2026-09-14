@@ -127,7 +127,10 @@
 				</button>
 			</div>
 
-			<a href="/docs/" class="btn-primary mt-6 w-full">Show me what to do with it</a>
+			<a href="/app/" class="btn-primary mt-6 w-full">Take me to my dashboard</a>
+			<p class="mt-3 text-center text-xs text-muted">
+				The reference lives in there too, under API reference.
+			</p>
 		</div>
 	{:else}
 		<ol class="mb-6 flex items-center gap-1.5" aria-label="Progress">

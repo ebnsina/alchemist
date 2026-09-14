@@ -6,10 +6,11 @@
 		DashboardSquare01Icon,
 		Upload01Icon,
 		KeyframeIcon,
+		Book02Icon,
 		Logout01Icon
 	} from '@hugeicons/core-free-icons';
 	import Logo from '$lib/components/Logo.svelte';
-	import { session, logout, type Session } from '$lib/api';
+	import { session, logout, ApiError, type Session } from '$lib/api';
 
 	let { children } = $props();
 	let me: Session | null = $state(null);
@@ -18,15 +19,28 @@
 	const nav = [
 		{ href: '/app/', label: 'Overview', icon: DashboardSquare01Icon },
 		{ href: '/app/upload/', label: 'Upload', icon: Upload01Icon },
-		{ href: '/app/keys/', label: 'API keys', icon: KeyframeIcon }
+		{ href: '/app/keys/', label: 'API keys', icon: KeyframeIcon },
+		{ href: '/app/docs/', label: 'API reference', icon: Book02Icon }
 	];
+
+	let trouble = $state('');
 
 	// The session lives in an HttpOnly cookie, so the page cannot read it — asking
 	// the API is the only way to know, and the only way to be sure it is still live.
+	//
+	// Only a refused session sends someone to the login page. A network blip or a
+	// rate limit is not a signed-out state, and treating it as one throws away
+	// whatever they were in the middle of.
 	$effect(() => {
 		session()
-			.then((s) => (me = s))
-			.catch(() => goto('/login/'))
+			.then((s) => {
+				me = s;
+				trouble = '';
+			})
+			.catch((e) => {
+				if (e instanceof ApiError && e.code === 'no_session') goto('/login/');
+				else trouble = e instanceof ApiError ? e.message : 'We could not reach Alchemist.';
+			})
 			.finally(() => (checked = true));
 	});
 
@@ -80,6 +94,14 @@
 			<p class="text-sm text-muted">Checking your session…</p>
 		{:else if me}
 			{@render children()}
+		{:else if trouble}
+			<div class="card p-8 text-center">
+				<p class="font-semibold">We could not load your account</p>
+				<p class="mx-auto mt-2 max-w-sm text-sm text-muted">{trouble}</p>
+				<button type="button" class="btn-ghost mt-5" onclick={() => location.reload()}>
+					Try again
+				</button>
+			</div>
 		{/if}
 	</main>
 </div>

@@ -6,4 +6,6 @@ export const SITE = {
 	repo: 'https://github.com/ebnsina/alchemist'
 };
 
-export const ROUTES = ['/', '/edtech', '/media', '/pricing', '/docs', '/about'];
+// The public site is two pages. Signup, login and the dashboard are deliberately
+// absent: a sitemap is for pages a stranger should land on from a search.
+export const ROUTES = ['/', '/contact'];

@@ -15,10 +15,11 @@
 		return () => window.removeEventListener('scroll', read);
 	});
 	const links = [
-		{ href: '/#features', en: 'Features', bn: 'যা যা আছে' },
-		{ href: '/#how', en: 'How it works', bn: 'কীভাবে কাজ করে' },
-		{ href: '/#pricing', en: 'Pricing', bn: 'দাম' },
-		{ href: '/#faq', en: 'Questions', bn: 'প্রশ্ন' }
+		{ href: '/#features', en: 'Features' },
+		{ href: '/#how', en: 'How it works' },
+		{ href: '/#pricing', en: 'Pricing' },
+		{ href: '/#faq', en: 'Questions' },
+		{ href: '/contact/', en: 'Talk to us' }
 	];
 	const lang = $derived(page.url.pathname);
 </script>
