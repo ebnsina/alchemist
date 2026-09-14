@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Seo from '$lib/Seo.svelte';
 	import T from '$lib/T.svelte';
+	import Money from '$lib/Money.svelte';
 </script>
 
 <Seo
@@ -35,7 +36,7 @@
 	<div class="meters">
 		<article class="flow">
 			<h2><T as="span" en="Preparing your video" bn="ভিডিও তৈরি করা" /></h2>
-			<p class="price">৳2.00<span>
+			<p class="price"><Money amount={2} /><span class="note">
 					<T as="span" en="for each minute of video you send · about $0.016" bn="আপনার পাঠানো ভিডিওর প্রতি মিনিটে · প্রায় $০.০১৬" />
 				</span>
 			</p>
@@ -50,7 +51,7 @@
 
 		<article class="flow">
 			<h2><T as="span" en="Keeping it" bn="রেখে দেওয়া" /></h2>
-			<p class="price">৳1.20<span>
+			<p class="price"><Money amount={1.2} /><span class="note">
 					<T as="span" en="per GB per month · about $0.010" bn="প্রতি জিবি প্রতি মাসে · প্রায় $০.০১০" />
 				</span>
 			</p>
@@ -65,11 +66,11 @@
 
 		<article class="flow">
 			<h2><T as="span" en="Sending it to viewers" bn="দর্শকের কাছে পাঠানো" /></h2>
-			<p class="price">৳0.35<span>
+			<p class="price"><Money amount={0.35} /><span class="note">
 					<T as="span" en="for each GB watched inside Bangladesh · about $0.003" bn="বাংলাদেশের ভেতরে দেখা প্রতি জিবিতে · প্রায় $০.০০৩" />
 				</span>
 				</p>
-				<p class="price">৳1.20<span>
+				<p class="price"><Money amount={1.2} /><span class="note">
 					<T as="span" en="for each GB watched anywhere else · about $0.010" bn="অন্য যেকোনো জায়গায় দেখা প্রতি জিবিতে · প্রায় $০.০১০" />
 				</span>
 			</p>
@@ -116,21 +117,21 @@
 				<tbody>
 					<tr>
 						<th scope="row"><T as="span" en="Preparing 20 hours of video" bn="২০ ঘণ্টা ভিডিও তৈরি" /></th>
-						<td class="figure">৳2,400</td>
+						<td class="figure"><Money amount={2400} decimals={0} /></td>
 					</tr>
 					<tr>
 						<th scope="row"><T as="span" en="Keeping 500 GB" bn="৫০০ জিবি রেখে দেওয়া" /></th>
-						<td class="figure">৳600</td>
+						<td class="figure"><Money amount={600} decimals={0} /></td>
 					</tr>
 					<tr>
 						<th scope="row"><T as="span" en="Sending 250 GB inside Bangladesh" bn="দেশের ভেতরে ২৫০ জিবি পাঠানো" /></th>
-						<td class="figure">৳88</td>
+						<td class="figure"><Money amount={88} decimals={0} /></td>
 					</tr>
 				</tbody>
 				<tfoot>
 					<tr>
 						<th scope="row"><T as="span" en="A month" bn="মাসে" /></th>
-						<td class="figure total">৳3,088</td>
+						<td class="figure total"><Money amount={3088} decimals={0} /></td>
 					</tr>
 				</tfoot>
 			</table>

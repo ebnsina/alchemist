@@ -28,10 +28,12 @@
 	--color-hairline: rgba(255, 255, 255, 0.08);
 	--color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-		/* Fontshare serves latin only, so Bangla still falls through to the system's
-	   Noto Sans Bengali and the chain is unchanged. */
+		/* Kanchenjunga (body) serves latin and kirat-rai; Trench Slab (headings) latin
+	   only. Neither has Bengali, so Bangla still falls through to the system's Noto
+	   Sans Bengali and that chain is unchanged. Kanchenjunga has no variable axis —
+	   400 and 500 are requested as discrete faces. */
 	--font-sans:
-		'Amulya', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		'Kanchenjunga', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-heading:
 		'Trench Slab', 'Noto Sans Bengali', Georgia, 'Times New Roman', serif;
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, 'Roboto Mono', monospace;
@@ -456,7 +458,10 @@ html[lang='bn'] :is(.small, .fine) {
 	letter-spacing: -0.03em;
 	line-height: 1.15;
 }
-.price span {
+/* Was `.price span`, which caught every span inside the price — including the
+   ones the currency formatter emits, breaking the symbol onto its own line and
+   restyling it. Scoped to the caption it was written for. */
+.price .note {
 	display: block;
 	font-size: var(--step-0);
 	font-weight: 400;
