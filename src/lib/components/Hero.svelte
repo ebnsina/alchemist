@@ -1,11 +1,11 @@
 <script lang="ts">
 	import T from '$lib/T.svelte';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
-	import ShaderGradient from './ShaderGradient.svelte';
+	import AuroraGradient from './AuroraGradient.svelte';
 </script>
 
 <section class="relative overflow-hidden pt-32 pb-16 sm:pt-40 sm:pb-24">
-	<ShaderGradient />
+	<AuroraGradient />
 
 	<div class="mx-auto max-w-6xl px-4 text-center sm:px-6">
 		<p
