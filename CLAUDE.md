@@ -85,6 +85,12 @@ These were established by measurement and are expensive to rediscover.
   entire internet and a security-only suite would have passed it.
 - **MinIO's open-source binaries are archived** (410 Gone). Dev and prod both use
   SeaweedFS.
+- **Content hash is not unique per tenant.** Uploading the same file twice yields two
+  assets with independent lifecycles that share the encoding, so the dedup index is a
+  lookup index, not a constraint. A unique index there rejects a legitimate upload.
+- **The original is deleted once the mezzanine is stored**, unless the tenant pays to
+  retain it. Safe only because every rendition, including one generated on demand years
+  later, is built from the mezzanine and never the original.
 - **JIT renditions must reuse the asset's existing content key and its stored
   complexity.** A fresh key produces a rung nothing can decrypt (and it fails looking
   like a corrupt file, not a key mismatch); skipping complexity leaves one asset with

@@ -57,7 +57,10 @@ create table assets (
 );
 create index on assets (tenant_id, created_at desc);
 -- Dedup is scoped within tenant; cross-tenant dedup would leak content existence.
-create unique index on assets (tenant_id, source_sha256) where source_sha256 is not null;
+-- Not unique: several assets may share content. Uploading the same file twice yields
+-- two assets with independent lifecycles, sharing only the encoding work.
+create index assets_dedup_lookup on assets (tenant_id, source_sha256)
+  where source_sha256 is not null;
 
 create table renditions (
   id              uuid primary key default gen_random_uuid(),

@@ -3,6 +3,7 @@ package pipeline
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -121,6 +122,20 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		}
 	}
 
+	// Hash the source before encoding. At scale, re-uploads and provider migrations
+	// mean the same file arrives repeatedly; encoding it twice is pure waste.
+	// Scoped to the tenant -- a cross-tenant match would leak the fact that another
+	// customer holds the same file.
+	sum, err := hashFile(src)
+	if err != nil {
+		return fmt.Errorf("hash source: %w", err)
+	}
+	if existing, err := w.findDuplicate(ctx, a, sum); err != nil {
+		return err
+	} else if existing != "" {
+		return w.linkToDuplicate(ctx, a, existing, sum)
+	}
+
 	w.setState(ctx, a, "encoding")
 
 	opts := media.DefaultOptions()
@@ -181,6 +196,9 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		return fmt.Errorf("publish: %w", err)
 	}
 
+	// Only after the renditions and the mezzanine are safely stored.
+	w.applySourceRetention(ctx, a, deref(sourceKey), mezzKey)
+
 	if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
 		// partially_ready is a real, published state: playback works on the low
 		// ladder while the expensive rungs do not exist yet.
@@ -191,11 +209,11 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		if _, err := tx.Exec(ctx,
 			`update assets set state = $6::asset_state, duration_sec = $2, width = $3,
 			        height = $4, frame_rate = $5, mezzanine_key = $7,
-			        complexity = $8, updated_at = now()
+			        complexity = $8, source_sha256 = $9, updated_at = now()
 			  where id = $1`,
 			a.AssetID, res.Probe.DurationSec, res.Probe.Width,
 			res.Probe.Height, res.Probe.FrameRate, state, mezzKey,
-			res.Complexity); err != nil {
+			res.Complexity, sum); err != nil {
 			return err
 		}
 		for _, r := range res.Rungs {
@@ -433,4 +451,102 @@ func (w *TranscodeWorker) pullFromBucket(ctx context.Context, a TranscodeArgs, s
 		return fmt.Errorf("read %s from customer bucket: %w", objectKey, err)
 	}
 	return nil
+}
+
+// hashFile streams the file rather than reading it whole: sources run to gigabytes.
+func hashFile(path string) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return nil, err
+	}
+	return h.Sum(nil), nil
+}
+
+// findDuplicate looks for a completed asset with identical content in this tenant.
+func (w *TranscodeWorker) findDuplicate(ctx context.Context, a TranscodeArgs, sum []byte) (string, error) {
+	var id string
+	err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx,
+			`select id::text from assets
+			  where source_sha256 = $1 and id <> $2
+			    and state in ('ready','partially_ready')
+			  limit 1`, sum, a.AssetID).Scan(&id)
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	return id, err
+}
+
+// linkToDuplicate points the new asset at renditions that already exist.
+//
+// The asset stays its own row with its own id, because the customer asked for it and
+// may delete it independently; only the encoding work is skipped.
+func (w *TranscodeWorker) linkToDuplicate(ctx context.Context, a TranscodeArgs, existingID string, sum []byte) error {
+	err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx,
+			`update assets dst set
+			     state = src.state, duration_sec = src.duration_sec,
+			     width = src.width, height = src.height, frame_rate = src.frame_rate,
+			     mezzanine_key = src.mezzanine_key, complexity = src.complexity,
+			     source_sha256 = $3, deduplicated_from = src.id, updated_at = now()
+			   from assets src
+			  where dst.id = $1 and src.id = $2`, a.AssetID, existingID, sum)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	w.emit(ctx, a, "asset.ready", map[string]any{
+		"asset_id": a.AssetID, "deduplicated_from": existingID,
+	})
+	return nil
+}
+
+// applySourceRetention removes the original unless the tenant pays to keep it.
+//
+// Safe only because the mezzanine is already stored: every rendition, including one
+// generated on demand much later, is built from the mezzanine and never from the
+// original. Failure here is logged into the asset, not fatal -- the video is fine,
+// there is simply a file left behind for a later sweep.
+func (w *TranscodeWorker) applySourceRetention(ctx context.Context, a TranscodeArgs, sourceKey, mezzKey string) {
+	if sourceKey == "" || mezzKey == "" {
+		return // nothing uploaded by us, or no mezzanine to fall back on
+	}
+
+	var retain bool
+	if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		err := tx.QueryRow(ctx, `select retain_original from tenant_limits`).Scan(&retain)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil // no limits row: plan default, do not retain
+		}
+		return err
+	}); err != nil || retain {
+		return
+	}
+
+	if err := w.Store.Delete(ctx, sourceKey); err != nil {
+		// Not fatal: the video is fine, there is just an object left to sweep. But it
+		// must be visible, because silently leaked originals are exactly the cost this
+		// is meant to remove.
+		_ = w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+			_, e := tx.Exec(ctx,
+				`update assets set last_retention_error = $2 where id = $1`,
+				a.AssetID, err.Error())
+			return e
+		})
+		return
+	}
+	_ = w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx,
+			`update assets set source_deleted_at = now(), source_key = null
+			  where id = $1`, a.AssetID)
+		return err
+	})
 }
