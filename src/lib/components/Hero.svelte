@@ -8,9 +8,21 @@
 
 	<div class="mx-auto max-w-6xl px-4 text-center sm:px-6">
 		<p
-			class="inline-flex items-center gap-2 rounded-full border border-hairline bg-card px-3.5 py-1 text-xs text-muted"
+			class="inline-flex items-center gap-2 rounded-lg border border-hairline bg-transparent px-3 py-1.5 text-xs text-muted"
 		>
-			<span class="h-1.5 w-1.5 rounded-full bg-emerald-light"></span>
+			<svg
+				class="h-3.5 w-3.5 shrink-0 text-emerald-light"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<path d="M12 3v3m0 12v3m9-9h-3M6 12H3m12.4-5.4 2.1-2.1M6.5 17.5l-2.1 2.1m13 0-2.1-2.1M6.5 6.5 4.4 4.4" />
+				<circle cx="12" cy="12" r="3.25" />
+			</svg>
 			100 free videos every month · no card needed
 		</p>
 
