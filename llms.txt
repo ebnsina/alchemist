@@ -65,6 +65,8 @@ GET  /v1/assets/{id}/activity  -> pipeline steps, states and timings (no error t
 GET  /v1/keys                  -> names and dates, never the key
 POST /v1/keys                  -> another key (shown once)
 POST /v1/contact               -> an enquiry from the public site (no account)
+DELETE /v1/assets/{id}         -> delete a video; media shared with a deduplicated
+                                  copy survives until the last of them is gone
 DELETE /v1/keys/{id}           -> revoke
 POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready
 GET  /v1/usage                 -> billable aggregates

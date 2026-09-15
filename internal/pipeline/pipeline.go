@@ -209,8 +209,8 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 	w.setState(ctx, a, "packaging")
 	prefix := fmt.Sprintf("cmaf/%s/%s", a.TenantID, a.AssetID)
 
-	// The mezzanine is retained only while lazy rungs remain to be built from it.
-	// Keeping it forever would give back a large share of what JIT packaging saves.
+	// Stored only when a rung is deferred, and then kept for the life of the asset:
+	// studio edits render from it too, and the original is usually already deleted.
 	mezzKey := ""
 	if len(lazy) > 0 {
 		mezzKey = fmt.Sprintf("mez/%s/%s/mezzanine.mp4", a.TenantID, a.AssetID)
