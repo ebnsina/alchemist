@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/ebnsina/alchemist/internal/modules/live"
 )
 
 // An API spec that drifts from the router is worse than no spec: customers build
@@ -30,7 +32,7 @@ func TestOpenAPIMatchesRouter(t *testing.T) {
 	// carry would go unnoticed.
 	routes := map[string]bool{}
 	srv := &Server{webOrigins: []string{"https://example.test"},
-		live:        Live{IngestHost: "ingest.example"},
+		live:        live.New(nil, "ingest.example", nil, nil),
 		authLimiter: newAuthLimiter(10, time.Minute)}
 	router, ok := srv.Routes().(chi.Routes)
 	if !ok {

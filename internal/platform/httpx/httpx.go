@@ -23,3 +23,15 @@ func Error(w http.ResponseWriter, status int, code, message string) {
 		"error": map[string]string{"code": code, "message": message},
 	})
 }
+
+// TenantKey is where authentication puts the tenant it resolved. It lives here so a
+// module can read who is calling without importing the control plane.
+type ctxKey string
+
+const TenantKey ctxKey = "tenant_id"
+
+// Tenant is the authenticated tenant on this request, empty if there is none.
+func Tenant(r *http.Request) string {
+	id, _ := r.Context().Value(TenantKey).(string)
+	return id
+}

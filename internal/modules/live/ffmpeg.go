@@ -1,4 +1,4 @@
-package media
+package live
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+
+	"github.com/ebnsina/alchemist/internal/platform/media"
 )
 
 // Live ingest and segmentation.
@@ -21,23 +23,23 @@ import (
 // binary can emit LL-HLS partial segments today, so there is nothing shaka would buy
 // here that ffmpeg does not already do in one process.
 
-// LiveSegmentSeconds is the live segment length. It is GOPSeconds so every segment
+// segmentSeconds is the live segment length. It is media.GOPSeconds so every segment
 // opens on a keyframe, which is what lets the recording concatenate losslessly into
 // a mezzanine afterwards instead of being re-encoded.
-const LiveSegmentSeconds = GOPSeconds
+const segmentSeconds = media.GOPSeconds
 
-// LivePlaylist is the name of the playlist written into the output directory. It is
+// playlistName is the name of the playlist written into the output directory. It is
 // master.m3u8 because a single-rendition media playlist is a valid top-level
 // playlist, and because the asset's existing playback URL already points there.
-const LivePlaylist = "master.m3u8"
+const playlistName = "master.m3u8"
 
-// LiveCommand builds the one process that terminates ingest, encodes and segments.
+// segmentCommand builds the one process that terminates ingest, encodes and segments.
 //
 // Rate control matches the VOD path (CRF with a VBV cap, never per-chunk ABR) so the
 // recording looks like everything else in the library; only the preset drops to
 // veryfast, because realtime is a hard constraint and a soft frame beats a late one.
-func LiveCommand(ctx context.Context, input string, r Rung, outDir string) *exec.Cmd {
-	keyint := strconv.Itoa(LiveSegmentSeconds * MezzanineFrameRate)
+func segmentCommand(ctx context.Context, input string, r media.Rung, outDir string) *exec.Cmd {
+	keyint := strconv.Itoa(segmentSeconds * media.MezzanineFrameRate)
 
 	args := []string{"-hide_banner", "-loglevel", "error"}
 	// TCP, because a dropped UDP packet on the private hop between the ingest server
@@ -56,7 +58,7 @@ func LiveCommand(ctx context.Context, input string, r Rung, outDir string) *exec
 		"-g", keyint, "-keyint_min", keyint, "-sc_threshold", "0",
 		"-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "48000",
 		"-f", "hls",
-		"-hls_time", strconv.Itoa(LiveSegmentSeconds),
+		"-hls_time", strconv.Itoa(segmentSeconds),
 		"-hls_segment_type", "fmp4",
 		// EVENT, not LIVE: the playlist only grows, so a viewer can seek back to the
 		// start of the broadcast without a separate DVR mechanism.
@@ -64,29 +66,29 @@ func LiveCommand(ctx context.Context, input string, r Rung, outDir string) *exec
 		"-hls_list_size", "0",
 		"-hls_fmp4_init_filename", "init.mp4",
 		"-hls_segment_filename", filepath.Join(outDir, "%d.m4s"),
-		filepath.Join(outDir, LivePlaylist),
+		filepath.Join(outDir, playlistName),
 	)
 	return exec.CommandContext(ctx, "ffmpeg", args...)
 }
 
-// LivePullURL is the private address the transcoder reads a published stream from.
+// pullURL is the private address the transcoder reads a published stream from.
 // The path is the stream id, which is what the ingest server authorized against the
-// stream key -- see internal/api/live_auth.go.
-func LivePullURL(base, streamID string) string {
+// stream key -- see authorize.go.
+func pullURL(base, streamID string) string {
 	return base + "/" + streamID
 }
 
 // Ingest ports as configured in deploy/live/mediamtx.yml. Change them there and here
 // together, or the URL handed to a customer points at a port nothing is listening on.
 const (
-	LiveRTMPPort = 1935
-	LiveSRTPort  = 8890
+	rtmpPort = 1935
+	srtPort  = 8890
 )
 
-// LiveKeyPlaceholder marks where the customer pastes their own stream key.
-const LiveKeyPlaceholder = "YOUR_STREAM_KEY"
+// keyPlaceholder marks where the customer pastes their own stream key.
+const keyPlaceholder = "YOUR_STREAM_KEY"
 
-// LivePublishURL is what the customer points OBS at.
+// publishURL is what the customer points OBS at.
 //
 // The stream key travels as the password and the stream id as the path, because the
 // ingest server asks the API about exactly that pair before accepting a publisher.
@@ -95,11 +97,11 @@ const LiveKeyPlaceholder = "YOUR_STREAM_KEY"
 //
 // The key is a placeholder because only its hash is stored -- it was shown once, at
 // creation, and we cannot put it back into a URL later even for its owner.
-func LivePublishURL(protocol, host, streamID string) string {
+func publishURL(protocol, host, streamID string) string {
 	if protocol == "srt" {
 		return fmt.Sprintf("srt://%s:%d?streamid=publish:%s:publisher:%s",
-			host, LiveSRTPort, streamID, LiveKeyPlaceholder)
+			host, srtPort, streamID, keyPlaceholder)
 	}
 	return fmt.Sprintf("rtmp://%s:%d/%s?user=publisher&pass=%s",
-		host, LiveRTMPPort, streamID, LiveKeyPlaceholder)
+		host, rtmpPort, streamID, keyPlaceholder)
 }

@@ -18,6 +18,13 @@ const modulePrefix = "github.com/ebnsina/alchemist/internal/modules/"
 var platformAllowed = map[string]bool{
 	"httpx":   true, // response conventions, no state
 	"signing": true, // playback signatures, pure
+	// A module that owns tables carries a database handle when it is extracted, the
+	// same way any service carries its driver. platform/db is a thin pgx wrapper and
+	// its AsTenant is what enforces RLS.
+	"db": true,
+	// Ladder types and the encode primitives a realtime rung is built from. Pure
+	// value types and argv construction, no state and no connections.
+	"media": true,
 }
 
 // A module must not import another module. Cross-module needs go through an interface

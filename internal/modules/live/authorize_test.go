@@ -1,4 +1,4 @@
-package api
+package live
 
 import (
 	"net/http"
@@ -16,7 +16,7 @@ import (
 func TestIngestAuthRefusesBeforeTouchingTheDatabase(t *testing.T) {
 	// A nil database makes this honest: any case that reaches a query panics rather
 	// than quietly passing, so a refusal here is a refusal on logic alone.
-	s := &Server{live: Live{IngestHost: "ingest.example"}}
+	m := &Module{}
 
 	cases := []struct {
 		name string
@@ -36,21 +36,11 @@ func TestIngestAuthRefusesBeforeTouchingTheDatabase(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/internal/live/authorize",
 				strings.NewReader(c.body))
 			w := httptest.NewRecorder()
-			s.authorizeIngest(w, r)
+			m.authorizeIngest(w, r)
 			if w.Code != http.StatusUnauthorized {
 				t.Errorf("got %d, want 401 — this would have let a publisher through",
 					w.Code)
 			}
 		})
-	}
-}
-
-// The endpoint exists only where there is an ingest server to call it.
-func TestIngestAuthRouteOnlyWithLive(t *testing.T) {
-	if (&Server{}).liveEnabled() {
-		t.Error("live is enabled with no ingest host configured")
-	}
-	if !(&Server{live: Live{IngestHost: "ingest.example"}}).liveEnabled() {
-		t.Error("live is disabled despite an ingest host")
 	}
 }

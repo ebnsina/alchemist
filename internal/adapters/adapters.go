@@ -11,6 +11,7 @@ package adapters
 import (
 	"context"
 	"errors"
+	"io"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -19,6 +20,7 @@ import (
 	"github.com/ebnsina/alchemist/internal/pipeline"
 	"github.com/ebnsina/alchemist/internal/platform/db"
 	"github.com/ebnsina/alchemist/internal/platform/keys"
+	"github.com/ebnsina/alchemist/internal/platform/media"
 	"github.com/ebnsina/alchemist/internal/platform/storage"
 )
 
@@ -175,4 +177,87 @@ func (d DedupResolver) StoragePrefix(ctx context.Context, tenantID, assetID stri
 		return "live/" + tenantID + "/" + canonical, nil
 	}
 	return prefix, nil
+}
+
+// Put lets the live module publish a segment without seeing the storage client. The
+// same adapter serves delivery's reads, so one binding covers both directions.
+func (o ObjectStore) Put(ctx context.Context, key string, body io.Reader, contentType string) error {
+	return o.Store.Put(ctx, key, body, contentType)
+}
+
+// LiveAssets is live's view of the asset a broadcast is watched at. The asset table
+// belongs to the video side, so this is the file that becomes an HTTP call the day
+// live moves out -- and the only one.
+type LiveAssets struct{ DB *db.DB }
+
+// CreateForBroadcast mints the asset on the tenant's own ladder profile, which is
+// what the worker then resolves its single realtime rung from.
+func (l LiveAssets) CreateForBroadcast(ctx context.Context, tenantID string) (string, error) {
+	var assetID string
+	err := l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx,
+			`insert into assets (tenant_id, ladder_profile, state)
+			 select $1, t.ladder_profile, 'live' from tenants t
+			 returning id::text`, tenantID).Scan(&assetID)
+	})
+	return assetID, err
+}
+
+func (l LiveAssets) MarkLive(ctx context.Context, tenantID, assetID string) error {
+	return l.setState(ctx, tenantID, assetID, "live", nil)
+}
+
+func (l LiveAssets) MarkEnded(ctx context.Context, tenantID, assetID string) error {
+	return l.setState(ctx, tenantID, assetID, "live_ended", nil)
+}
+
+func (l LiveAssets) MarkFailed(ctx context.Context, tenantID, assetID, code string) error {
+	return l.setState(ctx, tenantID, assetID, "failed", &code)
+}
+
+func (l LiveAssets) setState(ctx context.Context, tenantID, assetID, state string, code *string) error {
+	return l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx,
+			`update assets set state = $2::asset_state,
+			        error_code = coalesce($3, error_code), updated_at = now()
+			  where id = $1`, assetID, state, code)
+		return err
+	})
+}
+
+// LiveLadder resolves the rungs a broadcast encodes at. ladder_profiles is shared
+// reference data, so live reads it here rather than joining to it itself.
+type LiveLadder struct{ DB *db.DB }
+
+func (l LiveLadder) Rungs(ctx context.Context, tenantID, assetID string) ([]media.Rung, error) {
+	var raw []byte
+	if err := l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx,
+			`select p.rungs from assets a
+			   join ladder_profiles p on p.name = a.ladder_profile
+			  where a.id = $1`, assetID).Scan(&raw)
+	}); err != nil {
+		return nil, err
+	}
+	return media.ParseLadder(raw)
+}
+
+// LiveQueue schedules the broadcast job. The module names what it wants queued; the
+// job type and the queue it lands on are this side of the seam.
+type LiveQueue struct{ River *river.Client[pgx.Tx] }
+
+func (q LiveQueue) EnqueueSession(ctx context.Context, sessionID, tenantID string) error {
+	_, err := q.River.Insert(ctx, pipeline.LiveArgs{SessionID: sessionID, TenantID: tenantID}, nil)
+	return err
+}
+
+// LiveEvents publishes the broadcast lifecycle through the same webhook path every
+// other event uses.
+type LiveEvents struct {
+	DB    *db.DB
+	River *river.Client[pgx.Tx]
+}
+
+func (e LiveEvents) Emit(ctx context.Context, tenantID, event string, data map[string]any) error {
+	return pipeline.Emit(ctx, e.DB, e.River, tenantID, event, data)
 }
