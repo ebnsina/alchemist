@@ -288,6 +288,11 @@ func (m *Module) startStream(w http.ResponseWriter, r *http.Request) {
 		"session_id": sessionID,
 		"asset_id":   assetID,
 		"ingest_url": publishURL(protocol, m.ingestHost, streamID),
+		// OBS and most encoders split this into two fields and join them with a
+		// slash. Handing over one URL gets the key appended a second time, which
+		// publishes to a path nothing authorised -- so the two halves are named.
+		"ingest_server":     publishURL(protocol, m.ingestHost, streamID),
+		"ingest_stream_key": "",
 	})
 }
 
