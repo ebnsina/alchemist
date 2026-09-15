@@ -273,7 +273,7 @@ func (s *Server) deleteAsset(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		if heir != nil {
-			if err := promoteHeir(r.Context(), tx, assetID, *heir, mediaPrefix); err != nil {
+			if err := s.promoteHeir(r.Context(), tx, assetID, *heir, mediaPrefix); err != nil {
 				return err
 			}
 		}
@@ -307,22 +307,68 @@ func (s *Server) deleteAsset(w http.ResponseWriter, r *http.Request) {
 // duplicate decrypts with and the rendition rows the API reads for them would vanish
 // with the parent. Playback would keep working off the surviving objects while /key
 // returned 404 and the asset reported no renditions at all.
-func promoteHeir(ctx context.Context, tx pgx.Tx, assetID, heir, mediaPrefix string) error {
-	// Every survivor gets the prefix written out: it is named after an id that is
-	// about to stop existing, and only the heir would otherwise resolve correctly.
-	for _, q := range []string{
-		`update assets set media_prefix = $3
-		  where id <> $1 and (deduplicated_from = $1 or media_prefix = $3)`,
-		`update content_keys set asset_id = $2 where asset_id = $1`,
-		`update renditions set asset_id = $2 where asset_id = $1`,
-		`update assets set deduplicated_from = null where id = $2`,
-		`update assets set deduplicated_from = $2 where deduplicated_from = $1 and id <> $2`,
-	} {
-		if _, err := tx.Exec(ctx, q, assetID, heir, mediaPrefix); err != nil {
+func (s *Server) promoteHeir(ctx context.Context, tx pgx.Tx, assetID, heir, mediaPrefix string) error {
+	// The content key is wrapped with the asset id as additional data, so moving the
+	// row to the heir without re-wrapping leaves a key that cannot be unwrapped and
+	// every duplicate 503s on /key.
+	rewrapped, nonce, err := s.rewrapKey(ctx, tx, assetID, heir)
+	if err != nil {
+		return err
+	}
+
+	// Each statement takes exactly the arguments it uses. Passing all three to every
+	// one looks tidier and fails at runtime: Postgres cannot infer the type of a
+	// parameter a statement never references, and the whole delete 500s.
+	steps := []struct {
+		sql  string
+		args []any
+	}{
+		// Every survivor gets the prefix written out: it is named after an id that is
+		// about to stop existing, and only the heir would otherwise resolve correctly.
+		{`update assets set media_prefix = $2
+		   where id <> $1 and (deduplicated_from = $1 or media_prefix = $2)`,
+			[]any{assetID, mediaPrefix}},
+
+		{`update renditions set asset_id = $2 where asset_id = $1`, []any{assetID, heir}},
+		{`update assets set deduplicated_from = null where id = $1`, []any{heir}},
+		{`update assets set deduplicated_from = $2
+		   where deduplicated_from = $1 and id <> $2`, []any{assetID, heir}},
+	}
+	// Only an encrypted asset has a key to move.
+	if rewrapped != nil {
+		steps = append(steps, struct {
+			sql  string
+			args []any
+		}{`update content_keys set asset_id = $2, wrapped_key = $3, nonce = $4
+		    where asset_id = $1`, []any{assetID, heir, rewrapped, nonce}})
+	}
+
+	for _, st := range steps {
+		if _, err := tx.Exec(ctx, st.sql, st.args...); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// rewrapKey re-seals the asset's content key under the heir's id. Returns nils when
+// the asset was never encrypted.
+func (s *Server) rewrapKey(ctx context.Context, tx pgx.Tx, assetID, heir string) ([]byte, []byte, error) {
+	var wrapped, nonce []byte
+	err := tx.QueryRow(ctx,
+		`select wrapped_key, nonce from content_keys where asset_id = $1`, assetID).
+		Scan(&wrapped, &nonce)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil, nil
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	key, err := s.keys.Unwrap(wrapped, nonce, assetID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.keys.Wrap(key, heir)
 }
 
 // reclaimFor lists what this asset alone was keeping alive. The source is always its

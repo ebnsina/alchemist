@@ -92,7 +92,7 @@ check "bound link carries the watermark" "$(echo "$BHLS" | grep -c 'wm=017123456
 check "bound link plays" "$(curl -s -o /dev/null -w '%{http_code}' "$B$BHLS")" "200"
 check "viewer stripped is refused" "$(curl -s -o /dev/null -w '%{http_code}' "${B}$(echo "$BHLS" | sed 's/&vid=student-8842//')")" "403"
 check "watermark swapped is refused" "$(curl -s -o /dev/null -w '%{http_code}' "${B}$(echo "$BHLS" | sed 's/&wm=01712345678/\&wm=someone-else/')")" "403"
-check "unsignable viewer id refused" "$(curl -s "$B/v1/assets/$A?viewer=a+b%20c" | python3 -c 'import sys,json;print(json.load(sys.stdin)["error"]["code"])' )" "invalid_viewer"
+check "unsignable viewer id refused" "$(curl -s -H "Authorization: Bearer $KEY" "$B/v1/assets/$A?viewer=a+b%20c" | python3 -c 'import sys,json;print(json.load(sys.stdin)["error"]["code"])' )" "invalid_viewer"
 
 echo "9c. delivery settings say how this account is protected"
 SET=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/playback-settings)
