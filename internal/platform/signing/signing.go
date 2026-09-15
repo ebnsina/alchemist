@@ -2,7 +2,7 @@
 //
 // Verification has to be possible at the edge without touching the control plane or
 // the database, so a signature carries everything needed to check it: the key id,
-// the expiry, and the path prefix it covers.
+// the expiry, the path prefix it covers, and any viewer it is bound to.
 package signing
 
 import (
@@ -66,12 +66,16 @@ func (k *Keyring) KIDs() []string {
 
 // Sign covers the asset prefix rather than an individual file, so one token
 // authorizes a manifest and every segment and key request beneath it.
-func (k *Keyring) Sign(prefix string, exp int64) (kid, sig string) {
-	return k.activeKID, compute(k.keys[k.activeKID], prefix, exp)
+//
+// viewer is the customer's own opaque id for whoever is watching and label is the
+// text their player burns on screen. Both are inside the signature, so a viewer who
+// edits either one out of the URL is left holding a link that no longer verifies.
+func (k *Keyring) Sign(prefix string, exp int64, viewer, label string) (kid, sig string) {
+	return k.activeKID, compute(k.keys[k.activeKID], prefix, exp, viewer, label)
 }
 
 // Verify checks a signature against the named key. An unknown key id fails closed.
-func (k *Keyring) Verify(prefix, kid, sig, expRaw string) bool {
+func (k *Keyring) Verify(prefix, kid, sig, expRaw, viewer, label string) bool {
 	secret, ok := k.keys[kid]
 	if !ok {
 		return false
@@ -80,12 +84,19 @@ func (k *Keyring) Verify(prefix, kid, sig, expRaw string) bool {
 	if err != nil || time.Now().Unix() > exp {
 		return false
 	}
-	return hmac.Equal([]byte(sig), []byte(compute(secret, prefix, exp)))
+	return hmac.Equal([]byte(sig), []byte(compute(secret, prefix, exp, viewer, label)))
 }
 
 // compute is the canonical string the edge must reproduce exactly.
-func compute(secret []byte, prefix string, exp int64) string {
+//
+// An unbound link signs the original two fields and nothing more, so links already
+// handed out keep verifying across the deploy that adds binding -- otherwise every
+// session in flight 403s for the length of a token TTL.
+func compute(secret []byte, prefix string, exp int64, viewer, label string) string {
 	mac := hmac.New(sha256.New, secret)
 	fmt.Fprintf(mac, "%s|%d", prefix, exp)
+	if viewer != "" || label != "" {
+		fmt.Fprintf(mac, "|%s|%s", viewer, label)
+	}
 	return hex.EncodeToString(mac.Sum(nil))[:SignatureLength]
 }

@@ -160,3 +160,42 @@ func (s *Server) revokeKey(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+type setLiveRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
+// setTenantLive turns the Live product on or off for one tenant.
+//
+// Operator surface rather than self-service: this is the line between what a customer
+// has paid for and what they have not, and nothing a customer holds should be able to
+// move it. Editing the row by hand in psql was the alternative, which is not a process.
+func (s *Server) setTenantLive(w http.ResponseWriter, r *http.Request) {
+	tenantID := chi.URLParam(r, "id")
+
+	var req setLiveRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "invalid_request",
+			"Send a JSON body with an \"enabled\" field.")
+		return
+	}
+
+	// Upsert: a tenant on plan defaults has no limits row yet, and enabling live must
+	// not require one to have been created first.
+	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		_, err := tx.Exec(r.Context(),
+			`insert into tenant_limits (tenant_id, live_enabled) values ($1, $2)
+			 on conflict (tenant_id) do update
+			   set live_enabled = excluded.live_enabled, updated_at = now()`,
+			tenantID, req.Enabled)
+		return err
+	})
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "internal_error",
+			"Something went wrong on our side.")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"tenant_id": tenantID, "live_enabled": req.Enabled,
+	})
+}

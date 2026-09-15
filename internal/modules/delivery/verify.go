@@ -37,7 +37,7 @@ func (m *Module) verifyPlayback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
-	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp")) {
+	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm")) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

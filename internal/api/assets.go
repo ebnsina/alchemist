@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -105,6 +106,11 @@ type playbackURLs struct {
 	DASH       string `json:"dash"`
 	Poster     string `json:"poster"`
 	Thumbnails string `json:"thumbnails"`
+	// Encrypted media is packaged cenc, and HLS has no cenc -- its fMP4 encryption is
+	// the SAMPLE-AES family. So an encrypted asset plays over DASH, and `preferred`
+	// says which URL to hand a player without the caller having to know that.
+	Encrypted bool   `json:"encrypted"`
+	Preferred string `json:"preferred"`
 }
 
 // rendition is one size of one video. Chunk counts are what makes progress
@@ -133,20 +139,45 @@ type assetResponse struct {
 	Playback    *playbackURLs `json:"playback,omitempty"`
 }
 
+// bindable is what a viewer id or watermark label may contain. Restricted to
+// characters that pass through a URL untouched, so the bytes the edge hashes are the
+// bytes that were signed -- percent-encoding would make njs and Go disagree and every
+// bound link would 403 at the edge only.
+var bindable = regexp.MustCompile(`^[A-Za-z0-9._~@-]+$`)
+
+func bindingOK(v string, max int) bool {
+	return v == "" || (len(v) <= max && bindable.MatchString(v))
+}
+
 func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 	assetID := chi.URLParam(r, "id")
 
+	// The customer's own id for whoever is watching, and the label their player
+	// draws on screen. Both stay opaque to us: they are signed, echoed and never
+	// stored, so we never learn which student a link belongs to.
+	viewer := r.URL.Query().Get("viewer")
+	label := r.URL.Query().Get("watermark")
+	if !bindingOK(viewer, 64) || !bindingOK(label, 48) {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_viewer",
+			"A viewer id or watermark can use letters, numbers and - . _ ~ @ only, "+
+				"up to 64 and 48 characters.")
+		return
+	}
+
 	var resp assetResponse
+	var encrypted bool
 	resp.Renditions = []rendition{}
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		var created time.Time
 		if err := tx.QueryRow(r.Context(),
-			`select id::text, state::text, error_code, duration_sec, width, height,
-			        source_bytes, created_at
-			   from assets where id = $1`, assetID).
+			`select a.id::text, a.state::text, a.error_code, a.duration_sec, a.width,
+			        a.height, a.source_bytes, a.created_at,
+			        exists (select 1 from content_keys k
+			                 where k.asset_id = coalesce(a.deduplicated_from, a.id))
+			   from assets a where a.id = $1`, assetID).
 			Scan(&resp.ID, &resp.State, &resp.ErrorCode, &resp.DurationSec,
-				&resp.Width, &resp.Height, &resp.SourceBytes, &created); err != nil {
+				&resp.Width, &resp.Height, &resp.SourceBytes, &created, &encrypted); err != nil {
 			return err
 		}
 		resp.CreatedAt = created.UTC().Format(time.RFC3339)
@@ -187,13 +218,25 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	case "ready", "partially_ready", "live", "live_ended":
 		exp := time.Now().Add(4 * time.Hour).Unix()
 		base := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
-		kid, sig := s.delivery.SignPlayback(base, exp)
+		kid, sig := s.delivery.SignPlayback(base, exp, viewer, label)
 		q := fmt.Sprintf("exp=%d&kid=%s&sig=%s", exp, kid, sig)
+		if viewer != "" {
+			q += "&vid=" + viewer
+		}
+		if label != "" {
+			q += "&wm=" + label
+		}
+		preferred := "hls"
+		if encrypted {
+			preferred = "dash"
+		}
 		resp.Playback = &playbackURLs{
 			HLS:        fmt.Sprintf("%s/master.m3u8?%s", base, q),
 			DASH:       fmt.Sprintf("%s/manifest.mpd?%s", base, q),
 			Poster:     fmt.Sprintf("%s/poster.jpg?%s", base, q),
 			Thumbnails: fmt.Sprintf("%s/sprite.vtt?%s", base, q),
+			Encrypted:  encrypted,
+			Preferred:  preferred,
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -230,7 +273,7 @@ func (s *Server) deleteAsset(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		if heir != nil {
-			if err := promoteHeir(r.Context(), tx, assetID, *heir, mediaPrefix); err != nil {
+			if err := s.promoteHeir(r.Context(), tx, assetID, *heir, mediaPrefix); err != nil {
 				return err
 			}
 		}
@@ -264,22 +307,68 @@ func (s *Server) deleteAsset(w http.ResponseWriter, r *http.Request) {
 // duplicate decrypts with and the rendition rows the API reads for them would vanish
 // with the parent. Playback would keep working off the surviving objects while /key
 // returned 404 and the asset reported no renditions at all.
-func promoteHeir(ctx context.Context, tx pgx.Tx, assetID, heir, mediaPrefix string) error {
-	// Every survivor gets the prefix written out: it is named after an id that is
-	// about to stop existing, and only the heir would otherwise resolve correctly.
-	for _, q := range []string{
-		`update assets set media_prefix = $3
-		  where id <> $1 and (deduplicated_from = $1 or media_prefix = $3)`,
-		`update content_keys set asset_id = $2 where asset_id = $1`,
-		`update renditions set asset_id = $2 where asset_id = $1`,
-		`update assets set deduplicated_from = null where id = $2`,
-		`update assets set deduplicated_from = $2 where deduplicated_from = $1 and id <> $2`,
-	} {
-		if _, err := tx.Exec(ctx, q, assetID, heir, mediaPrefix); err != nil {
+func (s *Server) promoteHeir(ctx context.Context, tx pgx.Tx, assetID, heir, mediaPrefix string) error {
+	// The content key is wrapped with the asset id as additional data, so moving the
+	// row to the heir without re-wrapping leaves a key that cannot be unwrapped and
+	// every duplicate 503s on /key.
+	rewrapped, nonce, err := s.rewrapKey(ctx, tx, assetID, heir)
+	if err != nil {
+		return err
+	}
+
+	// Each statement takes exactly the arguments it uses. Passing all three to every
+	// one looks tidier and fails at runtime: Postgres cannot infer the type of a
+	// parameter a statement never references, and the whole delete 500s.
+	steps := []struct {
+		sql  string
+		args []any
+	}{
+		// Every survivor gets the prefix written out: it is named after an id that is
+		// about to stop existing, and only the heir would otherwise resolve correctly.
+		{`update assets set media_prefix = $2
+		   where id <> $1 and (deduplicated_from = $1 or media_prefix = $2)`,
+			[]any{assetID, mediaPrefix}},
+
+		{`update renditions set asset_id = $2 where asset_id = $1`, []any{assetID, heir}},
+		{`update assets set deduplicated_from = null where id = $1`, []any{heir}},
+		{`update assets set deduplicated_from = $2
+		   where deduplicated_from = $1 and id <> $2`, []any{assetID, heir}},
+	}
+	// Only an encrypted asset has a key to move.
+	if rewrapped != nil {
+		steps = append(steps, struct {
+			sql  string
+			args []any
+		}{`update content_keys set asset_id = $2, wrapped_key = $3, nonce = $4
+		    where asset_id = $1`, []any{assetID, heir, rewrapped, nonce}})
+	}
+
+	for _, st := range steps {
+		if _, err := tx.Exec(ctx, st.sql, st.args...); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// rewrapKey re-seals the asset's content key under the heir's id. Returns nils when
+// the asset was never encrypted.
+func (s *Server) rewrapKey(ctx context.Context, tx pgx.Tx, assetID, heir string) ([]byte, []byte, error) {
+	var wrapped, nonce []byte
+	err := tx.QueryRow(ctx,
+		`select wrapped_key, nonce from content_keys where asset_id = $1`, assetID).
+		Scan(&wrapped, &nonce)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil, nil
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	key, err := s.keys.Unwrap(wrapped, nonce, assetID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.keys.Wrap(key, heir)
 }
 
 // reclaimFor lists what this asset alone was keeping alive. The source is always its

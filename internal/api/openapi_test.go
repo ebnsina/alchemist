@@ -30,7 +30,7 @@ func TestOpenAPIMatchesRouter(t *testing.T) {
 	// carry would go unnoticed.
 	routes := map[string]bool{}
 	srv := &Server{webOrigins: []string{"https://example.test"},
-		live:        Live{IngestHost: "ingest.example", PortLow: 9100, PortHigh: 9199},
+		live:        Live{IngestHost: "ingest.example"},
 		authLimiter: newAuthLimiter(10, time.Minute)}
 	router, ok := srv.Routes().(chi.Routes)
 	if !ok {

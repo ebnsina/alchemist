@@ -21,15 +21,30 @@ Things that will otherwise surprise you:
 - **Playback URLs expire** (4h) and carry `exp`, `kid` and `sig`. One signature
   authorizes the manifest, every segment, the content key, the poster and the
   thumbnails. Re-fetch the asset to get a fresh set; do not construct them yourself.
+- **Links can be bound to one viewer.** `GET /v1/assets/{id}?viewer=<your-id>&watermark=<label>`
+  adds `vid` and `wm` to the URLs, both inside the signature so neither can be edited
+  out. The viewer id is yours and stays opaque to us — signed, echoed, never stored.
+  `watermark` is a short label your player draws on screen; there is no server-side
+  burn-in. Set `max_viewer_devices` (`PUT /v1/playback-settings`, 0-20, 0 means no
+  cap) and a bound viewer streaming from more devices than that gets
+  `403 viewer_limit_reached` on the newest one. This is the answer to one login shared
+  with a class; encryption is not.
 - **Errors are `{"error":{"code","message"}}`.** Branch on `code`, which is stable.
   `message` is written for a human and is translated when the request sends
   `Accept-Language: bn`.
-- **Media is unencrypted by default**, and the signed expiring URL is the access
-  control. Optional cbcs encryption can be turned on per tenant
-  (`PUT /v1/playback-settings`), but it is not DRM without a licence server: the
-  manifest declares `KEYFORMAT="identity"` and the key is served from the same signed
-  URL as the segments. With it on, only Safari plays — Chrome and Firefox need EME.
-- **HLS is the primary output.** DASH is produced too, but only HLS is verified
+- **Media is encrypted by default** for new accounts: `cenc`, with the key endpoint
+  answering an EME Clear Key licence (`{"keys":[{"kty":"oct","kid":"...","k":"..."}],
+  "type":"temporary"}`, unpadded base64url). Chrome, Firefox and Edge play it with no
+  licence vendor. **Safari and iOS cannot** — WebKit's only key system is FairPlay —
+  and they get `403 browser_not_supported` from the key endpoint rather than a black
+  screen. This is encryption at rest, not DRM: the key reaches the browser in the
+  clear behind the signed URL, so a lifted bucket is useless but an entitled viewer
+  can still keep a copy. Turn it off per account with `PUT /v1/playback-settings`.
+  Existing accounts keep the setting they have, and published videos keep whatever
+  they were packaged with.
+- **Play whichever URL `playback.preferred` names.** HLS for a clear asset, DASH for
+  an encrypted one: encrypted media is packaged `cenc`, and HLS has no `cenc`. Both
+  URLs are always returned. DASH is produced too, but only HLS is verified
   end to end.
 - **Uploads never pass through the API.** `POST /v1/uploads` returns a presigned
   target; `PUT` the bytes there, then call `/complete`.
@@ -64,6 +79,7 @@ POST /v1/assets {"url":"..."}  -> import from a URL instead
 
 GET  /v1/assets                -> recent assets, newest first (dashboard listing)
 GET  /v1/assets/{id}           -> state, renditions with chunk progress, playback URLs
+                                  ?viewer=&watermark= binds the links to one person
 GET  /v1/assets/{id}/chunks    -> the chunk map, per rendition
 GET  /v1/assets/{id}/activity  -> pipeline steps, states and timings (no error text)
 GET  /v1/keys                  -> names and dates, never the key
@@ -76,9 +92,11 @@ POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready
 GET  /v1/usage                 -> billable aggregates: ingest seconds, egress bytes,
                                   storage gb_hours
 GET  /v1/branding              -> account name and logo URL
-GET  /v1/playback-settings     -> whether playback encryption is on
+GET  /v1/playback-settings     -> playback encryption, and the per-viewer device cap
 
-Live, present only where this deployment configures ingest:
+Live, present only where this deployment configures ingest, and only for a tenant
+who has bought it -- otherwise every endpoint here answers `live_not_enabled` (403).
+Live is a separate product from the VOD engine; a customer may hold either or both:
 POST   /v1/live-streams           -> create; the stream key is shown once
 GET    /v1/live-streams           -> your streams
 GET    /v1/live-streams/{id}      -> state and the asset the broadcast plays at
@@ -91,7 +109,7 @@ POST   /v1/members/invites     -> invite someone; token returned once
 DELETE /v1/members/invites/{id}-> withdraw a pending invite
 PATCH  /v1/members/{id}        -> change a role
 DELETE /v1/members/{id}        -> remove someone (their sessions cascade)
-PUT    /v1/playback-settings   -> turn playback encryption on or off
+PUT    /v1/playback-settings   -> encryption on/off, and max_viewer_devices (0-20)
 PUT    /v1/branding/logo       -> raw image bytes, <=1 MB, png/jpeg/webp
 DELETE /v1/branding/logo       -> remove it
 

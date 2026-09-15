@@ -140,11 +140,22 @@ These were established by measurement and are expensive to rediscover.
   surviving duplicate and moves those rows onto it: `content_keys` and `renditions`
   cascade from `assets`, so nulling the pointers instead takes the key and the ladder
   with it while the objects, and playback, carry on.
-- **Playback encryption is off by default and is not DRM.** With `KEYFORMAT="identity"`
-  the key is served from the same signed URL as the segments, so it protects nothing
-  the signed URL does not — and cbcs makes the stream unplayable outside Safari,
-  because Chrome and Firefox need EME. The signed expiring URL is the access control.
-  Tenants can opt in; assets keep whatever they were packaged with.
+- **Playback encryption is on by default and is still not DRM.** Media is packaged
+  `cenc` and `/playback/.../key` answers an EME Clear Key licence, which Chrome,
+  Firefox and Edge play with no licence vendor — that is what made the old cbcs
+  default unusable and it is fixed. The key still reaches the browser in the clear
+  behind the signed URL, so what this buys is encryption at rest: a lifted bucket or
+  backup decodes to nothing. It does not stop a viewer who is entitled to watch.
+  Never write a comment, doc line or message claiming otherwise. Safari and iOS
+  cannot play it at all (FairPlay is WebKit's only key system) and get
+  `browser_not_supported` rather than a black screen. Migration 033 changed the
+  default only: existing tenants and every published asset keep what they had.
+- **Sharing is answered by binding, not by encryption.** `?viewer=` mints a link whose
+  signature covers the viewer id and the watermark label, so neither can be edited out,
+  and `tenant_limits.max_viewer_devices` caps concurrent devices per viewer at the
+  origin. The cap cannot move to the edge: njs validates a signature with no shared
+  state, and counting devices needs state. Binding does **not** touch the media cache
+  key — `$uri$slice_range` still excludes the query, so viewers share every slice.
 - **JIT renditions must reuse the asset's existing content key and its stored
   complexity.** A fresh key produces a rung nothing can decrypt (and it fails looking
   like a corrupt file, not a key mismatch); skipping complexity leaves one asset with

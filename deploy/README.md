@@ -57,31 +57,62 @@ rows, and those copies are now resolved rather than stored.
 `internal/platform/db/migrations/028_usage_bytes.sql` adds `tenant_stored_bytes()`, another
 `SECURITY DEFINER` reader for a cross-tenant job, and the unique index the daily egress
 and storage rows upsert onto -- without it every flush inserts a new row instead of
-folding into the day.
+folding into the day. `internal/platform/db/migrations/033_encryption_default.sql` flips
+`tenants.encrypt_playback` to default true and changes **nothing** for tenants that
+already exist -- see below.
 
 `ALCHEMIST_ENCODE_WORKERS` should be roughly the core count. Encoding already uses a
 per-job worker pool, so setting it far above that only lengthens the tail.
 
 ## Live ingest
 
-Off unless both `ALCHEMIST_LIVE_INGEST_HOST` and `ALCHEMIST_LIVE_PORT_RANGE` are set;
+Off unless both `ALCHEMIST_LIVE_INGEST_HOST` and `ALCHEMIST_LIVE_PULL_BASE` are set;
 one without the other refuses to boot. With neither, the `/v1/live-streams` endpoints
 are not served at all rather than served and always failing.
 
-`ALCHEMIST_LIVE_PORT_RANGE` is `low-high`, one port per armed stream, so the range
-size is the number of concurrent broadcasts this box accepts. ffmpeg in listener mode
-takes one connection and cannot dispatch on SRT's streamid, which is why streams
-cannot share a port.
+An ingest server sits in front — `deploy/live/mediamtx.yml` configures it as a socket
+and nothing else, with HLS, WebRTC and recording all off, because playback is the
+origin's job. It terminates SRT and RTMP on **one port each**, whatever the number of
+streams, and dispatches on the path.
 
-**Open the range to your customers' encoders and to nobody else.** Ingest is currently
-authorised by the port rather than by the stream key, because ffmpeg never exposes the
-streamid it was handed. Both TCP (RTMP) and UDP (SRT) need the range open, and SRT
-needs an ffmpeg built with `--enable-libsrt` -- the distribution and Homebrew builds
-generally are not, and without it only RTMP works.
+    encoder ──RTMP/SRT──> ingest server ──loopback RTSP──> transcoder ──> origin
+                               │
+                               └── POST /internal/live/authorize (stream key)
 
-One live rung is roughly one CPU core held for the length of the broadcast. Size
-`ALCHEMIST_LIVE_PORT_RANGE` against cores, not against ambition: a box with 16 cores
-does not run 100 concurrent streams. See `docs/06-live.md`.
+**The stream key is the credential.** The ingest server asks the API about every
+publish, and a publish is allowed only when the key resolves to a live stream *and*
+that stream is the path being published to — checking the key alone would let one
+customer's valid key publish over everyone else's broadcast. Verified by refusing a
+wrong key: the ingest server logs `authentication failed: server replied with code
+401` and the publisher is dropped.
+
+**That endpoint carries no API key and must never be publicly reachable.** The caller
+is the ingest server on the same host, so bind it to loopback or a private interface
+and firewall it like a database port.
+
+Reads are asked about too, and are allowed **only from loopback** — that is how the
+transcoder pulls the stream back. Allowing them from anywhere would turn the ingest
+ports into a second, unsigned way to watch a customer's broadcast.
+
+### Enabling live for a customer
+
+Configuring an ingest host enables live for the **deployment**. It does not give it to
+anyone: Live is a separate product, `tenant_limits.live_enabled` is false by default,
+and a tenant with no limits row has it off. Turn it on per customer:
+
+    PUT /admin/tenants/{id}/live   {"enabled": true}
+
+Operator surface, behind `ALCHEMIST_ADMIN_KEY`. A VOD-only tenant calling the live
+endpoints gets `live_not_enabled` rather than a stream nobody sold them, and
+`/v1/whoami` reports `live_enabled` so a dashboard knows whether to offer it.
+
+### Sizing
+
+`ALCHEMIST_LIVE_MAX_STREAMS` is the number of concurrent broadcasts this box accepts.
+Size it against cores, not ambition: one live rung is roughly one CPU core held for
+the length of the broadcast, so a 16-core box does not run 100 streams. The port range
+that used to bound this is gone — one port now serves every stream. See
+`docs/06-live.md`.
 
 ## Edge
 
@@ -99,6 +130,59 @@ nginx -t && systemctl reload nginx
 Size `proxy_cache_path max_size` to about 80% of the cache disk. The working set is
 far smaller than the library: a small fraction of assets drives most views, which is
 the same power law that justifies JIT packaging.
+
+## Playback encryption after migration 033
+
+New tenants get `cenc` encryption on, with the key endpoint answering an EME Clear Key
+licence. Chrome, Firefox and Edge play it with no licence vendor.
+
+Two things it deliberately does not do:
+
+- **It does not touch existing tenants.** The migration changes the column default, not
+  the rows. Turning it on for a live account is an operator decision, because **Safari
+  and iOS cannot play Clear Key** -- WebKit's only key system is FairPlay -- and those
+  viewers get `403 browser_not_supported` from `/playback/.../key`. Flip one when its
+  audience is not on Apple devices: `PUT /v1/playback-settings {"encrypt_playback":true}`,
+  or `update tenants set encrypt_playback = true where id = '...';`
+- **It does not re-package anything already published.** Assets keep whatever they were
+  encoded with. Re-encrypting a library rewrites every object, changes every ETag, and
+  evicts the lot from every edge cache -- real money for protection nobody asked for.
+  A deferred rung generated years later reuses the asset's own key, or stays clear if
+  the asset has none.
+
+And be honest about what it is: **encryption at rest, not DRM.** The key goes to the
+browser in the clear behind the signed URL, so a stolen bucket or backup decodes to
+nothing, while a viewer who is entitled to watch can still keep a copy. Password
+sharing is answered by viewer-bound tokens and the device cap below, not by this.
+
+## Viewer binding, the device cap, and the cache
+
+`GET /v1/assets/{id}?viewer=<opaque-id>&watermark=<label>` mints links carrying `vid`
+and `wm`. Both are inside the HMAC, so a viewer cannot edit their id or their watermark
+out of the URL, and the njs at the edge hashes them the same way -- `internal/platform/signing/parity_test.go`
+covers bound links as well as plain ones.
+
+A link with no binding signs the original `{prefix}|{exp}` and nothing more, so tokens
+issued before this existed keep verifying. That is what stops a deploy 403ing every
+session in flight for the length of a token TTL.
+
+**This does not change the media cache key.** Media is still keyed on
+`$uri$slice_range`, so two students watching the same lecture share every cached slice
+no matter what their tokens say -- the hit ratio is untouched. Only manifests are keyed
+per full URI, and those were already per-viewer because every mint carries its own
+signature; they hold for two seconds, which is what absorbs a burst.
+
+The device cap is enforced at the **origin**, on playlist requests only. It cannot live
+at the edge: njs validates a signature with no shared state, and counting devices needs
+state shared across viewers. The consequence is that the edge's two-second manifest
+cache can serve one poll without the origin seeing it. A player re-reads its playlist
+every segment duration, so the next poll counts, and the window is a couple of seconds.
+
+`tenant_limits.max_viewer_devices` is 0 (no cap) by default. The count lives in the
+origin process, so a restart forgives everyone until each device polls again, and
+splitting `alchemist-origin` across machines gives each its own count -- both are
+deliberate. **ponytail:** the ceiling is one process; move the counter into Postgres or
+Redis only when several origins actually run at once.
 
 ## The cache key excludes the signature -- authorization must run first
 
@@ -127,8 +211,9 @@ it fails closed, which is the behaviour you want.
 
 ## Rotating playback keys
 
-Signatures are HMAC-SHA256 over `{prefix}|{exp}`, verified in the nginx worker so a
-cache hit never touches the control plane. `internal/platform/signing/parity_test.go` runs the
+Signatures are HMAC-SHA256 over `{prefix}|{exp}`, or `{prefix}|{exp}|{vid}|{wm}` when
+the link is bound to a viewer, verified in the nginx worker so a cache hit never touches
+the control plane. `internal/platform/signing/parity_test.go` runs the
 real `deploy/edge/playback_auth.js` under Node and asserts it matches Go byte for byte -- if those
 diverge, every playback URL 403s at the edge while looking valid at the origin.
 

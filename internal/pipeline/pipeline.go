@@ -146,9 +146,9 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 
 	opts := media.DefaultOptions()
 
-	// Off unless the tenant asked for it. cbcs without a licence server is not DRM —
-	// the key sits behind the same signed URL as the segments — and it makes the
-	// stream unplayable in every browser that is not Safari. See migration 025.
+	// On by default since migration 033. cenc plus an EME Clear Key licence plays in
+	// Chrome, Firefox and Edge with no vendor; what it buys is that a lifted bucket
+	// decodes to nothing, not DRM. Safari and iOS cannot play it.
 	var encrypt bool
 	if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx, `select encrypt_playback from tenants`).Scan(&encrypt)
@@ -261,6 +261,10 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 			if width%2 != 0 {
 				width++
 			}
+			// The update repeats every column, because the row always exists by now --
+			// recordPlan created it before the first chunk. Setting state alone left
+			// object_key and dash_representation null on every eager rung, and a null
+			// dash_representation drops that rung out of the rebuilt DASH manifest.
 			if _, err := tx.Exec(ctx,
 				`insert into renditions (asset_id, tenant_id, height, codec, bitrate_bps,
 				        encoder_version, params_hash, state, object_key, lazy,
@@ -268,7 +272,11 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 				 values ($1,$2,$3,$4,$5,$6,$7,'ready',$8,false,$9,$10,$5,$11,
 				         nullif($12,0)::bigint)
 				 on conflict (asset_id, height, codec) do update set
-				   state = 'ready', bytes = excluded.bytes`,
+				   state = 'ready', bytes = excluded.bytes,
+				   object_key = excluded.object_key, lazy = false,
+				   width = excluded.width, codec_string = excluded.codec_string,
+				   avg_bandwidth_bps = excluded.avg_bandwidth_bps,
+				   dash_representation = excluded.dash_representation`,
 				a.AssetID, a.TenantID, r.Height, r.Codec, r.MaxrateBPS,
 				media.EncoderVersion, media.ParamsHash(r),
 				fmt.Sprintf("%s/%dp.cmfv", prefix, r.Height),

@@ -36,16 +36,15 @@ const LivePlaylist = "master.m3u8"
 // Rate control matches the VOD path (CRF with a VBV cap, never per-chunk ABR) so the
 // recording looks like everything else in the library; only the preset drops to
 // veryfast, because realtime is a hard constraint and a soft frame beats a late one.
-func LiveCommand(ctx context.Context, protocol string, port int, r Rung, outDir string) *exec.Cmd {
+func LiveCommand(ctx context.Context, input string, r Rung, outDir string) *exec.Cmd {
 	keyint := strconv.Itoa(LiveSegmentSeconds * MezzanineFrameRate)
 
 	args := []string{"-hide_banner", "-loglevel", "error"}
-	// RTMP listening is an input flag; SRT carries it in the URL.
-	if protocol == "rtmp" {
-		args = append(args, "-listen", "1")
-	}
+	// TCP, because a dropped UDP packet on the private hop between the ingest server
+	// and here would corrupt a segment for every viewer at once.
+	args = append(args, "-rtsp_transport", "tcp")
 	args = append(args,
-		"-i", LiveIngestURL(protocol, port),
+		"-i", input,
 		"-c:v", "libx264",
 		"-profile:v", r.Profile,
 		"-preset", "veryfast",
@@ -70,25 +69,37 @@ func LiveCommand(ctx context.Context, protocol string, port int, r Rung, outDir 
 	return exec.CommandContext(ctx, "ffmpeg", args...)
 }
 
-// LiveIngestURL is the address the encoder publishes to, in ffmpeg's listener form.
-//
-// One port per stream: ffmpeg accepts a single connection and cannot dispatch on
-// SRT's streamid, so streams cannot share a port.
-//
-// ponytail: port-per-stream, ceiling is the size of the configured range. The upgrade
-// is one SRT listener that reads streamid at handshake and hands the socket on -- the
-// stream key already travels there, so nothing about auth changes.
-func LiveIngestURL(protocol string, port int) string {
-	if protocol == "srt" {
-		return fmt.Sprintf("srt://0.0.0.0:%d?mode=listener", port)
-	}
-	return fmt.Sprintf("rtmp://0.0.0.0:%d/live", port)
+// LivePullURL is the private address the transcoder reads a published stream from.
+// The path is the stream id, which is what the ingest server authorized against the
+// stream key -- see internal/api/live_auth.go.
+func LivePullURL(base, streamID string) string {
+	return base + "/" + streamID
 }
 
+// Ingest ports as configured in deploy/live/mediamtx.yml. Change them there and here
+// together, or the URL handed to a customer points at a port nothing is listening on.
+const (
+	LiveRTMPPort = 1935
+	LiveSRTPort  = 8890
+)
+
+// LiveKeyPlaceholder marks where the customer pastes their own stream key.
+const LiveKeyPlaceholder = "YOUR_STREAM_KEY"
+
 // LivePublishURL is what the customer points OBS at.
-func LivePublishURL(protocol, host string, port int, streamKey string) string {
+//
+// The stream key travels as the password and the stream id as the path, because the
+// ingest server asks the API about exactly that pair before accepting a publisher.
+// One port serves every stream: the ingest server dispatches on the path, which is
+// the thing ffmpeg's own listener could never do.
+//
+// The key is a placeholder because only its hash is stored -- it was shown once, at
+// creation, and we cannot put it back into a URL later even for its owner.
+func LivePublishURL(protocol, host, streamID string) string {
 	if protocol == "srt" {
-		return fmt.Sprintf("srt://%s:%d?mode=caller&streamid=%s", host, port, streamKey)
+		return fmt.Sprintf("srt://%s:%d?streamid=publish:%s:publisher:%s",
+			host, LiveSRTPort, streamID, LiveKeyPlaceholder)
 	}
-	return fmt.Sprintf("rtmp://%s:%d/live/%s", host, port, streamKey)
+	return fmt.Sprintf("rtmp://%s:%d/%s?user=publisher&pass=%s",
+		host, LiveRTMPPort, streamID, LiveKeyPlaceholder)
 }

@@ -26,10 +26,11 @@ type ObjectStore interface {
 	GetPassthrough(ctx context.Context, key, rangeHeader string) (*Object, error)
 }
 
-// ContentKeys resolves an asset's decryption key. The transcoder writes keys through
-// the same interface, so neither module has to know how the other stores them.
+// ContentKeys resolves an asset's decryption key and the id it was packaged under.
+// The transcoder writes keys through the same interface, so neither module has to
+// know how the other stores them.
 type ContentKeys interface {
-	Get(ctx context.Context, tenantID, assetID string) ([]byte, error)
+	Get(ctx context.Context, tenantID, assetID string) (keyID, key []byte, err error)
 	Put(ctx context.Context, tenantID, assetID string, keyID, key []byte) error
 }
 
@@ -43,13 +44,19 @@ type PlaybackObserver interface {
 	OnPlaybackStarted(ctx context.Context, tenantID, assetID string)
 }
 
-// EgressMeter is told how many bytes left the origin, so egress can be billed.
+// UsageMeter is told what left the origin, so it can be billed: bytes, and the
+// viewers a manifest request reveals.
 //
 // An interface for the same reason PlaybackObserver is one: delivery must not know a
 // database exists, or it stops being separable. A deployment that passes nil simply
 // does not meter.
-type EgressMeter interface {
+type UsageMeter interface {
 	RecordEgress(tenantID string, bytes int64)
+	RecordViewer(tenantID, assetID, viewer string)
+	// AllowViewer answers whether one more device may stream for a bound viewer.
+	// It rides on this interface rather than a second one because it is answered
+	// from the same in-memory view of who is watching that the meter already keeps.
+	AllowViewer(ctx context.Context, tenantID, viewer, device string) bool
 }
 
 // AssetResolver maps a requested asset to the storage prefix that actually holds its
@@ -70,7 +77,7 @@ type Module struct {
 	signer   *signing.Keyring
 	observer PlaybackObserver
 	resolver AssetResolver
-	meter    EgressMeter
+	meter    UsageMeter
 }
 
 func New(store ObjectStore, keys ContentKeys, signer *signing.Keyring) *Module {
@@ -94,10 +101,25 @@ func (m *Module) prefix(ctx context.Context, tenantID, assetID string) string {
 	return fmt.Sprintf("cmaf/%s/%s", tenantID, assetID)
 }
 
-// WithMeter attaches egress billing. Optional by design.
-func (m *Module) WithMeter(e EgressMeter) *Module {
+// WithMeter attaches usage billing. Optional by design.
+func (m *Module) WithMeter(e UsageMeter) *Module {
 	m.meter = e
 	return m
+}
+
+// meterViewer reports one viewer seen on one asset. Called on manifest requests only:
+// a player re-reads the playlist every segment duration, which is a heartbeat, while
+// segment requests are many per viewer and would count one person as a crowd.
+func (m *Module) meterViewer(tenantID, assetID, viewer string) {
+	if m.meter != nil && viewer != "" {
+		m.meter.RecordViewer(tenantID, assetID, viewer)
+	}
+}
+
+// allowViewer is the per-viewer device cap. A deployment with no meter attached has
+// no cap, the same way it has no billing.
+func (m *Module) allowViewer(ctx context.Context, tenantID, viewer, device string) bool {
+	return m.meter == nil || m.meter.AllowViewer(ctx, tenantID, viewer, device)
 }
 
 // meterEgress records what was actually written, not what was asked for: a viewer who
@@ -123,7 +145,10 @@ func (m *Module) Routes(r chi.Router) {
 	// later handler to act on a verb nobody intended to expose.
 	//
 	// The key route is declared first so "key" is not matched as a filename.
+	// POST is the EME licence request shaka sends; GET stays so curl and the journey
+	// harness can still read the licence.
 	r.Get("/playback/{tenant}/{asset}/key", m.serveContentKey)
+	r.Post("/playback/{tenant}/{asset}/key", m.serveContentKey)
 	r.Head("/playback/{tenant}/{asset}/key", m.serveContentKey)
 	r.Options("/playback/{tenant}/{asset}/key", m.serveContentKey)
 
@@ -137,18 +162,18 @@ func (m *Module) Routes(r chi.Router) {
 // SignPlayback mints the URLs the control plane hands to customers. It lives here
 // because the verification rules live here; keeping them together is what stops the
 // two drifting apart.
-func (m *Module) SignPlayback(prefix string, expUnix int64) (kid, sig string) {
-	return m.signer.Sign(prefix, expUnix)
+func (m *Module) SignPlayback(prefix string, expUnix int64, viewer, label string) (kid, sig string) {
+	return m.signer.Sign(prefix, expUnix, viewer, label)
 }
 
 // VerifyPlayback exposes signature checking to other modules that authorize viewer
 // traffic, such as the QoE beacon endpoint, without duplicating the rules.
-func (m *Module) VerifyPlayback(prefix, kid, sig, exp string) bool {
-	return m.verify(prefix, kid, sig, exp)
+func (m *Module) VerifyPlayback(prefix, kid, sig, exp, viewer, label string) bool {
+	return m.verify(prefix, kid, sig, exp, viewer, label)
 }
 
-func (m *Module) verify(prefix, kid, sig, exp string) bool {
-	return m.signer.Verify(prefix, kid, sig, exp)
+func (m *Module) verify(prefix, kid, sig, exp, viewer, label string) bool {
+	return m.signer.Verify(prefix, kid, sig, exp, viewer, label)
 }
 
 // Object mirrors the storage response fields the origin passes through verbatim so

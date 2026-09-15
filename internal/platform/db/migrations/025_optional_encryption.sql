@@ -1,5 +1,9 @@
 -- Playback encryption becomes a choice, and the default is off.
 --
+-- Superseded by 033: this was a measure for as long as the media was packaged cbcs.
+-- With cenc and an EME Clear Key licence it plays in Chrome and Firefox, and the
+-- default is on.
+--
 -- As configured it was never DRM. The manifest declares
 -- `METHOD=SAMPLE-AES ... KEYFORMAT="identity"`, and the key is served as raw bytes
 -- from the same signed URL as the segments — so anyone able to fetch a segment can

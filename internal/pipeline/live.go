@@ -30,6 +30,15 @@ const LiveTimeout = 6 * time.Hour
 // a segment, so a segment is never more than one interval behind the viewer.
 const livePollInterval = time.Second
 
+// LiveWaitForEncoder is how long an armed stream waits for somebody to publish before
+// giving up. Generous, because a class that starts late is normal and the cost of
+// waiting is one idle worker slot.
+const LiveWaitForEncoder = 30 * time.Minute
+
+// liveRetryInterval is how often the transcoder re-checks whether a publisher has
+// arrived. Two seconds is under one segment, so nothing is missed at the start.
+const liveRetryInterval = 2 * time.Second
+
 type LiveArgs struct {
 	SessionID string `json:"session_id"`
 	TenantID  string `json:"tenant_id"`
@@ -46,10 +55,12 @@ func (LiveArgs) InsertOpts() river.InsertOpts {
 
 type LiveWorker struct {
 	river.WorkerDefaults[LiveArgs]
-	DB      *db.DB
-	Store   *storage.Store
-	River   *river.Client[pgx.Tx]
-	WorkDir string
+	DB    *db.DB
+	Store *storage.Store
+	River *river.Client[pgx.Tx]
+	// PullBase is the ingest server's private address, e.g. rtsp://127.0.0.1:8554.
+	PullBase string
+	WorkDir  string
 }
 
 func (w *LiveWorker) Timeout(*river.Job[LiveArgs]) time.Duration { return LiveTimeout }
@@ -67,18 +78,16 @@ func (w *LiveWorker) Work(ctx context.Context, job *river.Job[LiveArgs]) error {
 	a := job.Args
 
 	var assetID, streamID, protocol string
-	var port int
 	var ladderRaw []byte
 	err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx,
-			`select s.asset_id::text, s.stream_id::text, l.protocol, l.ingest_port,
-			        p.rungs
+			`select s.asset_id::text, s.stream_id::text, l.protocol, p.rungs
 			   from live_sessions s
 			   join live_streams l on l.id = s.stream_id
 			   join assets a on a.id = s.asset_id
 			   join ladder_profiles p on p.name = a.ladder_profile
 			  where s.id = $1`, a.SessionID).
-			Scan(&assetID, &streamID, &protocol, &port, &ladderRaw)
+			Scan(&assetID, &streamID, &protocol, &ladderRaw)
 	})
 	if err != nil {
 		return fmt.Errorf("load live session %s: %w", a.SessionID, err)
@@ -99,31 +108,61 @@ func (w *LiveWorker) Work(ctx context.Context, job *river.Job[LiveArgs]) error {
 		return err
 	}
 
-	cmd := media.LiveCommand(ctx, protocol, port, rung, dir)
+	// The ingest server holds the socket, so there is nothing to pull until a
+	// publisher actually arrives. ffmpeg exits immediately against an empty path, so
+	// the wait is a retry loop rather than a listening socket.
+	pull := media.LivePullURL(w.PullBase, streamID)
+	prefix := fmt.Sprintf("live/%s/%s", a.TenantID, assetID)
+	published := map[string]bool{}
+	waitUntil := time.Now().Add(LiveWaitForEncoder)
+
+	for {
+		ended, err := w.runIngest(ctx, a, pull, rung, dir, prefix, published, assetID, streamID)
+		if err != nil {
+			return w.failLive(ctx, a, assetID, streamID, "ingest_failed")
+		}
+		if ended {
+			return w.endLive(ctx, a, assetID, streamID)
+		}
+		// Nothing published yet: nobody has connected. Keep waiting until the stream
+		// is abandoned rather than failing a broadcast that starts five minutes late.
+		if time.Now().After(waitUntil) {
+			return w.failLive(ctx, a, assetID, streamID, "no_encoder")
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(liveRetryInterval):
+		}
+	}
+}
+
+// runIngest reads one connection to completion. It reports ended=true when video was
+// seen, which is a broadcast that finished; ended=false means nobody was publishing
+// and the caller should wait and try again.
+func (w *LiveWorker) runIngest(ctx context.Context, a LiveArgs, pull string, rung media.Rung,
+	dir, prefix string, published map[string]bool, assetID, streamID string) (bool, error) {
+	cmd := media.LiveCommand(ctx, pull, rung, dir)
 	if err := cmd.Start(); err != nil {
-		return w.failLive(ctx, a, assetID, streamID, "ingest_failed")
+		return false, err
 	}
 
 	done := make(chan error, 1)
 	go func() { done <- cmd.Wait() }()
 
-	prefix := fmt.Sprintf("live/%s/%s", a.TenantID, assetID)
-	published := map[string]bool{}
 	ticker := time.NewTicker(livePollInterval)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case ffmpegErr := <-done:
+		case <-done:
 			// Publish whatever the last tick missed before declaring the broadcast
 			// over, or the final segments are lost even though they were encoded.
 			_, _ = w.publishSegments(ctx, a, dir, prefix, published)
-			// An encoder that hangs up is how a broadcast normally ends, so a
-			// non-zero exit after we saw video is success, not failure.
-			if ffmpegErr != nil && len(published) == 0 {
-				return w.failLive(ctx, a, assetID, streamID, "ingest_failed")
-			}
-			return w.endLive(ctx, a, assetID, streamID)
+			// An encoder that hangs up is how a broadcast normally ends, so an exit
+			// after we saw video is success. An exit with nothing published is simply
+			// nobody there yet.
+			return len(published) > 0, nil
 		case <-ticker.C:
 			added, err := w.publishSegments(ctx, a, dir, prefix, published)
 			if err != nil || added == 0 {

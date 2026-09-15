@@ -44,7 +44,8 @@ func (s *Server) postBeacon(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
 	prefix := "/playback/" + tenantID + "/" + assetID
-	if !s.delivery.VerifyPlayback(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp")) {
+	if !s.delivery.VerifyPlayback(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"),
+		q.Get("vid"), q.Get("wm")) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

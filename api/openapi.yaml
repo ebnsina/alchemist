@@ -80,6 +80,32 @@ paths:
         "201": { description: Key issued; api_key shown once }
         "404": { description: tenant_not_found }
 
+  /admin/tenants/{id}/live:
+    put:
+      summary: Turn the Live product on or off for a tenant
+      description: |
+        Operator surface. Live is a separate product from the VOD engine, and this is
+        the line between what a customer has paid for and what they have not — so
+        nothing a customer holds can move it.
+
+        Off by default, including for a tenant with no limits row. Configuring an
+        ingest host enables live for the *deployment*; this enables it for a tenant.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        "200": { description: Entitlement set }
+        "400": { description: invalid_request }
+        "401": { description: invalid_admin_key }
+
   /admin/keys/{keyID}:
     delete:
       summary: Revoke an API key
@@ -152,8 +178,12 @@ paths:
   /v1/whoami:
     get:
       summary: Identify the authenticated tenant
+      description: |
+        `live_enabled` is true only when this tenant has bought Live **and** the
+        deployment has an ingest host — a dashboard branching on it will not offer
+        endpoints that are not mounted.
       responses:
-        "200": { description: Tenant identity and ladder profile }
+        "200": { description: Tenant identity, ladder profile and live entitlement }
         "401": { description: Missing or invalid API key }
 
   /v1/uploads:
@@ -200,10 +230,43 @@ paths:
         `playback` appears once the state is `ready` or `partially_ready`, and
         throughout a broadcast (`live`, then `live_ended`). URLs are signed and
         expire.
+
+        **Hand the player whichever URL `playback.preferred` names.** Both `hls` and
+        `dash` are always present, but encrypted media is packaged `cenc` and HLS has
+        no `cenc` — its fMP4 encryption is the SAMPLE-AES family — so an encrypted
+        asset plays over DASH and a clear one over HLS. `playback.encrypted` says
+        which kind it is; `preferred` saves the caller having to know the rule.
+
+        Pass `viewer` to bind the link to one person. The id is yours and stays
+        opaque to us — it is signed, echoed back in the URL as `vid`, and never
+        stored. A bound link cannot be edited to remove or change the binding, and
+        it is what the per-viewer device cap counts against
+        (`max_viewer_devices` in `/v1/playback-settings`). Beyond the cap the origin
+        answers `403 viewer_limit_reached`.
+
+        Pass `watermark` to carry a short label the player draws on screen, usually
+        the student's own phone number or roll. It travels inside the signature as
+        `wm`, so a viewer cannot strip it, and a leaked recording names the account
+        it came from. Burning it into the video server-side is not offered: that is
+        per-session encoding and costs a stream per viewer.
+
+        Both accept letters, digits and `- . _ ~ @` only — `viewer` up to 64
+        characters, `watermark` up to 48. Anything else is `400 invalid_viewer`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: viewer
+          in: query
+          required: false
+          description: Your opaque id for whoever is watching.
+          schema: { type: string, maxLength: 64, pattern: '^[A-Za-z0-9._~@-]+$' }
+        - name: watermark
+          in: query
+          required: false
+          description: Short label the player renders on screen.
+          schema: { type: string, maxLength: 48, pattern: '^[A-Za-z0-9._~@-]+$' }
       responses:
         "200": { description: Asset state and playback URLs }
+        "400": { description: invalid_viewer }
         "404": { description: asset_not_found }
     delete:
       summary: Delete a video
@@ -581,6 +644,37 @@ paths:
       responses:
         "200": { description: Up to 500 items, newest first }
 
+  /internal/live/authorize:
+    post:
+      summary: Authorize a publisher (ingest server only)
+      description: |
+        Not part of the customer API. The ingest server calls this before accepting a
+        publisher, and it is the only thing standing between a stream key and someone
+        else's broadcast — so it must be bound to a private interface and never
+        exposed publicly. See `deploy/README.md`.
+
+        It carries no API key, because the caller has none: the stream key inside the
+        request body is the credential. A publish is allowed only when the key
+        resolves to a live stream **and** that stream is the path being published to.
+        Checking the key alone would let one valid key publish over every other
+        stream on the server.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, description: Only "publish" is ever allowed }
+                path: { type: string, description: The live stream's id }
+                password: { type: string, description: The stream key }
+                token: { type: string, description: The stream key, if sent as a token }
+                protocol: { type: string }
+                ip: { type: string }
+      responses:
+        "204": { description: The publisher may proceed }
+        "401": { description: Refused. No detail is returned, deliberately }
+
   /v1/live-streams:
     get:
       summary: Your live streams
@@ -588,8 +682,12 @@ paths:
         Present only when this deployment has live ingest configured. Without an
         ingest host there is nowhere for an encoder to connect, so the endpoints are
         not served at all rather than served and always failing.
+
+        Live is a separate product. A tenant who has not bought it gets
+        `live_not_enabled` from every endpoint here, whatever the deployment supports.
       responses:
         "200": { description: Up to 200 streams, newest first }
+        "403": { description: live_not_enabled }
     post:
       summary: Create a live stream
       description: |
@@ -794,19 +892,35 @@ paths:
     get:
       summary: How your videos are delivered
       responses:
-        "200": { description: Whether playback encryption is on }
+        "200": { description: Whether playback encryption is on, and the device cap }
     put:
-      summary: Turn playback encryption on or off
+      summary: Playback encryption and the per-viewer device cap
       description: |
-        **Off by default, deliberately.** Without a licence server this is not DRM:
-        the manifest declares `KEYFORMAT="identity"` and the key is served from the
-        same signed URL as the segments, so anyone able to fetch a segment can fetch
-        the key. It adds nothing the expiring signed URL does not already give, and
-        it makes playback impossible in every browser but Safari — Chrome and Firefox
-        need EME, which needs a licence server.
+        **`encrypt_playback` is on by default for new accounts.** Media is packaged
+        `cenc` and the key endpoint answers an EME Clear Key licence, which Chrome,
+        Firefox and Edge play with no licence vendor.
 
-        Access control is the signed expiring URL. Turn this on only if you have a
-        reason to accept Safari-only playback.
+        Be clear about what it does: this is **encryption at rest, not DRM**. The key
+        is handed to the browser in the clear behind the signed URL, so it does not
+        stop a viewer who is allowed to watch from keeping a copy. What it buys is
+        that a lifted bucket or a stolen backup decodes to nothing. Sharing is
+        addressed by `max_viewer_devices` and by binding links to a viewer, not by
+        this.
+
+        **Safari and iOS cannot play encrypted assets.** WebKit's only key system is
+        FairPlay, which needs an Apple certificate and a licence server. Those viewers
+        get `403 browser_not_supported` from the key endpoint, with a message saying
+        which browsers work. Turn encryption off for the account if your audience is
+        mostly on Apple devices.
+
+        `max_viewer_devices` caps how many devices one viewer may stream from at
+        once, 0–20, where **0 means no cap**. It applies only to links minted with
+        `GET /v1/assets/{id}?viewer=...`; unbound links are not counted. A device is
+        the viewer's address and browser taken together, and one that has not asked
+        for a playlist in a couple of minutes gives its slot back. Past the cap the
+        newest device is refused — `403 viewer_limit_reached` — never the one already
+        watching, so a shared password cannot boot the student who paid out of their
+        own lecture.
 
         Videos already published keep whatever they were made with: re-packaging a
         library on a settings change would rewrite every object and evict the lot
@@ -820,8 +934,10 @@ paths:
               required: [encrypt_playback]
               properties:
                 encrypt_playback: { type: boolean }
+                max_viewer_devices: { type: integer, minimum: 0, maximum: 20 }
       responses:
         "200": { description: Changed; applies to the next video processed }
+        "400": { description: invalid_request }
         "403": { description: session_required or not_permitted }
 
   /v1/branding:
@@ -895,11 +1011,26 @@ paths:
         - { name: exp, in: query, required: true, schema: { type: integer } }
         - { name: kid, in: query, required: true, schema: { type: string } }
         - { name: sig, in: query, required: true, schema: { type: string } }
+        - name: vid
+          in: query
+          required: false
+          description: |
+            Present on a bound link. Covered by `sig`, so it cannot be removed or
+            changed. Playlist requests carrying it are counted against the account's
+            device cap.
+          schema: { type: string }
+        - name: wm
+          in: query
+          required: false
+          description: |
+            Present on a bound link. The watermark label the player renders, covered
+            by `sig`.
+          schema: { type: string }
       responses:
         "200": { description: Full object }
         "206": { description: Byte range }
         "304": { description: Not modified }
-        "403": { description: playback_not_authorized }
+        "403": { description: playback_not_authorized or viewer_limit_reached }
         "404": { description: not_found }
         "416": { description: range_not_satisfiable }
     head:
@@ -924,15 +1055,43 @@ paths:
 
   /playback/{tenant}/{asset}/key:
     get:
-      summary: Fetch the content decryption key
+      summary: Fetch the EME Clear Key licence
       security: []
-      description: Authorized by the same signature as the media. Never cached.
+      description: |
+        Authorized by the same signature as the media, and never cached. Returns an
+        EME Clear Key licence, `application/json`:
+
+            {"keys":[{"kty":"oct","kid":"<base64url>","k":"<base64url>"}],
+             "type":"temporary"}
+
+        Base64url is unpadded. Chrome, Firefox and Edge all support Clear Key with
+        the `cenc` scheme this media is packaged in. **Safari and iOS cannot** —
+        WebKit's only key system is FairPlay — and they get
+        `403 browser_not_supported` here rather than a player that never starts.
+
+        This is encryption, not DRM: the key is delivered to the browser behind the
+        signed URL. What it protects is the media at rest, so a lifted bucket or a
+        stolen backup decodes to nothing.
       parameters:
         - { name: tenant, in: path, required: true, schema: { type: string } }
         - { name: asset, in: path, required: true, schema: { type: string } }
       responses:
-        "200": { description: Raw 16-byte key }
-        "403": { description: playback_not_authorized }
+        "200": { description: Clear Key licence JSON }
+        "403": { description: playback_not_authorized or browser_not_supported }
+        "404": { description: not_found — the asset is not encrypted }
+    post:
+      summary: Request the licence the way EME does
+      security: []
+      description: |
+        The same licence as `GET`. Players built on shaka send the EME challenge as a
+        POST body; Clear Key needs nothing from it, and it is read and discarded.
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string } }
+        - { name: asset, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Clear Key licence JSON }
+        "403": { description: playback_not_authorized or browser_not_supported }
+        "404": { description: not_found — the asset is not encrypted }
     head:
       summary: Headers for the content key
       security: []

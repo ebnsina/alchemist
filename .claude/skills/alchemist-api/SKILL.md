@@ -150,16 +150,57 @@ curl -H "Authorization: Bearer $KEY" $ALCHEMIST/v1/assets/$ASSET_ID
 ```json
 {"id":"...","state":"partially_ready","duration_seconds":2400,
  "playback":{"hls":"/playback/.../master.m3u8?exp=...&kid=...&sig=...",
-             "dash":"...","poster":"...","thumbnails":"..."}}
+             "dash":"...","poster":"...","thumbnails":"...",
+             "encrypted":true,"preferred":"dash"}}
 ```
 
-Fetch these per viewer, per session. Hand the `hls` URL to any HLS player. HLS is the
-verified path; DASH is produced but less tested.
+Fetch these per viewer, per session. **Hand the player whichever URL `preferred`
+names.** Both are always present, but an encrypted asset is packaged `cenc` and HLS
+has no `cenc` -- its fMP4 encryption is the SAMPLE-AES family -- so an encrypted
+asset plays over DASH and a clear one over HLS. `encrypted` says which kind it is;
+`preferred` saves you having to know the rule.
 
-Media is **unencrypted by default** and plays in every browser. If a tenant turns
-playback encryption on (`PUT /v1/playback-settings`), the stream becomes cbcs
-SAMPLE-AES and then **only Safari plays it** — hls.js and shaka-player need EME and a
-licence server for cbcs, and there is none. Do not assume a player handles it.
+### Binding a link to one student
+
+```bash
+curl -H "Authorization: Bearer $KEY" \
+  "$ALCHEMIST/v1/assets/$ASSET_ID?viewer=student-8842&watermark=01712345678"
+# playback URLs now carry &vid=student-8842&wm=01712345678
+```
+
+`viewer` is your own id for whoever is watching. It stays opaque to Alchemist: signed,
+echoed back, never stored. `watermark` is a short label your player draws on screen —
+render it drifting, so nobody reposts a dump with their own number on it. Both are
+inside the signature, so a viewer who edits either out of the URL gets a 403. Letters,
+digits and `- . _ ~ @` only; 64 and 48 characters. Anything else is `400 invalid_viewer`.
+There is no server-side burn-in: that is a re-encode per viewer.
+
+Set `max_viewer_devices` (`PUT /v1/playback-settings`, 0–20, 0 means no cap) and a bound
+viewer watching from more devices than that gets `403 viewer_limit_reached` on the
+newest one — the sessions already playing are left alone. Unbound links are never
+counted. This, not encryption, is what answers one login shared with a class.
+
+### Encryption
+
+**On by default for new accounts.** Media is `cenc` and the key endpoint returns an EME
+Clear Key licence:
+
+```json
+{"keys":[{"kty":"oct","kid":"<base64url>","k":"<base64url>"}],"type":"temporary"}
+```
+
+Unpadded base64url. Point shaka-player's `drm.servers['org.w3.clearkey']` at the asset's
+`/key` URL with the same `exp`, `kid` and `sig`; shaka POSTs its challenge there and the
+endpoint answers the licence. Chrome, Firefox and Edge all play it.
+
+**Safari and iOS cannot.** WebKit's only key system is FairPlay, which needs an Apple
+certificate and a licence server. Those viewers get `403 browser_not_supported` from the
+key endpoint — show that message rather than an unexplained black player. Turn
+encryption off for the account if the audience is mostly on Apple devices.
+
+Be accurate with customers about what this is: **encryption at rest, not DRM.** The key
+is delivered to the browser behind the signed URL, so a stolen bucket or backup is
+useless, while a viewer entitled to watch can still keep a copy.
 
 `thumbnails` is a WebVTT file for scrubbing previews; `poster` is a JPEG.
 
@@ -181,6 +222,9 @@ Defaults to the current calendar month.
 | `source_too_large` | Above the tenant's size limit. |
 | `source_unreadable` / `no_video_stream` | The file is corrupt, or is not video. |
 | `playback_not_authorized` | Signature expired or invalid. Re-fetch the asset. |
+| `viewer_limit_reached` | This viewer is already streaming from the maximum number of devices. |
+| `browser_not_supported` | Safari or iOS asking for a Clear Key licence. Tell them to use Chrome, Firefox or Edge. |
+| `invalid_viewer` | `viewer` or `watermark` has characters or a length that will not survive a URL. |
 | `invalid_api_key` | Key is wrong or has been revoked. |
 | `session_required` | Account administration. Not reachable with an API key, by design. |
 | `not_permitted` | The signed-in user is not an owner or admin. |

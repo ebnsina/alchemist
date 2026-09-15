@@ -1,9 +1,12 @@
 package delivery
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"path"
 	"strings"
@@ -22,7 +25,7 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 
 	prefix := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
 	q := r.URL.Query()
-	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp")) {
+	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm")) {
 		httpx.ErrorFor(w, r, http.StatusForbidden, "playback_not_authorized",
 			"This playback link has expired or is not valid.")
 		return
@@ -31,6 +34,17 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 	setCORS(w)
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// One login shared with a class is the largest leak there is, and every one of
+	// those viewers is authenticated -- so it is caught by counting devices, not by
+	// encryption. Checked on the playlist because that is what a player polls, and
+	// before storage is touched so a refusal costs nothing.
+	if vid := q.Get("vid"); vid != "" && isManifest(file) && r.Method == http.MethodGet &&
+		!m.allowViewer(r.Context(), tenantID, vid, viewerKey(r)) {
+		httpx.ErrorFor(w, r, http.StatusForbidden, "viewer_limit_reached",
+			"This account is already watching on too many devices. Close one and try again.")
 		return
 	}
 
@@ -83,6 +97,12 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 	// are worth generating.
 	if file == "master.m3u8" && m.observer != nil && r.Method == http.MethodGet {
 		m.observer.OnPlaybackStarted(r.Context(), tenantID, assetID)
+	}
+
+	// A playlist read is one viewer present now: players re-read it every segment
+	// duration, and it is the only request every viewer makes and shares with nobody.
+	if isManifest(file) && r.Method == http.MethodGet {
+		m.meterViewer(tenantID, assetID, viewerKey(r))
 	}
 
 	// Manifests and the scrubbing index are small and must be rewritten so their
@@ -145,4 +165,31 @@ func contentTypeFor(name string) string {
 	default:
 		return "video/mp4"
 	}
+}
+
+// isManifest is the subset of rewritten files a player polls: the playlists. The
+// scrubbing index is fetched once and is not a sign anyone is still watching.
+func isManifest(name string) bool {
+	return strings.HasSuffix(name, ".m3u8") || strings.HasSuffix(name, ".mpd")
+}
+
+// viewerKey identifies one viewer well enough to count them, without storing anything
+// that identifies a person: the address and user agent are hashed together and the
+// digest is all that is ever held.
+//
+// It is also the device identity the per-viewer cap counts, where CGNAT merges two
+// phones on the same carrier into one device: the cap errs towards letting a viewer
+// watch, which is the right direction to be wrong in on the playback path.
+//
+// ponytail: carrier-grade NAT puts many mobile viewers behind one address, so this
+// under-counts on exactly the network most BD viewers use. The player's beacon already
+// carries a real per-viewer session_id (internal/api/qoe.go) -- feed that in when the
+// number has to be exact rather than indicative.
+func viewerKey(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	sum := sha256.Sum256([]byte(host + "\x00" + r.Header.Get("User-Agent")))
+	return hex.EncodeToString(sum[:16])
 }

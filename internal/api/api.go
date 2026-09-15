@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -86,6 +87,13 @@ func (s *Server) Routes() http.Handler {
 	r.Post("/playback/{tenant}/{asset}/beacon", s.postBeacon)
 	r.Options("/playback/{tenant}/{asset}/beacon", s.postBeacon)
 
+	// The ingest server asks whether a publisher may write to a stream. It holds no
+	// API key, so this is unauthenticated and must be bound to a private interface --
+	// the stream key inside the request is the credential. See deploy/README.md.
+	if s.liveEnabled() {
+		r.Post("/internal/live/authorize", s.authorizeIngest)
+	}
+
 	// Operator surface, behind a separate credential so a leaked customer key cannot
 	// mint tenants or more keys.
 	r.Route("/admin", func(r chi.Router) {
@@ -94,6 +102,7 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/tenants", s.listTenants)
 		r.Post("/tenants/{id}/keys", s.issueKey)
 		r.Delete("/keys/{keyID}", s.revokeKey)
+		r.Put("/tenants/{id}/live", s.setTenantLive)
 		r.Get("/contact", s.listContact)
 	})
 
@@ -157,13 +166,17 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/migrations", s.listMigrations)
 		r.Get("/migrations/{id}/items", s.listMigrationItems)
 		// Live is mounted only when an ingest host is configured: without somewhere
-		// for an encoder to connect, the endpoints could only ever fail.
+		// for an encoder to connect, the endpoints could only ever fail. Whether this
+		// particular tenant bought it is a separate question, asked per request.
 		if s.liveEnabled() {
-			r.Post("/live-streams", s.createLiveStream)
-			r.Get("/live-streams", s.listLiveStreams)
-			r.Get("/live-streams/{id}", s.getLiveStream)
-			r.Post("/live-streams/{id}/start", s.startLiveStream)
-			r.Delete("/live-streams/{id}", s.deleteLiveStream)
+			r.Group(func(r chi.Router) {
+				r.Use(s.requireLive)
+				r.Post("/live-streams", s.createLiveStream)
+				r.Get("/live-streams", s.listLiveStreams)
+				r.Get("/live-streams/{id}", s.getLiveStream)
+				r.Post("/live-streams/{id}/start", s.startLiveStream)
+				r.Delete("/live-streams/{id}", s.deleteLiveStream)
+			})
 		}
 
 		r.Post("/edits", s.createEdit)
@@ -249,17 +262,30 @@ func (s *Server) whoami(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 
 	var name, profile string
+	var live bool
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
-		return tx.QueryRow(r.Context(),
-			`select name, ladder_profile from tenants`).Scan(&name, &profile)
+		if err := tx.QueryRow(r.Context(),
+			`select name, ladder_profile from tenants`).Scan(&name, &profile); err != nil {
+			return err
+		}
+		// Both have to be true to mean anything: a tenant who bought Live still cannot
+		// use it on a deployment with no ingest host, and a dashboard that offered it
+		// would be sending them at endpoints that are not mounted.
+		err := tx.QueryRow(r.Context(),
+			`select live_enabled from tenant_limits`).Scan(&live)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		return err
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
 			"Something went wrong on our side.")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"tenant_id": tenantID, "name": name, "ladder_profile": profile,
+		"live_enabled": live && s.liveEnabled(),
 	})
 }
 
