@@ -21,14 +21,17 @@ export const CSS = `
   unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 .alc{
-  /* Alchemist: brass on near-black. Transmutation, not another blue video player. */
+  /* Alchemist: lime on near-black, the brand's own two hues. Not another blue
+     video player. */
   --alc-bg:#0C0C0E;
   --alc-raise:#17171B;
   --alc-line:#2A2A31;
   --alc-ink:#F4F1EC;
   --alc-muted:#A19C94;
-  --alc-brass:#E8A33D;
-  --alc-brass-ink:#1A1206;
+  /* Lime is the brand, the same value the site and dashboard use. It was brass
+     here, which made the player look like a different product. */
+  --alc-brand:#C9F24D;
+  --alc-on-brand:#0D0D0F;
   --alc-save:#3FBF8F;
   --alc-danger:#E8785F;
   --alc-radius:10px;
@@ -74,9 +77,9 @@ export const CSS = `
 }
 .alc-btn svg{width:100%;height:100%;display:block}
 .alc-btn:hover{background:rgba(255,255,255,.09)}
-.alc-btn[aria-pressed="true"],.alc-btn[aria-expanded="true"]{background:rgba(232,163,61,.18);color:var(--alc-brass)}
+.alc-btn[aria-pressed="true"],.alc-btn[aria-expanded="true"]{background:rgba(201,242,77,.18);color:var(--alc-brand)}
 .alc-btn:focus-visible,.alc-pill:focus-visible,.alc-item:focus-visible,.alc-seek:focus-visible{
-  outline:2px solid var(--alc-brass);outline-offset:2px;
+  outline:2px solid var(--alc-brand);outline-offset:2px;
 }
 
 /* ---- Data Saver: a headline control, never a settings-menu afterthought ---- */
@@ -103,10 +106,10 @@ export const CSS = `
 }
 .alc-track{position:absolute;left:0;right:0;top:6px;height:4px;border-radius:2px;background:rgba(255,255,255,.22)}
 .alc-buffered{position:absolute;left:0;top:0;height:100%;border-radius:2px;background:rgba(255,255,255,.3)}
-.alc-played{position:absolute;left:0;top:0;height:100%;border-radius:2px;background:var(--alc-brass)}
+.alc-played{position:absolute;left:0;top:0;height:100%;border-radius:2px;background:var(--alc-brand)}
 .alc-knob{
   position:absolute;top:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;
-  background:var(--alc-brass);transform:translateY(-50%) scale(0);transition:transform .13s ease;
+  background:var(--alc-brand);transform:translateY(-50%) scale(0);transition:transform .13s ease;
 }
 .alc-seek:hover .alc-knob,.alc-seek:focus-visible .alc-knob,.alc[data-scrubbing] .alc-knob{transform:translateY(-50%) scale(1)}
 
@@ -132,7 +135,7 @@ export const CSS = `
 .alc-vol{display:flex;align-items:center}
 .alc-vol input{
   width:0;opacity:0;transition:width .16s ease,opacity .16s ease;
-  accent-color:var(--alc-brass);height:16px;margin:0;cursor:pointer;
+  accent-color:var(--alc-brand);height:16px;margin:0;cursor:pointer;
 }
 .alc-vol:hover input,.alc-vol:focus-within input{width:68px;opacity:1;margin:0 6px 0 2px}
 @media (hover:none){.alc-vol input{display:none}}
@@ -155,7 +158,7 @@ export const CSS = `
   cursor:pointer;text-align:start;
 }
 .alc-item:hover{background:rgba(255,255,255,.07)}
-.alc-item[aria-checked="true"]{color:var(--alc-brass)}
+.alc-item[aria-checked="true"]{color:var(--alc-brand)}
 .alc-item svg{width:17px;height:17px;flex:0 0 auto;opacity:0}
 .alc-item[aria-checked="true"] svg{opacity:1}
 .alc-item-note{margin-inline-start:auto;font-family:var(--alc-mono);font-size:11px;color:var(--alc-muted)}
@@ -174,7 +177,7 @@ export const CSS = `
 .alc-big{
   pointer-events:auto;appearance:none;border:0;cursor:pointer;
   width:66px;height:66px;border-radius:50%;padding:19px;
-  background:var(--alc-brass);color:var(--alc-brass-ink);
+  background:var(--alc-brand);color:var(--alc-on-brand);
   box-shadow:0 6px 26px rgba(0,0,0,.5);transition:transform .14s ease;
 }
 .alc-big:hover{transform:scale(1.06)}
@@ -183,7 +186,7 @@ export const CSS = `
 
 .alc-spinner{
   width:38px;height:38px;border-radius:50%;
-  border:3px solid rgba(255,255,255,.2);border-top-color:var(--alc-brass);
+  border:3px solid rgba(255,255,255,.2);border-top-color:var(--alc-brand);
   animation:alc-spin .8s linear infinite;
 }
 @keyframes alc-spin{to{transform:rotate(360deg)}}
@@ -204,7 +207,7 @@ export const CSS = `
 .alc-action{
   appearance:none;border:0;cursor:pointer;font:inherit;font-weight:650;font-size:13px;
   margin-top:4px;padding:9px 18px;border-radius:999px;
-  background:var(--alc-brass);color:var(--alc-brass-ink);
+  background:var(--alc-brand);color:var(--alc-on-brand);
 }
 .alc-action:hover{filter:brightness(1.07)}
 .alc-action:focus-visible{outline:2px solid #fff;outline-offset:2px}

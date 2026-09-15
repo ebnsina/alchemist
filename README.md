@@ -338,7 +338,7 @@ Brass on near-black — the alchemist's gold, not another blue video player.
 
 | | |
 |---|---|
-| `#E8A33D` | brass — accent, progress, primary action |
+| `#C9F24D` | lime — accent, progress, primary action. The brand value, shared with the site and dashboard |
 | `#3FBF8F` | Data Saver active |
 | `#E8785F` | errors |
 | `#0C0C0E` / `#17171B` | surface, raised surface |
