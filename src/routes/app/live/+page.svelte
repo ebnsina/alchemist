@@ -36,6 +36,7 @@
 	);
 	const at = $derived(steps[step - 1]);
 	let fresh = $state<{ name: string; stream_key: string } | null>(null);
+	let keyCard = $state<HTMLElement | null>(null);
 	let armed = $state<{ id: string; ingest_url: string } | null>(null);
 	let watching = $state<{ id: string; name: string; asset: AssetDetail } | null>(null);
 	let copied = $state('');
@@ -97,6 +98,8 @@
 			source = 'camera';
 			protocol = 'srt';
 			step = 1;
+			// The key is the only thing that matters now; the form behind it can wait.
+			queueMicrotask(() => keyCard?.focus());
 			await load();
 		} catch (err) {
 			error = said(err);
@@ -184,7 +187,15 @@
 </header>
 
 {#if fresh}
-	<div class="card mt-6 p-6" in:fly={{ y: 12, duration: 340, easing: cubicOut }}>
+	<!-- Focused on appearing: the create form resets behind this, and without it the
+	     browser put the cursor back in the name field, pulling attention off a secret
+	     that is on screen exactly once. -->
+	<div
+		class="card mt-6 p-6"
+		tabindex="-1"
+		bind:this={keyCard}
+		in:fly={{ y: 12, duration: 340, easing: cubicOut }}
+	>
 		<p class="text-sm font-semibold">{fresh.name}</p>
 		<p class="mt-1 text-xs text-dim">
 			This is the stream key. Copy it now — it is the only time it is on screen, and we cannot
@@ -201,6 +212,13 @@
 				{copied === 'key' ? 'Copied' : 'Copy'}
 			</button>
 		</div>
+		<!-- Where it goes, at the moment they are holding it. Finding this out later
+		     means starting the stream and reading a placeholder in a URL. -->
+		<p class="sub mt-3">
+			When you press <b>Start</b> you get a server address containing
+			<code class="font-mono">YOUR_STREAM_KEY</code>. Put this key there, and leave your
+			encoder's own <b>Stream Key</b> field empty.
+		</p>
 		<button type="button" class="btn mt-4" onclick={() => (fresh = null)}>I have saved it</button>
 	</div>
 {/if}
@@ -248,14 +266,14 @@
 	{#if at === 'name'}
 		<h3 class="mt-4">What is this stream for?</h3>
 		<p class="sub mt-1">A name only you see, so you can tell your streams apart later.</p>
-		<!-- svelte-ignore a11y_autofocus -->
+		<!-- Focused only when the customer is actually on step 1 of a fresh form, never
+		     when step 1 is being re-rendered behind a stream key they must copy. -->
 		<input
 			bind:value={name}
 			class="field mt-4"
 			type="text"
 			placeholder="e.g. Friday physics class"
 			maxlength="60"
-			autofocus
 			required
 		/>
 		<button
