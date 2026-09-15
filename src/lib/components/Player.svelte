@@ -53,11 +53,12 @@
 		let instance: import('hls.js').default | null = null;
 
 		(async () => {
-			// An encrypted asset is packaged cenc, which only DASH carries, and no
-			// browser plays cenc without a licence server we have not wired up.
+			// hls.js cannot read DASH, and an encrypted asset is packaged cenc, which
+			// only DASH carries. The key itself is served -- what is missing here is a
+			// DASH player, which the embed has and this preview does not.
 			if (src.includes('.mpd')) {
 				blocked = true;
-				note = 'This video is encrypted. Playing it needs a DASH player and a licence server, which is not wired up yet.';
+				note = 'Encrypted videos play in the embed, not in this preview. Use the playback link.';
 				return;
 			}
 
