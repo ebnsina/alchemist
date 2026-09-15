@@ -173,7 +173,9 @@ func (d DedupResolver) StoragePrefix(ctx context.Context, tenantID, assetID stri
 	if err != nil {
 		return "", err
 	}
-	if state == "live" || state == "live_ended" {
+	// live_armed resolves here too: nothing is written yet, so the honest answer is a
+	// 404 for a segment that does not exist, not a hit in the VOD library.
+	if state == "live_armed" || state == "live" || state == "live_ended" {
 		return "live/" + tenantID + "/" + canonical, nil
 	}
 	return prefix, nil
@@ -192,12 +194,16 @@ type LiveAssets struct{ DB *db.DB }
 
 // CreateForBroadcast mints the asset on the tenant's own ladder profile, which is
 // what the worker then resolves its single realtime rung from.
+//
+// live_armed, not live: arming is not broadcasting. An asset created in 'live' shows
+// as ON AIR the moment somebody presses Start and hands out playback URLs for
+// segments nothing has written yet. MarkLive moves it on the first segment.
 func (l LiveAssets) CreateForBroadcast(ctx context.Context, tenantID string) (string, error) {
 	var assetID string
 	err := l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx,
 			`insert into assets (tenant_id, ladder_profile, state)
-			 select $1, t.ladder_profile, 'live' from tenants t
+			 select $1, t.ladder_profile, 'live_armed' from tenants t
 			 returning id::text`, tenantID).Scan(&assetID)
 	})
 	return assetID, err

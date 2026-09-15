@@ -258,7 +258,8 @@ paths:
       summary: Fetch an asset
       description: |
         `playback` appears once the state is `ready` or `partially_ready`, and
-        throughout a broadcast (`live`, then `live_ended`). URLs are signed and
+        throughout a broadcast (`live_armed` while it waits for an encoder, `live`
+        once one is publishing, then `live_ended`). URLs are signed and
         expire.
 
         **Hand the player whichever URL `playback.preferred` names.** Both `hls` and

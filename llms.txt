@@ -14,8 +14,10 @@ Things that will otherwise surprise you:
   returns immediately; 480p and above are generated on first playback. Treat
   `ready` and `partially_ready` as equally playable. Waiting for `ready` will hang
   for content nobody has watched yet.
-- **A live stream is an asset.** `live` means a broadcast is happening and playable
-  now; `live_ended` means it has finished and its recording is being turned into an
+- **A live stream is an asset.** `live_armed` means a stream is waiting for an
+  encoder and nothing has been sent yet, so there are no playback URLs and nothing to
+  watch -- arming is not broadcasting. `live` means a broadcast is happening and
+  playable now; `live_ended` means it has finished and its recording is being turned into an
   ordinary video. That conversion needs no re-upload and the asset keeps its id, so a
   link handed out before the broadcast plays the broadcast, then the recording, with
   no gap and nothing to re-fetch. When it lands the asset reaches `ready` or
