@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Mortarboard01Icon, PlaySquareIcon, StarIcon } from '@hugeicons/core-free-icons';
-	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
+	import { reveal } from '$lib/utils/reveal';
 
 	// The reference put three invented people with names, roles, avatars and star
 	// ratings here. Same grid, same cards, same reveal — but they describe the work
@@ -25,8 +25,8 @@
 	];
 </script>
 
-<section class="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
+<section class="screen px-4 sm:px-6" use:reveal>
+	<div class="mx-auto max-w-2xl text-center">
 		<p class="label text-ink">
 			Who it's for
 		</p>
@@ -37,7 +37,7 @@
 
 	<div class="mt-14 grid gap-5 md:grid-cols-3">
 		{#each uses as u, i (u.ten)}
-			<article class="card p-8" use:scrollReveal={{ delay: i * 90 }}>
+			<article class="card p-8">
 				<div class="flex items-start justify-between gap-5">
 					<h3 class="text-lg font-semibold tracking-tight">{u.ten}</h3>
 					<HugeiconsIcon

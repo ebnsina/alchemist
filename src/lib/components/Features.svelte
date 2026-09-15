@@ -8,7 +8,7 @@
 		Database01Icon,
 		GlobalIcon
 	} from '@hugeicons/core-free-icons';
-	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
+	import { reveal } from '$lib/utils/reveal';
 
 	const features = [
 		{
@@ -44,8 +44,8 @@
 	];
 </script>
 
-<section id="features" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
-	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
+<section id="features" class="screen px-4 sm:px-6" use:reveal>
+	<div class="mx-auto max-w-2xl text-center">
 		<p class="label text-ink">
 			What you get
 		</p>
@@ -57,7 +57,7 @@
 
 	<div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 		{#each features as f, i (f.ten)}
-			<article class="card p-8" use:scrollReveal={{ delay: (i % 3) * 80 }}>
+			<article class="card p-8">
 				<div class="flex items-start justify-between gap-5">
 					<h3 class="text-lg font-semibold tracking-tight">{f.ten}</h3>
 					<HugeiconsIcon

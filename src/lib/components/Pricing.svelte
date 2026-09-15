@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Tick02Icon } from '@hugeicons/core-free-icons';
-	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
+	import { reveal } from '$lib/utils/reveal';
 	import Money from '$lib/Money.svelte';
 
 	// Three meters, not three tiers. A platform that charges per seat punishes its
@@ -41,8 +41,8 @@
 	];
 </script>
 
-<section id="pricing" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
-	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
+<section id="pricing" class="screen px-4 sm:px-6" use:reveal>
+	<div class="mx-auto max-w-2xl text-center">
 		<p class="label text-ink">Pricing</p>
 		<h2 class="mt-3 text-3xl leading-[1.32] font-semibold tracking-tight sm:text-4xl">
 			You pay for three things.
@@ -56,7 +56,7 @@
 
 	<div class="mt-12 grid gap-4 md:grid-cols-3">
 		{#each meters as m, i (m.title)}
-			<article class="card flex flex-col px-6 py-8" use:scrollReveal={{ delay: i * 80 }}>
+			<article class="card flex flex-col px-6 py-8">
 				<h3 class="label text-dim">{m.title}</h3>
 				<p class="mt-4 font-mono text-4xl font-medium tracking-tight tabular-nums">
 					<Money amount={m.amount} />
@@ -75,7 +75,7 @@
 		{/each}
 	</div>
 
-	<div class="card mt-4 p-8" use:scrollReveal>
+	<div class="card mt-4 p-8">
 		<h3 class="text-sm font-semibold">In every account, at no extra charge</h3>
 		<ul class="mt-4 grid gap-3 sm:grid-cols-2">
 			{#each included as row (row)}

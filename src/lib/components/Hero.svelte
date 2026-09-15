@@ -4,7 +4,7 @@
 	import ConversionFlow from './ConversionFlow.svelte';
 </script>
 
-<section class="mx-auto max-w-[1200px] px-4 pt-[104px] pb-16 sm:px-6">
+<section class="screen px-4 pt-[104px] sm:px-6">
 	<div class="grid items-center gap-10 lg:grid-cols-2 lg:gap-[64px]">
 		<div>
 			<p class="label flex items-center gap-2 text-dim">

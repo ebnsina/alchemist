@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { ArrowDown01Icon } from '@hugeicons/core-free-icons';
-	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
+	import { reveal } from '$lib/utils/reveal';
 
 	const qs = [
 		{
@@ -31,8 +31,8 @@
 	];
 </script>
 
-<section id="faq" class="mx-auto max-w-3xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
-	<div class="text-center" use:scrollReveal>
+<section id="faq" class="screen px-4 sm:px-6" use:reveal>
+	<div class="text-center">
 		<p class="label text-ink">
 			Questions
 		</p>
@@ -42,7 +42,7 @@
 		</h2>
 	</div>
 
-	<div class="mt-10 divide-y divide-sunk border-y border-sunk" use:scrollReveal>
+	<div class="mt-10 divide-y divide-sunk border-y border-sunk">
 		{#each qs as q (q.qen)}
 			<details class="group">
 				<summary

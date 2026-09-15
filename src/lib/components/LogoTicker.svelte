@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { reveal } from '$lib/utils/reveal';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Tick02Icon } from '@hugeicons/core-free-icons';
 	// Names the kinds of work Alchemist is for. Claims nothing about who uses it.
@@ -43,7 +44,7 @@
 	const fade = (idx: number) => Math.max(0.25, 1 - Math.abs(idx - (i + CENTER)) * 0.26);
 </script>
 
-<section class="flex min-h-svh flex-col items-center justify-center border-y border-sunk py-16">
+<section class="screen border-y border-sunk" use:reveal={{ selector: '.picker-mask' }}>
 	<p class="label mb-6 text-center text-dim">
 		Built for creators, teachers, and small businesses
 	</p>

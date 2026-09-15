@@ -113,6 +113,23 @@ Every surface that can load, be empty, or fail ships all three states.
 - **Don't** ship framework default styling, an icon set other than Hugeicons, or a
   dark-pattern flow.
 
+## Motion
+
+The landing page is a stack of screens: every section is `min-height: 100svh`,
+centred, and a scroll-snap stop. Snapping is CSS — the browser already knows how to
+page a list of full-height sections, and doing it in script costs the keyboard, the
+scrollbar and the trackpad their normal behaviour. It is `proximity` rather than
+`mandatory`, because a section taller than the viewport must still scroll through,
+and it is off below 1024px and under reduced motion.
+
+GSAP animates what is inside a screen, not the page itself. One ScrollTrigger per
+section staggers its children in as the section arrives — one trigger, not one per
+element, because a landing page has dozens of children and a trigger each is dozens
+of listeners doing the same arithmetic.
+
+Under reduced motion there is no animation at all, not a gentler one: the resting
+state is the final state, so doing nothing leaves every section correct.
+
 ## Where it is used
 
 The dashboard overview is the reference layout: the node list on the left, and a

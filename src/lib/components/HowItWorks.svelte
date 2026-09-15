@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
+	import { reveal } from '$lib/utils/reveal';
 
 	const steps = [
 		{
@@ -17,10 +17,10 @@
 	];
 </script>
 
-<section id="how" class="relative scroll-mt-24 overflow-hidden py-16 sm:py-24">
+<section id="how" class="screen relative overflow-hidden" use:reveal>
 	<div class="glow-2 pointer-events-none absolute top-10 -right-20 -z-10 h-[26rem] w-[26rem]" aria-hidden="true"></div>
 	<div class="mx-auto max-w-6xl px-4 sm:px-6">
-		<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
+		<div class="mx-auto max-w-2xl text-center">
 			<p class="label text-ink">
 				How it works
 			</p>
@@ -32,7 +32,7 @@
 
 		<ol class="mt-14 grid gap-5 md:grid-cols-3">
 			{#each steps as s, i (s.ten)}
-				<li class="card p-8" use:scrollReveal={{ delay: i * 90 }}>
+				<li class="card p-8">
 					<div class="flex items-start justify-between gap-5">
 						<h3 class="text-lg font-semibold tracking-tight">{s.ten}</h3>
 						<span class="flex-none text-3xl leading-none font-semibold text-ink" aria-hidden="true"

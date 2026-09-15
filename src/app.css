@@ -478,6 +478,38 @@ details[open] > summary .chevron {
 	border-bottom-color: var(--color-sunk);
 }
 
+/* A landing section is a screen. Snapping is CSS, not script: the browser already
+   knows how to page a list of full-height sections, and it keeps the keyboard, the
+   scrollbar and the trackpad behaving the way the reader expects. GSAP animates
+   what is inside a screen; it does not move the page.
+
+   Proximity rather than mandatory: a section taller than the viewport — the feature
+   grid on a phone — must still be scrollable through, and mandatory fights that. */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+	html {
+		scroll-snap-type: y proximity;
+	}
+}
+
+.screen {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: stretch;
+	min-height: 100svh;
+	width: 100%;
+	max-width: 72rem;
+	margin-inline: auto;
+	padding-block: 64px;
+	scroll-snap-align: start;
+	scroll-margin-top: 0;
+}
+
+/* The two that span the full width own their own inner measure. */
+.screen > * {
+	width: 100%;
+}
+
 .vh {
 	position: absolute;
 	width: 1px;
