@@ -227,6 +227,12 @@ paths:
         throughout a broadcast (`live`, then `live_ended`). URLs are signed and
         expire.
 
+        **Hand the player whichever URL `playback.preferred` names.** Both `hls` and
+        `dash` are always present, but encrypted media is packaged `cenc` and HLS has
+        no `cenc` — its fMP4 encryption is the SAMPLE-AES family — so an encrypted
+        asset plays over DASH and a clear one over HLS. `playback.encrypted` says
+        which kind it is; `preferred` saves the caller having to know the rule.
+
         Pass `viewer` to bind the link to one person. The id is yours and stays
         opaque to us — it is signed, echoed back in the URL as `vid`, and never
         stored. A bound link cannot be edited to remove or change the binding, and

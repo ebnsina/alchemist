@@ -106,6 +106,11 @@ type playbackURLs struct {
 	DASH       string `json:"dash"`
 	Poster     string `json:"poster"`
 	Thumbnails string `json:"thumbnails"`
+	// Encrypted media is packaged cenc, and HLS has no cenc -- its fMP4 encryption is
+	// the SAMPLE-AES family. So an encrypted asset plays over DASH, and `preferred`
+	// says which URL to hand a player without the caller having to know that.
+	Encrypted bool   `json:"encrypted"`
+	Preferred string `json:"preferred"`
 }
 
 // rendition is one size of one video. Chunk counts are what makes progress
@@ -161,15 +166,18 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resp assetResponse
+	var encrypted bool
 	resp.Renditions = []rendition{}
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		var created time.Time
 		if err := tx.QueryRow(r.Context(),
-			`select id::text, state::text, error_code, duration_sec, width, height,
-			        source_bytes, created_at
-			   from assets where id = $1`, assetID).
+			`select a.id::text, a.state::text, a.error_code, a.duration_sec, a.width,
+			        a.height, a.source_bytes, a.created_at,
+			        exists (select 1 from content_keys k
+			                 where k.asset_id = coalesce(a.deduplicated_from, a.id))
+			   from assets a where a.id = $1`, assetID).
 			Scan(&resp.ID, &resp.State, &resp.ErrorCode, &resp.DurationSec,
-				&resp.Width, &resp.Height, &resp.SourceBytes, &created); err != nil {
+				&resp.Width, &resp.Height, &resp.SourceBytes, &created, &encrypted); err != nil {
 			return err
 		}
 		resp.CreatedAt = created.UTC().Format(time.RFC3339)
@@ -218,11 +226,17 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 		if label != "" {
 			q += "&wm=" + label
 		}
+		preferred := "hls"
+		if encrypted {
+			preferred = "dash"
+		}
 		resp.Playback = &playbackURLs{
 			HLS:        fmt.Sprintf("%s/master.m3u8?%s", base, q),
 			DASH:       fmt.Sprintf("%s/manifest.mpd?%s", base, q),
 			Poster:     fmt.Sprintf("%s/poster.jpg?%s", base, q),
 			Thumbnails: fmt.Sprintf("%s/sprite.vtt?%s", base, q),
+			Encrypted:  encrypted,
+			Preferred:  preferred,
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)

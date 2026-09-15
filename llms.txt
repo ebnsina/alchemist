@@ -42,7 +42,9 @@ Things that will otherwise surprise you:
   can still keep a copy. Turn it off per account with `PUT /v1/playback-settings`.
   Existing accounts keep the setting they have, and published videos keep whatever
   they were packaged with.
-- **HLS is the primary output.** DASH is produced too, but only HLS is verified
+- **Play whichever URL `playback.preferred` names.** HLS for a clear asset, DASH for
+  an encrypted one: encrypted media is packaged `cenc`, and HLS has no `cenc`. Both
+  URLs are always returned. DASH is produced too, but only HLS is verified
   end to end.
 - **Uploads never pass through the API.** `POST /v1/uploads` returns a presigned
   target; `PUT` the bytes there, then call `/complete`.

@@ -150,11 +150,15 @@ curl -H "Authorization: Bearer $KEY" $ALCHEMIST/v1/assets/$ASSET_ID
 ```json
 {"id":"...","state":"partially_ready","duration_seconds":2400,
  "playback":{"hls":"/playback/.../master.m3u8?exp=...&kid=...&sig=...",
-             "dash":"...","poster":"...","thumbnails":"..."}}
+             "dash":"...","poster":"...","thumbnails":"...",
+             "encrypted":true,"preferred":"dash"}}
 ```
 
-Fetch these per viewer, per session. Hand the `hls` URL to any HLS player. HLS is the
-verified path; DASH is produced but less tested.
+Fetch these per viewer, per session. **Hand the player whichever URL `preferred`
+names.** Both are always present, but an encrypted asset is packaged `cenc` and HLS
+has no `cenc` -- its fMP4 encryption is the SAMPLE-AES family -- so an encrypted
+asset plays over DASH and a clear one over HLS. `encrypted` says which kind it is;
+`preferred` saves you having to know the rule.
 
 ### Binding a link to one student
 

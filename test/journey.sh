@@ -56,7 +56,16 @@ echo "7. the SSRF attempt should have failed with a clear reason"
 ES=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/assets/$EVIL | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["state"]+":"+str(d.get("error_code")))')
 check "metadata fetch blocked" "$ES" "failed:source_url_not_allowed"
 
-echo "8. playback works"
+echo "8. the API says which URL to play"
+PF=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/assets/$A | python3 -c 'import sys,json;p=json.load(sys.stdin).get("playback") or {};print(p.get("preferred",""))')
+ENC=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/assets/$A | python3 -c 'import sys,json;p=json.load(sys.stdin).get("playback") or {};print(str(p.get("encrypted","")).lower())')
+# Encrypted media is cenc and HLS cannot carry cenc, so the two answers must agree.
+case "$ENC:$PF" in
+  true:dash|false:hls) check "preferred matches encryption ($ENC)" ok ok;;
+  *) check "preferred matches encryption" "$ENC:$PF" "true:dash or false:hls";;
+esac
+
+echo "9. playback works"
 P=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/assets/$A)
 HLS=$(echo "$P"|python3 -c 'import sys,json;print(json.load(sys.stdin)["playback"]["hls"])')
 check "master playlist" "$(curl -s -o /dev/null -w '%{http_code}' "$B$HLS")" "200"
