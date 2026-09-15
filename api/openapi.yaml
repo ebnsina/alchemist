@@ -733,8 +733,11 @@ paths:
         Creating a stream reserves nothing. Call `start` when you are ready to go on
         air; that is what takes an ingest port and waits for your encoder.
 
-        SRT is the default because it holds up on a lossy uplink. RTMP is there for
-        hardware encoders that speak nothing else.
+        `protocol` names what the customer publishes *from*, not only what goes over
+        the wire. `camera` is a browser with a webcam, which needs no encoder at all;
+        `srt` and `rtmp` are the two answers to "my encoder". SRT is the default
+        because it holds up on a lossy uplink, and RTMP is there for hardware encoders
+        that speak nothing else.
       requestBody:
         required: true
         content:
@@ -744,7 +747,7 @@ paths:
               required: [name]
               properties:
                 name: { type: string }
-                protocol: { type: string, enum: [srt, rtmp], default: srt }
+                protocol: { type: string, enum: [srt, rtmp, camera], default: srt }
       responses:
         "201": { description: The stream, including its key, shown this once only }
         "400": { description: invalid_request, invalid_protocol }
@@ -793,6 +796,14 @@ paths:
         Takes an ingest port, creates the video the broadcast will be watched at, and
         waits for your encoder. Point OBS or your hardware encoder at the
         `ingest_url` that comes back.
+
+        A `camera` stream comes back with a WHIP endpoint as `ingest_url` and a
+        `publish_token` beside it, because a browser is the encoder and has no key to
+        paste. Send the SDP offer as `POST {ingest_url}` with
+        `Authorization: Bearer publisher:{publish_token}` — the ingest server reads
+        WebRTC credentials from that header and ignores them in the query string. The
+        token is minted for this broadcast and replaces the stream key, so the
+        credential in page script lives one session.
 
         The video is playable from the first segment: fetch it at
         `GET /v1/assets/{asset_id}` and use the playback URLs there, exactly as you

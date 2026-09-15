@@ -75,13 +75,40 @@ one without the other refuses to boot. With neither, the `/v1/live-streams` endp
 are not served at all rather than served and always failing.
 
 An ingest server sits in front — `deploy/live/mediamtx.yml` configures it as a socket
-and nothing else, with HLS, WebRTC and recording all off, because playback is the
-origin's job. It terminates SRT and RTMP on **one port each**, whatever the number of
-streams, and dispatches on the path.
+and nothing else, with HLS and recording off, because playback is the origin's job. It
+terminates SRT, RTMP and WebRTC on **one port each**, whatever the number of streams,
+and dispatches on the path.
 
-    encoder ──RTMP/SRT──> ingest server ──loopback RTSP──> transcoder ──> origin
-                               │
-                               └── POST /internal/live/authorize (stream key)
+    encoder ──RTMP/SRT────┐
+                          ├─> ingest server ──loopback RTSP──> transcoder ──> origin
+    browser ──WHIP :8889──┘        │
+                                   └── POST /internal/live/authorize (stream key)
+
+WebRTC is on for **publishing only**: a browser POSTs its SDP offer to
+`http://host:8889/{stream-id}/whip` and becomes the encoder, which is the whole of
+what a customer with a laptop and no OBS needs. The path is the stream id exactly as
+RTMP's is, so the same `(key, path)` authorisation and the same loopback RTSP pull
+carry it; nothing downstream knows the difference.
+
+**WHIP credentials go in a header, not the query string.** The stream key travels as
+`Authorization: Bearer publisher:<key>`, and a key in `?user=&pass=` is refused —
+verified against MediaMTX v1.15.6, where the query-string form logs
+`authentication failed: server replied with code 401`, indistinguishable from a wrong
+key. `Authorization: Basic` works too; Bearer is what the dashboard sends, because a
+401 to a Basic request makes the browser pop its own credential dialog.
+
+A browser has no key to paste, so `POST /v1/live-streams/{id}/start` on a `camera`
+stream mints one and returns it as `publish_token`. It replaces the stream key, which
+is free because nothing else holds it: the credential sitting in page script is good
+for one broadcast.
+
+**A public deployment needs TLS on the WHIP port.** `webrtcEncryption: no` and the
+`http://` URL the API returns are right for a box where the dashboard is also on
+`http://localhost`; the moment the dashboard is served over https, the browser blocks
+a plain-http WHIP POST as mixed content and `getUserMedia` refuses an insecure origin
+anyway. Set `webrtcEncryption: yes` with `webrtcServerCert`/`webrtcServerKey`, or put
+the same certificate in front of `:8889`, and change the scheme in `publishURL` in
+`internal/modules/live/ffmpeg.go` alongside the ports it already hardcodes.
 
 **The stream key is the credential.** The ingest server asks the API about every
 publish, and a publish is allowed only when the key resolves to a live stream *and*
@@ -96,7 +123,10 @@ and firewall it like a database port.
 
 Reads are asked about too, and are allowed **only from loopback** — that is how the
 transcoder pulls the stream back. Allowing them from anywhere would turn the ingest
-ports into a second, unsigned way to watch a customer's broadcast.
+ports into a second, unsigned way to watch a customer's broadcast. That still holds
+with WebRTC on: WHEP is a read, so it is refused by the same rule, and it was verified
+after enabling it rather than assumed. Loopback reads stay open to anything on the
+box, as they were for RTSP; the box is not a trust boundary.
 
 ### Enabling live for a customer
 

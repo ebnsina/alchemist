@@ -48,6 +48,17 @@ func (m *Module) requireLive(next http.Handler) http.Handler {
 	})
 }
 
+// newStreamKey mints a key and the hash that is all we keep of it.
+func newStreamKey() (string, []byte, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", nil, err
+	}
+	key := hex.EncodeToString(raw)
+	sum := sha256.Sum256([]byte(key))
+	return key, sum[:], nil
+}
+
 type stream struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
@@ -79,32 +90,31 @@ func (m *Module) createStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// SRT is the default because it survives a lossy uplink; RTMP is there because
-	// older hardware encoders speak nothing else.
+	// older hardware encoders speak nothing else, and camera is a browser publishing
+	// its own webcam for a customer who has no encoder at all.
 	if req.Protocol == "" {
 		req.Protocol = "srt"
 	}
-	if req.Protocol != "srt" && req.Protocol != "rtmp" {
+	if req.Protocol != "srt" && req.Protocol != "rtmp" && req.Protocol != "camera" {
 		httpx.ErrorFor(w, r, http.StatusBadRequest, "invalid_protocol",
-			"Choose srt or rtmp.")
+			"Choose camera, srt or rtmp.")
 		return
 	}
 
-	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
+	key, sum, err := newStreamKey()
+	if err != nil {
 		httpx.ErrorFor(w, r, http.StatusInternalServerError, "internal_error",
 			"Something went wrong on our side.")
 		return
 	}
-	key := hex.EncodeToString(raw)
-	sum := sha256.Sum256([]byte(key))
 
 	var out stream
-	err := m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+	err = m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(r.Context(),
 			`insert into live_streams (tenant_id, name, key_hash, protocol)
 			 values ($1,$2,$3,$4)
 			 returning id::text, name, protocol, state, created_at`,
-			tenantID, req.Name, sum[:], req.Protocol).
+			tenantID, req.Name, sum, req.Protocol).
 			Scan(&out.ID, &out.Name, &out.Protocol, &out.State, &out.CreatedAt)
 	})
 	if err != nil {
@@ -192,20 +202,18 @@ func (m *Module) replaceKey(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpx.Tenant(r)
 	streamID := chi.URLParam(r, "id")
 
-	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
+	key, sum, err := newStreamKey()
+	if err != nil {
 		httpx.ErrorFor(w, r, http.StatusInternalServerError, "internal_error",
 			"Something went wrong on our side.")
 		return
 	}
-	key := hex.EncodeToString(raw)
-	sum := sha256.Sum256([]byte(key))
 
 	var state string
-	err := m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+	err = m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(r.Context(),
 			`update live_streams set key_hash = $2, updated_at = now()
-			  where id = $1 returning state`, streamID, sum[:]).Scan(&state)
+			  where id = $1 returning state`, streamID, sum).Scan(&state)
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		httpx.ErrorFor(w, r, http.StatusNotFound, "stream_not_found", "We couldn't find that stream.")
@@ -258,11 +266,27 @@ func (m *Module) startStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A browser is the encoder for a camera stream, so it needs a key it can send --
+	// and the one minted at creation was shown once and never stored. Nobody pasted
+	// it into an encoder either, so a fresh key per broadcast costs nothing and keeps
+	// the credential in page script alive for exactly one session.
+	var publishToken string
+	var sum []byte
+	if protocol == "camera" {
+		publishToken, sum, err = newStreamKey()
+		if err != nil {
+			httpx.ErrorFor(w, r, http.StatusInternalServerError, "internal_error",
+				"We couldn't start that stream.")
+			return
+		}
+	}
+
 	var sessionID string
 	err = m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(r.Context(),
-			`update live_streams set state = 'armed', updated_at = now()
-			  where id = $1`, streamID); err != nil {
+			`update live_streams set state = 'armed', updated_at = now(),
+			        key_hash = coalesce($2, key_hash)
+			  where id = $1`, streamID, sum); err != nil {
 			return err
 		}
 		return tx.QueryRow(r.Context(),
@@ -283,17 +307,24 @@ func (m *Module) startStream(w http.ResponseWriter, r *http.Request) {
 
 	// The ingest server checks the key against this exact path before it accepts a
 	// publisher, so the URL carries no secret and is safe to show and to log.
-	httpx.JSON(w, http.StatusAccepted, map[string]any{
+	out := map[string]any{
 		"stream_id":  streamID,
 		"session_id": sessionID,
 		"asset_id":   assetID,
 		"ingest_url": publishURL(protocol, m.ingestHost, streamID),
+	}
+	if protocol == "camera" {
+		// WHIP reads credentials from the Authorization header and nowhere else, so
+		// this is sent as "Bearer publisher:<token>" rather than joined into the URL.
+		out["publish_token"] = publishToken
+	} else {
 		// OBS and most encoders split this into two fields and join them with a
 		// slash. Handing over one URL gets the key appended a second time, which
 		// publishes to a path nothing authorised -- so the two halves are named.
-		"ingest_server":     publishURL(protocol, m.ingestHost, streamID),
-		"ingest_stream_key": "",
-	})
+		out["ingest_server"] = publishURL(protocol, m.ingestHost, streamID)
+		out["ingest_stream_key"] = ""
+	}
+	httpx.JSON(w, http.StatusAccepted, out)
 }
 
 func (m *Module) deleteStream(w http.ResponseWriter, r *http.Request) {
