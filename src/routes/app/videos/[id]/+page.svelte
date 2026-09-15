@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { Copy01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
+	import {
+		Copy01Icon,
+		Tick02Icon,
+		PlayCircleIcon,
+		Image01Icon,
+		TimelineEventIcon
+	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import { setCrumbs } from '$lib/crumbs.svelte';
 	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
@@ -74,12 +80,29 @@
 		processing_failed: 'The work failed on our side. Worth trying again.'
 	};
 
-	// What each playback link is actually for.
-	const LINKS: Record<string, { label: string; what: string }> = {
-		hls: { label: 'HLS', what: 'Hand this to a player. iPhones and most web players want this one.' },
-		dash: { label: 'DASH', what: 'The same video, in the format Android and smart TVs tend to prefer.' },
-		poster: { label: 'Poster', what: 'A still from the video, for the thumbnail before anyone presses play.' },
-		thumbnails: { label: 'Scrub previews', what: 'The little images that appear when a viewer drags along the timeline.' }
+	// What each playback link is actually for. The description is a tooltip now: four
+	// paragraphs beside four URLs pushed the thing people came for off the screen.
+	const LINKS: Record<string, { label: string; what: string; icon: typeof Copy01Icon }> = {
+		hls: {
+			label: 'HLS',
+			what: 'Hand this to a player. iPhones and most web players want this one.',
+			icon: PlayCircleIcon
+		},
+		dash: {
+			label: 'DASH',
+			what: 'The same video, in the format Android and smart TVs tend to prefer.',
+			icon: PlayCircleIcon
+		},
+		poster: {
+			label: 'Poster',
+			what: 'A still from the video, for the thumbnail before anyone presses play.',
+			icon: Image01Icon
+		},
+		thumbnails: {
+			label: 'Previews',
+			what: 'The little images that appear when a viewer drags along the timeline.',
+			icon: TimelineEventIcon
+		}
 	};
 
 	const mbps = (bps: number) =>
@@ -300,19 +323,25 @@
 			</p>
 			<div class="card mt-4 divide-y divide-sunk">
 				{#each Object.entries(asset.playback).filter((e): e is [string, string] => e[0] in LINKS) as [kind, url] (kind)}
-					<div class="flex flex-wrap items-center gap-x-3 gap-y-2 p-4">
-						<div class="w-40 flex-none">
-							<p class="text-sm font-medium">{LINKS[kind]?.label ?? kind}</p>
-							<p class="sub mt-0.5">{LINKS[kind]?.what ?? ''}</p>
-						</div>
+					<div class="flex items-center gap-3 px-4 py-3">
+						<span
+							class="chip flex flex-none items-center gap-1.5"
+							class:chip-on={asset.playback?.preferred === kind}
+							title={LINKS[kind]?.what ?? ''}
+						>
+							<HugeiconsIcon icon={LINKS[kind]?.icon ?? Copy01Icon} size={12} strokeWidth={2} />
+							{LINKS[kind]?.label ?? kind}
+						</span>
 						<code class="min-w-0 flex-1 truncate font-mono text-xs text-dim">{url}</code>
 						<button
 							type="button"
 							class="flex flex-none items-center gap-1.5 text-xs text-ink"
+							title="Copy this link"
+							aria-label="Copy the {LINKS[kind]?.label ?? kind} link"
 							onclick={() => copy(url, kind)}
 						>
-							<HugeiconsIcon icon={copied === kind ? Tick02Icon : Copy01Icon} size={13} strokeWidth={2} />
-							{copied === kind ? 'Copied' : 'Copy'}
+							<HugeiconsIcon icon={copied === kind ? Tick02Icon : Copy01Icon} size={14} strokeWidth={2} />
+							<span class="vh">{copied === kind ? 'Copied' : 'Copy'}</span>
 						</button>
 					</div>
 				{/each}
