@@ -12,7 +12,20 @@
 rtmp: yes
 srt: yes
 hls: no
-webrtc: no
+
+# WebRTC is on for publishing only, so a browser with a webcam is an encoder. WHIP
+# POSTs the offer to :8889/<stream-id>/whip and the API authorises it by the same
+# (key, path) pair RTMP uses, so the transcoder's loopback RTSP pull is unchanged.
+#
+# It does not become a way to watch: a read is refused unless it comes from loopback,
+# which is the transcoder, and viewers are served signed HLS by the origin. Encryption
+# stays off because this terminates behind the edge, exactly like the RTMP port.
+webrtc: yes
+webrtcAddress: :8889
+webrtcEncryption: no
+# Published locally over a LAN or loopback, so there is nothing to ask a STUN server.
+# A deployment behind NAT names its public address here instead.
+webrtcICEServers2: []
 
 # RTSP is the encoder's private pickup path, not a public one: the transcoder pulls
 # rtsp://127.0.0.1:8554/<stream-id> from here. Bound to loopback so it is not a

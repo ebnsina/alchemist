@@ -92,12 +92,13 @@ func pullURL(base, streamID string) string {
 const (
 	rtmpPort = 1935
 	srtPort  = 8890
+	whipPort = 8889
 )
 
 // keyPlaceholder marks where the customer pastes their own stream key.
 const keyPlaceholder = "YOUR_STREAM_KEY"
 
-// publishURL is what the customer points OBS at.
+// publishURL is what the customer points OBS at, or what the browser POSTs to.
 //
 // The stream key travels as the password and the stream id as the path, because the
 // ingest server asks the API about exactly that pair before accepting a publisher.
@@ -106,8 +107,17 @@ const keyPlaceholder = "YOUR_STREAM_KEY"
 //
 // The key is a placeholder because only its hash is stored -- it was shown once, at
 // creation, and we cannot put it back into a URL later even for its owner.
+//
+// The camera URL carries no placeholder because WHIP has nowhere to put one: the
+// ingest server reads WebRTC credentials from the Authorization header only, and
+// ignores them in the query string -- a query-string key is refused with a 401 and
+// looks exactly like a wrong key. Verified against MediaMTX v1.15.6; see
+// deploy/README.md. The browser gets a usable key from start, not from this URL.
 func publishURL(protocol, host, streamID string) string {
-	if protocol == "srt" {
+	switch protocol {
+	case "camera":
+		return fmt.Sprintf("http://%s:%d/%s/whip", host, whipPort, streamID)
+	case "srt":
 		return fmt.Sprintf("srt://%s:%d?streamid=publish:%s:publisher:%s",
 			host, srtPort, streamID, keyPlaceholder)
 	}

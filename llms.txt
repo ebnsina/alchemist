@@ -101,9 +101,11 @@ Live, present only where this deployment configures ingest, and only for a tenan
 who has bought it -- otherwise every endpoint here answers `live_not_enabled` (403).
 Live is a separate product from the VOD engine; a customer may hold either or both:
 POST   /v1/live-streams           -> create; the stream key is shown once
+                                     protocol: camera (a browser webcam), srt or rtmp
 GET    /v1/live-streams           -> your streams
 GET    /v1/live-streams/{id}      -> state and the asset the broadcast plays at
-POST   /v1/live-streams/{id}/start -> go on air; returns the ingest_url for OBS
+POST   /v1/live-streams/{id}/start -> go on air; returns the ingest_url for OBS,
+                                     or a WHIP endpoint plus publish_token for camera
 POST   /v1/live-streams/{id}/key  -> replace the stream key; the old one stops working
 DELETE /v1/live-streams/{id}      -> delete
 
