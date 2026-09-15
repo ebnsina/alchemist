@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"net"
 	"net/http"
 	"strings"
 )
@@ -46,6 +47,13 @@ func (s *Server) publishAllowed(ctx context.Context, key, path string) bool {
 	return strings.EqualFold(strings.Trim(path, "/"), streamID)
 }
 
+// isLoopback reports whether the request came from this machine. The address is the
+// ingest server's view of the client, not a header, so it cannot be spoofed by one.
+func isLoopback(addr string) bool {
+	ip := net.ParseIP(strings.TrimSpace(addr))
+	return ip != nil && ip.IsLoopback()
+}
+
 // mediamtxAuthRequest is MediaMTX's payload. Only the fields that decide the answer
 // are read; the rest are ignored rather than rejected, so a newer version that adds a
 // field does not start failing every publish.
@@ -66,8 +74,21 @@ func (s *Server) authorizeIngest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Playback never comes from the ingest server -- it is served by the origin, with
-	// a signed URL. Anything but a publish is refused whatever key it carries.
+	// The transcoder reads the published stream back over loopback RTSP, and the
+	// ingest server asks about that too. Allowing it is what lets the pull work;
+	// allowing it from anywhere would make the ingest ports a second, unsigned way
+	// to watch a customer's broadcast.
+	if req.Action == "read" {
+		if isLoopback(req.IP) {
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+		return
+	}
+
+	// Viewers are served by the origin with a signed URL, never by the ingest server.
+	// Anything else is refused whatever key it carries.
 	if req.Action != "publish" {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

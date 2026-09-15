@@ -66,20 +66,33 @@ per-job worker pool, so setting it far above that only lengthens the tail.
 
 ## Live ingest
 
-Off unless both `ALCHEMIST_LIVE_INGEST_HOST` and `ALCHEMIST_LIVE_PORT_RANGE` are set;
+Off unless both `ALCHEMIST_LIVE_INGEST_HOST` and `ALCHEMIST_LIVE_PULL_BASE` are set;
 one without the other refuses to boot. With neither, the `/v1/live-streams` endpoints
 are not served at all rather than served and always failing.
 
-`ALCHEMIST_LIVE_PORT_RANGE` is `low-high`, one port per armed stream, so the range
-size is the number of concurrent broadcasts this box accepts. ffmpeg in listener mode
-takes one connection and cannot dispatch on SRT's streamid, which is why streams
-cannot share a port.
+An ingest server sits in front — `deploy/live/mediamtx.yml` configures it as a socket
+and nothing else, with HLS, WebRTC and recording all off, because playback is the
+origin's job. It terminates SRT and RTMP on **one port each**, whatever the number of
+streams, and dispatches on the path.
 
-**Open the range to your customers' encoders and to nobody else.** With the direct
-ffmpeg listener, ingest is authorised by the port rather than by the stream key,
-because ffmpeg never exposes the streamid it was handed. Both TCP (RTMP) and UDP (SRT)
-need the range open, and SRT needs an ffmpeg built with `--enable-libsrt` -- the
-distribution and Homebrew builds generally are not, and without it only RTMP works.
+    encoder ──RTMP/SRT──> ingest server ──loopback RTSP──> transcoder ──> origin
+                               │
+                               └── POST /internal/live/authorize (stream key)
+
+**The stream key is the credential.** The ingest server asks the API about every
+publish, and a publish is allowed only when the key resolves to a live stream *and*
+that stream is the path being published to — checking the key alone would let one
+customer's valid key publish over everyone else's broadcast. Verified by refusing a
+wrong key: the ingest server logs `authentication failed: server replied with code
+401` and the publisher is dropped.
+
+**That endpoint carries no API key and must never be publicly reachable.** The caller
+is the ingest server on the same host, so bind it to loopback or a private interface
+and firewall it like a database port.
+
+Reads are asked about too, and are allowed **only from loopback** — that is how the
+transcoder pulls the stream back. Allowing them from anywhere would turn the ingest
+ports into a second, unsigned way to watch a customer's broadcast.
 
 ### Enabling live for a customer
 
@@ -90,37 +103,16 @@ and a tenant with no limits row has it off. Turn it on per customer:
     PUT /admin/tenants/{id}/live   {"enabled": true}
 
 Operator surface, behind `ALCHEMIST_ADMIN_KEY`. A VOD-only tenant calling the live
-endpoints gets `live_not_enabled` rather than a stream nobody sold them.
+endpoints gets `live_not_enabled` rather than a stream nobody sold them, and
+`/v1/whoami` reports `live_enabled` so a dashboard knows whether to offer it.
 
-### Authorising publishers properly
+### Sizing
 
-`deploy/live/mediamtx.yml` puts an ingest server in front, which is what makes the
-stream key the credential instead of the port. It reads SRT's streamid and RTMP's
-query at handshake and asks the API about every publish:
-
-    POST /internal/live/authorize   ->  204 allowed, 401 refused
-
-**That endpoint carries no API key and must never be publicly reachable.** The caller
-is the ingest server on the same host, so bind it to loopback or a private interface
-and firewall it like a database port. The stream key in the request body is the
-credential, and a publish is allowed only when the key resolves to a live stream *and*
-that stream is the path being published to -- checking the key alone would let one
-customer's valid key publish over everyone else's broadcast.
-
-With the ingest server in front, one RTMP port and one SRT port serve every stream, so
-`ALCHEMIST_LIVE_PORT_RANGE` stops being the concurrency ceiling. Cores still are.
-
-**Running a different ingest server.** The rule -- the key resolves to a live stream,
-and that stream is the path being published to -- is one function, and each server gets
-a small handler around it. They cannot share an endpoint: MediaMTX reads `204` as yes
-and `401` as no, while SRS requires `200` with a body of `0` and treats a bare `204` as
-a refusal. So swapping means one new handler on its own route plus a config file for
-that server, not a rewrite. There is no selector and no plugin layer, because running
-two at once is not a thing anyone wants.
-
-One live rung is roughly one CPU core held for the length of the broadcast. Size
-`ALCHEMIST_LIVE_PORT_RANGE` against cores, not against ambition: a box with 16 cores
-does not run 100 concurrent streams. See `docs/06-live.md`.
+`ALCHEMIST_LIVE_MAX_STREAMS` is the number of concurrent broadcasts this box accepts.
+Size it against cores, not ambition: one live rung is roughly one CPU core held for
+the length of the broadcast, so a 16-core box does not run 100 streams. The port range
+that used to bound this is gone — one port now serves every stream. See
+`docs/06-live.md`.
 
 ## Edge
 

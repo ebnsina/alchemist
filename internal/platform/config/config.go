@@ -38,10 +38,13 @@ type Config struct {
 	// LiveIngestHost is the address encoders publish to. Empty leaves the live
 	// surface unmounted, the same way no web origin leaves the account surface off.
 	LiveIngestHost string
-	// LivePortLow/High bound the ingest port range. One port per armed stream,
-	// because ffmpeg in listener mode accepts one connection and cannot dispatch.
-	LivePortLow  int
-	LivePortHigh int
+	// LivePullBase is where the transcoder reads a published stream from, e.g.
+	// rtsp://127.0.0.1:8554. The ingest server terminates SRT and RTMP, checks the
+	// stream key against the API, and this is the private side of it.
+	LivePullBase string
+	// LiveMaxStreams bounds concurrent broadcasts on this box. Cores, not ports:
+	// one rung is roughly one core held for the length of the broadcast.
+	LiveMaxStreams int
 }
 
 func Load() (*Config, error) {
@@ -95,18 +98,25 @@ func Load() (*Config, error) {
 	// Optional as a pair. Live is off unless both are set; one without the other is a
 	// boot failure rather than a surface that half exists.
 	c.LiveIngestHost = strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_INGEST_HOST"))
-	portRange := strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_PORT_RANGE"))
-	if (c.LiveIngestHost == "") != (portRange == "") {
+	c.LivePullBase = strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_PULL_BASE"))
+	if (c.LiveIngestHost == "") != (c.LivePullBase == "") {
 		return nil, fmt.Errorf(
-			"ALCHEMIST_LIVE_INGEST_HOST and ALCHEMIST_LIVE_PORT_RANGE must be set together")
+			"ALCHEMIST_LIVE_INGEST_HOST and ALCHEMIST_LIVE_PULL_BASE must be set together")
 	}
-	if portRange != "" {
-		lo, hi, ok := strings.Cut(portRange, "-")
-		c.LivePortLow, _ = strconv.Atoi(lo)
-		c.LivePortHigh, _ = strconv.Atoi(hi)
-		if !ok || c.LivePortLow < 1 || c.LivePortHigh > 65535 || c.LivePortLow > c.LivePortHigh {
+	if c.LivePullBase != "" {
+		if !strings.HasPrefix(c.LivePullBase, "rtsp://") {
 			return nil, fmt.Errorf(
-				"ALCHEMIST_LIVE_PORT_RANGE must be low-high within 1-65535, got %q", portRange)
+				"ALCHEMIST_LIVE_PULL_BASE must be an rtsp:// address, got %q", c.LivePullBase)
+		}
+		c.LivePullBase = strings.TrimSuffix(c.LivePullBase, "/")
+		c.LiveMaxStreams = 2
+		if v := strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_MAX_STREAMS")); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 {
+				return nil, fmt.Errorf(
+					"ALCHEMIST_LIVE_MAX_STREAMS must be a positive number, got %q", v)
+			}
+			c.LiveMaxStreams = n
 		}
 	}
 

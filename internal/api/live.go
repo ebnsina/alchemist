@@ -23,8 +23,6 @@ import (
 // Live carries what the live surface needs. An empty host leaves it unmounted.
 type Live struct {
 	IngestHost string
-	PortLow    int
-	PortHigh   int
 }
 
 // liveEnabled is about this deployment: with no ingest host there is nowhere for an
@@ -201,7 +199,6 @@ func (s *Server) startLiveStream(w http.ResponseWriter, r *http.Request) {
 	streamID := chi.URLParam(r, "id")
 
 	var state, protocol, profile string
-	var port int
 	var assetID, sessionID string
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		if err := tx.QueryRow(r.Context(),
@@ -213,15 +210,6 @@ func (s *Server) startLiveStream(w http.ResponseWriter, r *http.Request) {
 		if state == "armed" || state == "live" {
 			return nil
 		}
-		// The lowest free port in the range. Held by live_streams.ingest_port, which
-		// is unique, so two simultaneous arms cannot land on the same one.
-		if err := tx.QueryRow(r.Context(),
-			`select p from generate_series($1::int, $2::int) p
-			  where p not in (select ingest_port from live_streams
-			                   where ingest_port is not null)
-			  order by p limit 1`, s.live.PortLow, s.live.PortHigh).Scan(&port); err != nil {
-			return err
-		}
 		if err := tx.QueryRow(r.Context(),
 			`insert into assets (tenant_id, ladder_profile, state)
 			 values ($1, $2, 'live') returning id::text`,
@@ -229,8 +217,8 @@ func (s *Server) startLiveStream(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		if _, err := tx.Exec(r.Context(),
-			`update live_streams set state = 'armed', ingest_port = $2, updated_at = now()
-			  where id = $1`, streamID, port); err != nil {
+			`update live_streams set state = 'armed', updated_at = now()
+			  where id = $1`, streamID); err != nil {
 			return err
 		}
 		return tx.QueryRow(r.Context(),
@@ -240,11 +228,6 @@ func (s *Server) startLiveStream(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == pgx.ErrNoRows && state == "":
 		writeErrFor(w, r, http.StatusNotFound, "stream_not_found", "We couldn't find that stream.")
-		return
-	case err == pgx.ErrNoRows:
-		// The port query is the only other thing that can return no rows.
-		writeErrFor(w, r, http.StatusServiceUnavailable, "no_ingest_port",
-			"We're at capacity for live streams right now. Please try again shortly.")
 		return
 	case err != nil:
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
@@ -263,16 +246,13 @@ func (s *Server) startLiveStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ponytail: the port is the credential, not the stream key. ffmpeg's listener
-	// accepts any path and never exposes SRT's streamid, so it cannot check the key
-	// -- anyone who reaches an armed port can publish to it. Firewall the range to
-	// known encoders until the Go SRT listener lands, which reads streamid at
-	// handshake and resolves it through resolve_stream_key().
+	// The ingest server checks the key against this exact path before it accepts a
+	// publisher, so the URL carries no secret and is safe to show and to log.
 	writeJSON(w, http.StatusAccepted, map[string]any{
 		"stream_id":  streamID,
 		"session_id": sessionID,
 		"asset_id":   assetID,
-		"ingest_url": media.LivePublishURL(protocol, s.live.IngestHost, port, sessionID),
+		"ingest_url": media.LivePublishURL(protocol, s.live.IngestHost, streamID),
 	})
 }
 

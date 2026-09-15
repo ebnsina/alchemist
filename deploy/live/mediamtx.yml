@@ -29,7 +29,7 @@ srtAddress: :8890
 # Every publish is asked about. The stream key travels in the credentials, the stream
 # id is the path, and the API requires both to agree -- see internal/api/live_auth.go.
 authMethod: http
-authHTTPAddress: http://127.0.0.1:8099/internal/live/authorize
+authHTTPAddress: http://127.0.0.1:8090/internal/live/authorize
 authHTTPExclude:
   - action: api
   - action: metrics
