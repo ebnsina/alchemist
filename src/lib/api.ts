@@ -159,3 +159,23 @@ export type AssetDetail = {
 };
 
 export const getAsset = (id: string) => call<AssetDetail>(`/v1/assets/${id}`);
+
+export type Chunk = {
+	rendition: string;
+	index: number;
+	start_sec: number;
+	end_sec: number;
+	done: boolean;
+};
+export type Activity = {
+	step: string;
+	state: string;
+	attempt: number;
+	failures: number;
+	queued_at: string;
+	started_at: string | null;
+	finished_at: string | null;
+};
+
+export const getChunks = (id: string) => call<{ chunks: Chunk[] }>(`/v1/assets/${id}/chunks`);
+export const getActivity = (id: string) => call<{ activity: Activity[] }>(`/v1/assets/${id}/activity`);

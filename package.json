@@ -28,6 +28,7 @@
   "private": true,
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.3.3",
-    "@hugeicons/svelte": "^1.1.5"
+    "@hugeicons/svelte": "^1.1.5",
+    "hls.js": "^1.7.3"
   }
 }

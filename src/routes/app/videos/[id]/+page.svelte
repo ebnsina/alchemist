@@ -3,7 +3,8 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { ArrowLeft01Icon, Copy01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
-	import Json from '$lib/components/Json.svelte';
+	import Player from '$lib/components/Player.svelte';
+	import Advanced from '$lib/components/Advanced.svelte';
 	import { getAsset, ApiError, type AssetDetail } from '$lib/api';
 
 	let asset = $state<AssetDetail | null>(null);
@@ -121,6 +122,12 @@
 		</p>
 	{/if}
 
+	{#if asset.playback}
+		<section class="mt-6">
+			<Player hls={asset.playback.hls} poster={asset.playback.poster} />
+		</section>
+	{/if}
+
 	<section class="mt-8">
 		<h2 class="text-lg font-semibold tracking-tight">The sizes we made</h2>
 		<p class="mt-1 text-sm text-muted">
@@ -172,10 +179,10 @@
 
 	{#if asset.playback}
 		<section class="mt-8">
-			<h2 class="text-lg font-semibold tracking-tight">Play it</h2>
+			<h2 class="text-lg font-semibold tracking-tight">The links</h2>
 			<p class="mt-1 text-sm text-muted">
-				These links are signed and last four hours. Ask for the asset again when you need fresh
-				ones rather than building them yourself.
+				Signed, good for four hours. Ask for the asset again when you need fresh ones rather
+				than building them yourself.
 			</p>
 			<div class="card mt-4 divide-y divide-hairline">
 				{#each Object.entries(asset.playback) as [kind, url] (kind)}
@@ -196,11 +203,5 @@
 		</section>
 	{/if}
 
-	<section class="mt-8">
-		<h2 class="text-lg font-semibold tracking-tight">What the API returns</h2>
-		<p class="mt-1 text-sm text-muted">The same call your own code would make.</p>
-		<div class="mt-4">
-			<Json source={JSON.stringify(asset, null, 2)} label="GET /v1/assets/{asset.id}" />
-		</div>
-	</section>
+	<Advanced {asset} live={working} />
 {/if}
