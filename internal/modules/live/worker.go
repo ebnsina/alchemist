@@ -46,6 +46,7 @@ type Worker struct {
 	Assets Assets
 	Ladder Ladder
 	Events Events
+	Queue  Queue
 	// PullBase is the ingest server's private address, e.g. rtsp://127.0.0.1:8554.
 	PullBase string
 	WorkDir  string
@@ -54,12 +55,9 @@ type Worker struct {
 // Run runs one broadcast: wait for the encoder, encode and segment, and publish each
 // segment as it lands.
 //
-// ponytail: one rung, no ABR, and the recording is left as live segments rather than
-// converted to a VOD asset. The ceiling is that a viewer gets a single bitrate and
-// the segments stay small objects until swept. Both upgrades are additive -- N rungs
-// is N outputs in the same ffmpeg command on the same GOP grid, and the recording
-// concatenates losslessly into a mezzanine that the existing Transcode/Package path
-// already knows how to handle. See docs/06-live.md.
+// ponytail: one rung, no ABR. The ceiling is that a viewer gets a single bitrate
+// while the broadcast is on; the upgrade is additive -- N rungs is N outputs in the
+// same ffmpeg command on the same GOP grid. See docs/06-live.md.
 func (w *Worker) Run(ctx context.Context, sessionID, tenantID string) error {
 	a := session{ID: sessionID, TenantID: tenantID}
 
@@ -95,7 +93,7 @@ func (w *Worker) Run(ctx context.Context, sessionID, tenantID string) error {
 	// publisher actually arrives. ffmpeg exits immediately against an empty path, so
 	// the wait is a retry loop rather than a listening socket.
 	pull := pullURL(w.PullBase, streamID)
-	prefix := fmt.Sprintf("live/%s/%s", tenantID, assetID)
+	prefix := Prefix(tenantID, assetID)
 	published := map[string]bool{}
 	waitUntil := time.Now().Add(WaitForEncoder)
 
@@ -166,13 +164,13 @@ func (w *Worker) runIngest(ctx context.Context, a session, pull string, rung med
 // publishSegments uploads every file the playlist already names, then the playlist.
 func (w *Worker) publishSegments(ctx context.Context, dir, prefix string,
 	published map[string]bool) (int, error) {
-	body, err := os.ReadFile(filepath.Join(dir, playlistName))
+	body, err := os.ReadFile(filepath.Join(dir, PlaylistName))
 	if err != nil {
 		return 0, err
 	}
 
 	added := 0
-	for _, name := range playlistFiles(body) {
+	for _, name := range PlaylistFiles(body) {
 		if published[name] {
 			continue
 		}
@@ -193,17 +191,17 @@ func (w *Worker) publishSegments(ctx context.Context, dir, prefix string,
 	}
 	// Playlist last, always: a playlist naming a segment that is not yet stored is a
 	// 404 in the middle of a broadcast.
-	return added, w.Store.Put(ctx, prefix+"/"+playlistName,
+	return added, w.Store.Put(ctx, prefix+"/"+PlaylistName,
 		bytes.NewReader(body), "application/vnd.apple.mpegurl")
 }
 
-// playlistFiles lists the media files a playlist references: the init segment named
+// PlaylistFiles lists the media files a playlist references: the init segment named
 // by EXT-X-MAP and every segment line.
 //
 // Driven by the playlist rather than by a directory listing because ffmpeg writes a
 // segment first and names it only once it is closed. Publishing whatever is in the
 // directory would push a half-written segment and stall the player on it.
-func playlistFiles(body []byte) []string {
+func PlaylistFiles(body []byte) []string {
 	var out []string
 	for _, line := range strings.Split(string(body), "\n") {
 		line = strings.TrimSpace(line)
@@ -236,11 +234,15 @@ func (w *Worker) markSeen(ctx context.Context, a session, assetID, streamID stri
 		return err
 	})
 	_ = w.Assets.MarkLive(ctx, a.TenantID, assetID)
-	w.emitLive(ctx, a.TenantID, "live.started", assetID, streamID)
+	w.emitLive(ctx, a.TenantID, "live.started", assetID, streamID, "")
 }
 
-// endLive closes the broadcast. The segments stay where they are and keep playing:
-// the asset is live_ended, not ready, because the recording has not been converted.
+// endLive closes the broadcast and hands the recording to the VOD path.
+//
+// The asset goes to live_ended, not ready: the segments are still the only copy of
+// the recording and the storage prefix switches on that state, so playback keeps
+// reading live/ until the cmaf/ objects exist. The reaper re-issues the conversion if
+// this enqueue is lost, so a dropped job is a delay and not a lost recording.
 func (w *Worker) endLive(ctx context.Context, a session, assetID, streamID string) error {
 	// A fresh context: the job context may already be past its deadline, which is
 	// exactly when recording the outcome matters most.
@@ -265,8 +267,8 @@ func (w *Worker) endLive(ctx context.Context, a session, assetID, streamID strin
 	if err := w.Assets.MarkEnded(ctx, a.TenantID, assetID); err != nil {
 		return err
 	}
-	w.emitLive(ctx, a.TenantID, "live.ended", assetID, streamID)
-	return nil
+	w.emitLive(ctx, a.TenantID, "live.ended", assetID, streamID, "")
+	return w.Queue.ConvertRecording(ctx, a.TenantID, assetID)
 }
 
 // failLive records a stable code and stops. No ffmpeg text crosses this boundary.
@@ -285,17 +287,25 @@ func (w *Worker) failLive(ctx context.Context, a session, assetID, streamID, cod
 		return err
 	})
 	_ = w.Assets.MarkFailed(ctx, a.TenantID, assetID, code)
+	w.emitLive(ctx, a.TenantID, "live.failed", assetID, streamID, code)
+	// Segments are left for the reaper rather than deleted here: the failure path is
+	// exactly where a second storage call is most likely to fail too.
 	return fmt.Errorf("%w: live session %s: %s", ErrBroadcastFailed, a.ID, code)
 }
 
-func (w *Worker) emitLive(ctx context.Context, tenantID, event, assetID, streamID string) {
+// emitLive carries the stable code on a failure, because "it never went on air" and
+// "it stopped mid-match" need different things from the customer.
+func (w *Worker) emitLive(ctx context.Context, tenantID, event, assetID, streamID, code string) {
 	if w.Events == nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
-	_ = w.Events.Emit(ctx, tenantID, event,
-		map[string]any{"asset_id": assetID, "stream_id": streamID})
+	data := map[string]any{"asset_id": assetID, "stream_id": streamID}
+	if code != "" {
+		data["error_code"] = code
+	}
+	_ = w.Events.Emit(ctx, tenantID, event, data)
 }
 
 // liveRung picks the lowest eager rung in the tenant's profile.

@@ -28,10 +28,19 @@ import (
 // a mezzanine afterwards instead of being re-encoded.
 const segmentSeconds = media.GOPSeconds
 
-// playlistName is the name of the playlist written into the output directory. It is
+// PlaylistName is the name of the playlist written into the output directory. It is
 // master.m3u8 because a single-rendition media playlist is a valid top-level
 // playlist, and because the asset's existing playback URL already points there.
-const playlistName = "master.m3u8"
+const PlaylistName = "master.m3u8"
+
+// Prefix is where a broadcast's segments are stored, separate from cmaf/ so the sweep
+// that deletes them can never walk into the VOD library.
+//
+// Exported because the conversion job reads the recording back from here. The layout
+// stays live's: the day this module moves out, so does the only definition of it.
+func Prefix(tenantID, assetID string) string {
+	return "live/" + tenantID + "/" + assetID
+}
 
 // segmentCommand builds the one process that terminates ingest, encodes and segments.
 //
@@ -66,7 +75,7 @@ func segmentCommand(ctx context.Context, input string, r media.Rung, outDir stri
 		"-hls_list_size", "0",
 		"-hls_fmp4_init_filename", "init.mp4",
 		"-hls_segment_filename", filepath.Join(outDir, "%d.m4s"),
-		filepath.Join(outDir, playlistName),
+		filepath.Join(outDir, PlaylistName),
 	)
 	return exec.CommandContext(ctx, "ffmpeg", args...)
 }

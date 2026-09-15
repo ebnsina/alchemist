@@ -215,6 +215,16 @@ func (l LiveAssets) MarkFailed(ctx context.Context, tenantID, assetID, code stri
 	return l.setState(ctx, tenantID, assetID, "failed", &code)
 }
 
+// State is what tells the sweep whether the recording still lives in the live prefix.
+func (l LiveAssets) State(ctx context.Context, tenantID, assetID string) (string, error) {
+	var state string
+	err := l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx,
+			`select state::text from assets where id = $1`, assetID).Scan(&state)
+	})
+	return state, err
+}
+
 func (l LiveAssets) setState(ctx context.Context, tenantID, assetID, state string, code *string) error {
 	return l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx,
@@ -248,6 +258,25 @@ type LiveQueue struct{ River *river.Client[pgx.Tx] }
 
 func (q LiveQueue) EnqueueSession(ctx context.Context, sessionID, tenantID string) error {
 	_, err := q.River.Insert(ctx, pipeline.LiveArgs{SessionID: sessionID, TenantID: tenantID}, nil)
+	return err
+}
+
+// ConvertRecording is the ordinary transcode job: the recording reads its source back
+// out of the live prefix, and everything after that -- ladder, encryption, CMAF,
+// rendition rows, asset.ready -- is the path every upload already takes.
+//
+// Unique by args because both the worker that ended the broadcast and the reaper that
+// noticed it ended ask for this, and converting one recording twice would publish the
+// same objects under two encodes.
+func (q LiveQueue) ConvertRecording(ctx context.Context, tenantID, assetID string) error {
+	_, err := q.River.Insert(ctx,
+		pipeline.TranscodeArgs{AssetID: assetID, TenantID: tenantID},
+		&river.InsertOpts{UniqueOpts: river.UniqueOpts{ByArgs: true}})
+	return err
+}
+
+func (q LiveQueue) ReclaimPrefix(ctx context.Context, prefix string) error {
+	_, err := q.River.Insert(ctx, pipeline.ReclaimArgs{Prefixes: []string{prefix}}, nil)
 	return err
 }
 

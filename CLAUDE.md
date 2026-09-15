@@ -180,9 +180,15 @@ These were established by measurement and are expensive to rediscover.
   That holds only because nothing written there survives: the recording converts into
   the ordinary `cmaf/` layout and the live prefix is swept. Never serve the permanent
   library from small objects.
+- **A converting recording must stay in `live_ended` until its `cmaf/` objects exist.**
+  `DedupResolver.StoragePrefix` switches prefix on that column, so writing `encoding`
+  over it points every viewer at objects that are not there yet — a 404 partway through
+  a link the customer handed out before the match. `setState` and `markFailed` in
+  `internal/pipeline/pipeline.go` both exclude it; the only write that moves the asset
+  is the final one, which already runs after the upload.
 - **Cross-tenant sweeps need a `SECURITY DEFINER` function.** RLS is forced, so a
   background job with no tenant in scope silently reads zero rows — it does not error.
-  `active_bucket_sources()` and `resolve_api_key()` exist for this.
+  `active_bucket_sources()`, `resolve_api_key()` and `live_tenants()` exist for this.
 
 ## Working here
 

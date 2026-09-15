@@ -95,6 +95,7 @@ func main() {
 		Assets: adapters.LiveAssets{DB: database}, Ladder: adapters.LiveLadder{DB: database},
 		PullBase: cfg.LivePullBase, WorkDir: cfg.WorkDir}
 	river.AddWorker(workers, &pipeline.LiveWorker{Live: liveBroadcast})
+	river.AddWorker(workers, &pipeline.LiveReapWorker{DB: database, Live: liveBroadcast})
 
 	riverClient, err := river.NewClient(riverpgxv5.New(database.Pool()), &river.Config{
 		Queues: map[string]river.QueueConfig{
@@ -117,6 +118,7 @@ func main() {
 	editor.River = riverClient
 	reconciler.River = riverClient
 	liveBroadcast.Events = adapters.LiveEvents{DB: database, River: riverClient}
+	liveBroadcast.Queue = adapters.LiveQueue{River: riverClient}
 
 	if err := riverClient.Start(ctx); err != nil {
 		log.Error("river start", "err", err)

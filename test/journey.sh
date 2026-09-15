@@ -21,9 +21,12 @@ check "tenant resolves" "$(echo "$R"|python3 -c 'import sys,json;print(json.load
 
 echo "2. register a webhook"
 R=$(curl -s -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
-  -d '{"url":"https://127.0.0.1:8072/hook","events":["asset.ready","asset.failed"]}' $B/v1/webhooks)
+  -d '{"url":"https://127.0.0.1:8072/hook","events":["asset.ready","asset.failed","live.started","live.ended","live.failed"]}' $B/v1/webhooks)
 echo "   https-only enforced: $(echo "$R" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("error",{}).get("code","ACCEPTED"))')"
 # The receiver is plain http in this harness, so register via the DB-free path below.
+# The live events are named to prove they are accepted; an event we do not send is a
+# 400, so a customer integrating live finds out here rather than in production.
+check "unknown event refused" "$(curl -s -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' -d '{"url":"https://example.com/h","events":["live.paused"]}' $B/v1/webhooks | python3 -c 'import sys,json;print(json.load(sys.stdin)["error"]["code"])')" "unknown_event"
 
 echo "3. import a video from a URL (migration off another provider)"
 R=$(curl -s -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \

@@ -393,7 +393,13 @@ paths:
                   type: array
                   items:
                     type: string
-                    enum: [asset.ready, asset.failed, rendition.ready]
+                    enum:
+                      - asset.ready
+                      - asset.failed
+                      - rendition.ready
+                      - live.started
+                      - live.ended
+                      - live.failed
       responses:
         "201": { description: Endpoint created; secret shown once }
         "400": { description: invalid_url or unknown_event }
