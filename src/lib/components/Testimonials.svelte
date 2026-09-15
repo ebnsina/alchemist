@@ -27,7 +27,7 @@
 
 <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
-		<p class="text-xs tracking-widest text-brand-light uppercase">
+		<p class="label-caps text-tertiary">
 			Who it's for
 		</p>
 		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
@@ -37,17 +37,17 @@
 
 	<div class="mt-14 grid gap-5 md:grid-cols-3">
 		{#each uses as u, i (u.ten)}
-			<article class="card card-hover p-8" use:scrollReveal={{ delay: i * 90 }}>
+			<article class="card p-8" use:scrollReveal={{ delay: i * 90 }}>
 				<div class="flex items-start justify-between gap-5">
 					<h3 class="text-lg font-semibold tracking-tight">{u.ten}</h3>
 					<HugeiconsIcon
 						icon={u.icon}
 						size={42}
 						strokeWidth={1.6}
-						class="tilt flex-none text-brand-light"
+						class="flex-none text-tertiary"
 					/>
 				</div>
-				<p class="mt-3.5 text-sm leading-[1.75] text-muted">{u.ben}</p>
+				<p class="mt-3.5 text-sm leading-[1.75] text-secondary">{u.ben}</p>
 			</article>
 		{/each}
 	</div>

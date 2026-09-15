@@ -86,11 +86,11 @@
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">Overview</h1>
 		{#if month}
-			<p class="mt-1 text-sm text-muted">Usage so far in {month}</p>
+			<p class="mt-1 text-sm text-secondary">Usage so far in {month}</p>
 		{/if}
 	</div>
 	<div class="flex items-center gap-2">
-		<button type="button" class="btn-ghost" onclick={load} disabled={loading}>
+		<button type="button" class="btn-secondary" onclick={load} disabled={loading}>
 			<HugeiconsIcon icon={RefreshIcon} size={15} strokeWidth={1.8} />
 			Refresh
 		</button>
@@ -102,14 +102,14 @@
 </header>
 
 {#if error}
-	<p class="mt-6 text-sm text-[#fca5a5]" role="alert">{error}</p>
+	<p class="mt-6 text-sm text-danger" role="alert">{error}</p>
 {/if}
 
 <section class="mt-6 grid gap-4 sm:grid-cols-3">
 	{#each Object.entries(UNITS) as [unit, spec] (unit)}
 		{@const line = lines.find((l) => l.unit === unit)}
 		<div class="card p-5">
-			<p class="text-xs text-muted">{spec.label}</p>
+			<p class="text-xs text-secondary">{spec.label}</p>
 			<p class="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
 				{line ? spec.format(line.quantity) : '—'}
 			</p>

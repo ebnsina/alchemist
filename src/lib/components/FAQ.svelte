@@ -33,30 +33,30 @@
 
 <section id="faq" class="mx-auto max-w-3xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="text-center" use:scrollReveal>
-		<p class="text-xs tracking-widest text-brand-light uppercase">
+		<p class="label-caps text-tertiary">
 			Questions
 		</p>
 		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
 			Got questions?
-			<span class="gradient-text">We've got answers.</span>
+			<span class="text-tertiary">We've got answers.</span>
 		</h2>
 	</div>
 
-	<div class="mt-10 divide-y divide-hairline border-y border-hairline" use:scrollReveal>
+	<div class="mt-10 divide-y divide-outline border-y border-outline" use:scrollReveal>
 		{#each qs as q (q.qen)}
 			<details class="group">
 				<summary
-					class="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium transition-colors hover:text-brand-light"
+					class="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium transition-colors hover:text-tertiary"
 				>
 					{q.qen}
 					<HugeiconsIcon
 						icon={ArrowDown01Icon}
 						size={17}
 						strokeWidth={2}
-						class="chevron flex-none text-muted"
+						class="chevron flex-none text-secondary"
 					/>
 				</summary>
-				<p class="pb-5 text-sm leading-relaxed text-muted">{q.aen}</p>
+				<p class="pb-5 text-sm leading-relaxed text-secondary">{q.aen}</p>
 			</details>
 		{/each}
 	</div>

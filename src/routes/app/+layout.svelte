@@ -107,15 +107,15 @@
 		</div>
 
 		{#if me}
-			<div class="mx-4 mt-4 rounded-xl bg-white/[0.04] px-3 py-2.5">
+			<div class="mx-4 mt-4 rounded-md border border-outline bg-surface px-3 py-2.5">
 				<p class="truncate text-sm font-medium">{me.org}</p>
-				<p class="mt-0.5 truncate text-xs text-muted">{me.email}</p>
+				<p class="mt-0.5 truncate text-xs text-secondary">{me.email}</p>
 			</div>
 		{/if}
 
 		<nav class="mt-4 flex-1 overflow-y-auto px-3" aria-label="Dashboard">
 			{#each groups as group (group.label)}
-				<p class="px-2 pt-3 pb-1.5 text-[11px] tracking-wider text-muted uppercase">
+				<p class="label-caps px-2 pt-4 pb-2 text-secondary">
 					{group.label}
 				</p>
 				<ul class="grid gap-0.5">
@@ -137,12 +137,12 @@
 			{/each}
 		</nav>
 
-		<div class="border-t border-hairline p-3">
-			<a href="/" class="side-link text-muted">
+		<div class="border-t border-outline p-3">
+			<a href="/" class="side-link text-secondary">
 				<HugeiconsIcon icon={ArrowUpRight01Icon} size={17} strokeWidth={1.7} />
 				Back to the site
 			</a>
-			<button type="button" class="side-link w-full text-muted" onclick={signOut}>
+			<button type="button" class="side-link w-full text-secondary" onclick={signOut}>
 				<HugeiconsIcon icon={Logout01Icon} size={17} strokeWidth={1.7} />
 				Sign out
 			</button>
@@ -171,24 +171,24 @@
 					<HugeiconsIcon icon={Menu01Icon} size={18} strokeWidth={1.8} />
 				</button>
 				<nav class="flex items-center gap-2 text-sm" aria-label="Breadcrumb">
-					<span class="text-muted">Dashboard</span>
-					<span class="text-muted" aria-hidden="true">/</span>
+					<span class="text-secondary">Dashboard</span>
+					<span class="text-secondary" aria-hidden="true">/</span>
 					<span class="font-medium">{current}</span>
 				</nav>
 			</header>
 
 			<div class="panel__body">
 				{#if !checked}
-					<p class="text-sm text-muted">Checking your session…</p>
+					<p class="text-sm text-secondary">Checking your session…</p>
 				{:else if me}
 					<div in:fly={{ y: 8, duration: 220, easing: cubicOut }}>
 						{@render children()}
 					</div>
 				{:else if trouble}
-					<div class="card p-8 text-center">
+					<div class="card text-center">
 						<p class="font-semibold">We could not load your account</p>
-						<p class="mx-auto mt-2 max-w-sm text-sm text-muted">{trouble}</p>
-						<button type="button" class="btn-ghost mt-5" onclick={() => location.reload()}>
+						<p class="mx-auto mt-2 max-w-sm text-sm text-secondary">{trouble}</p>
+						<button type="button" class="btn-secondary mt-5" onclick={() => location.reload()}>
 							Try again
 						</button>
 					</div>
@@ -218,13 +218,14 @@
 		position: fixed;
 		inset: 0 auto 0 0;
 		z-index: 40;
-		background: var(--color-body);
-		border-right: 1px solid var(--color-hairline);
+		background: var(--color-neutral);
+		border-right: 1px solid var(--color-outline);
 		transform: translateX(-100%);
-		transition: transform 240ms cubic-bezier(0.25, 0.8, 0.35, 1);
+		transition: transform 200ms ease;
 	}
 	.sidebar--open {
 		transform: none;
+		box-shadow: var(--shadow-float);
 	}
 	@media (min-width: 1024px) {
 		.sidebar {
@@ -232,7 +233,7 @@
 			top: 0;
 			transform: none;
 			width: auto;
-			border-right: 0;
+			box-shadow: none;
 		}
 	}
 
@@ -240,51 +241,49 @@
 		position: fixed;
 		inset: 0;
 		z-index: 30;
-		background: rgba(0, 0, 0, 0.55);
+		background: rgba(21, 24, 27, 0.4);
 	}
 
 	.panel-wrap {
 		min-width: 0;
 		height: 100svh;
-		padding: 0.5rem;
+		padding: 8px;
 	}
 	@media (min-width: 1024px) {
 		.panel-wrap {
-			padding: 0.75rem;
+			padding: 16px 16px 16px 0;
 		}
 	}
 
-	/* The inset: a distinct surface with its own edge, so the sidebar reads as the
-	   frame rather than as one more column of the same page. */
+	/* Depth is the surface colour against paper plus the hairline. No shadow here:
+	   this is static content, and the system has one shadow, for things that float. */
 	.panel {
 		display: flex;
 		flex-direction: column;
 		height: 100%;
 		min-width: 0;
-		background: var(--color-card);
-		border: 1px solid var(--color-hairline);
-		border-radius: 18px;
-		corner-shape: squircle;
-		box-shadow: var(--card-shadow);
+		background: var(--color-surface);
+		border: 1px solid var(--color-outline);
+		border-radius: var(--radius-lg);
 		overflow: hidden;
 	}
 	.panel__bar {
 		display: flex;
 		flex: none;
 		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem 1rem;
-		border-bottom: 1px solid var(--color-hairline);
+		gap: 12px;
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--color-outline);
 	}
 	.panel__body {
 		flex: 1;
 		min-height: 0;
 		overflow-y: auto;
-		padding: 1.5rem 1rem 3rem;
+		padding: 24px 16px 64px;
 	}
 	@media (min-width: 640px) {
 		.panel__body {
-			padding: 2rem 2rem 4rem;
+			padding: 40px 40px 64px;
 		}
 	}
 </style>

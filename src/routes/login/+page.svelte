@@ -43,17 +43,17 @@
 	{#if done}
 		<div class="text-center" in:fly={{ y: 12, duration: 360, easing: cubicOut }}>
 			<span
-				class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-brand-mid text-on-brand"
+				class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-tertiary text-on-primary"
 			>
 				<HugeiconsIcon icon={Tick02Icon} size={20} strokeWidth={2.6} />
 			</span>
-			<p class="mt-4 text-sm text-muted">You are signed in as {email}.</p>
+			<p class="mt-4 text-sm text-secondary">You are signed in as {email}.</p>
 			<a href="/app/" class="btn-primary mt-6 w-full">Go to your dashboard</a>
 		</div>
 	{:else}
 		<form onsubmit={submit}>
 			<label class="block">
-				<span class="mb-1.5 block text-xs text-muted">Email</span>
+				<span class="mb-1.5 block text-xs text-secondary">Email</span>
 				<input
 					bind:this={field}
 					bind:value={email}
@@ -68,7 +68,7 @@
 			</label>
 
 			<label class="mt-4 block">
-				<span class="mb-1.5 block text-xs text-muted">Password</span>
+				<span class="mb-1.5 block text-xs text-secondary">Password</span>
 				<input
 					bind:value={password}
 					class="field"
@@ -81,7 +81,7 @@
 			</label>
 
 			{#if error}
-				<p class="mt-3 text-sm text-[#fca5a5]" role="alert">{error}</p>
+				<p class="mt-3 text-sm text-danger" role="alert">{error}</p>
 			{/if}
 
 			<button type="submit" class="btn-primary mt-6 w-full" disabled={busy}>
@@ -89,8 +89,8 @@
 			</button>
 		</form>
 
-		<p class="mt-6 text-center text-xs text-muted">
-			New here? <a href="/signup/" class="text-brand-light">Start free</a>
+		<p class="mt-6 text-center text-xs text-secondary">
+			New here? <a href="/signup/" class="text-tertiary">Start free</a>
 		</p>
 	{/if}
 </AuthShell>

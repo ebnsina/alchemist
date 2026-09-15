@@ -100,7 +100,7 @@
 			poster={posterSrc}
 		></video>
 	{/if}
-	<div class="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs text-muted">
+	<div class="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs text-secondary">
 		<span>{note}</span>
 		{#if !blocked}
 			<span>{level ? `Playing ${level} · ` : ''}link expires in four hours</span>

@@ -21,8 +21,8 @@
 
 <div class="code">
 	<div class="code__bar">
-		<span class="text-xs text-muted">{label || 'JSON'}</span>
-		<button type="button" onclick={copy} class="flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-ink">
+		<span class="text-xs text-secondary">{label || 'JSON'}</span>
+		<button type="button" onclick={copy} class="flex items-center gap-1.5 text-xs text-secondary transition-colors hover:text-primary">
 			<HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={13} strokeWidth={2} />
 			{copied ? 'Copied' : 'Copy'}
 		</button>
@@ -32,42 +32,41 @@
 
 <style>
 	.code {
-		border-radius: 14px;
-		corner-shape: squircle;
-		background: var(--color-body);
-		border: 1px solid var(--color-hairline);
+		border-radius: var(--radius-md);
+		background: var(--color-neutral);
+		border: 1px solid var(--color-outline);
 		overflow: hidden;
 	}
 	.code__bar {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0.45rem 0.8rem;
-		border-bottom: 1px solid var(--color-hairline);
+		padding: 8px 12px;
+		border-bottom: 1px solid var(--color-outline);
 	}
 	.code__body {
 		margin: 0;
-		padding: 0.9rem 1rem;
+		padding: 12px 16px;
 		overflow-x: auto;
 		font-family: var(--font-mono);
-		font-size: var(--step--1);
+		font-size: 0.8125rem;
 		line-height: 1.7;
 	}
-	/* Measured on the card ground, not chosen: key 6.6:1, string 7.8:1,
-	   number 8.1:1, literal 6.9:1. */
+	/* Syntax colour inside the system: ink for keys, teal for values, slate for the
+	   punctuation between them. No new hues — weight and the one accent do the work.
+	   Measured on the paper ground: key 16.95:1, string 7.02:1, slate 4.93:1. */
 	.tok--key {
-		color: #7dd3fc;
+		color: var(--color-primary);
+		font-weight: 500;
 	}
 	.tok--string {
-		color: var(--color-brand-light);
+		color: var(--color-tertiary);
 	}
-	.tok--number {
-		color: #fbbf24;
-	}
+	.tok--number,
 	.tok--literal {
-		color: #c4b5fd;
+		color: var(--color-tertiary-container);
 	}
 	.tok--plain {
-		color: var(--color-muted);
+		color: var(--color-secondary);
 	}
 </style>

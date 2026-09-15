@@ -5,7 +5,7 @@
 		Clock01Icon,
 		Package01Icon,
 		SquareLock01Icon,
-		Delete02Icon,
+		Database01Icon,
 		GlobalIcon
 	} from '@hugeicons/core-free-icons';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
@@ -32,7 +32,7 @@
 			ben: 'Every play runs through a signed link that expires when you say. Pass it around and it stops working, and a saved copy will not play.'
 		},
 		{
-			icon: Delete02Icon,
+			icon: Database01Icon,
 			ten: 'One tenant cannot see another',
 			ben: 'Isolation is a database rule, not a WHERE clause somebody has to remember. A query with no filter still returns only that account.'
 		},
@@ -46,28 +46,28 @@
 
 <section id="features" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
-		<p class="text-xs tracking-widest text-brand-light uppercase">
+		<p class="label-caps text-tertiary">
 			What you get
 		</p>
 		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
 			The video parts you would rather not build.
-			<span class="gradient-text">All of them.</span>
+			<span class="text-tertiary">All of them.</span>
 		</h2>
 	</div>
 
 	<div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 		{#each features as f, i (f.ten)}
-			<article class="card card-hover p-8" use:scrollReveal={{ delay: (i % 3) * 80 }}>
+			<article class="card p-8" use:scrollReveal={{ delay: (i % 3) * 80 }}>
 				<div class="flex items-start justify-between gap-5">
 					<h3 class="text-lg font-semibold tracking-tight">{f.ten}</h3>
 					<HugeiconsIcon
 						icon={f.icon}
 						size={42}
 						strokeWidth={1.6}
-						class="tilt flex-none text-brand-light"
+						class="flex-none text-tertiary"
 					/>
 				</div>
-				<p class="mt-3.5 text-sm leading-[1.75] text-muted">{f.ben}</p>
+				<p class="mt-3.5 text-sm leading-[1.75] text-secondary">{f.ben}</p>
 			</article>
 		{/each}
 	</div>

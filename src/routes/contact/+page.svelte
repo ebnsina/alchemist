@@ -51,7 +51,7 @@
 
 <section class="mx-auto max-w-2xl px-4 pt-32 pb-20 sm:px-6 sm:pt-40 sm:pb-28">
 	<h1 class="text-3xl leading-[1.32] font-semibold tracking-tight sm:text-4xl">Talk to us</h1>
-	<p class="mt-3 max-w-xl text-muted">
+	<p class="mt-3 max-w-xl text-secondary">
 		Tell us what you are putting online and roughly how much of it. We answer with what it would
 		cost and whether we are the right people for it.
 	</p>
@@ -59,25 +59,25 @@
 	{#if sent}
 		<div class="card mt-8 p-8 text-center" in:fly={{ y: 12, duration: 380, easing: cubicOut }}>
 			<span
-				class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-brand-mid text-on-brand"
+				class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-tertiary text-on-primary"
 			>
 				<HugeiconsIcon icon={Tick02Icon} size={20} strokeWidth={2.6} />
 			</span>
 			<p class="mt-4 font-semibold">We have it</p>
-			<p class="mx-auto mt-2 max-w-sm text-sm text-muted">
+			<p class="mx-auto mt-2 max-w-sm text-sm text-secondary">
 				Someone reads every one of these. Expect a reply at {email} within a working day.
 			</p>
-			<a href="/" class="btn-ghost mt-6">Back to the start</a>
+			<a href="/" class="btn-secondary mt-6">Back to the start</a>
 		</div>
 	{:else}
 		<form class="card mt-8 grid gap-4 p-6 sm:p-8" onsubmit={submit}>
 			<div class="grid gap-4 sm:grid-cols-2">
 				<label class="block">
-					<span class="mb-1.5 block text-xs text-muted">Your name</span>
+					<span class="mb-1.5 block text-xs text-secondary">Your name</span>
 					<input bind:value={name} class="field" type="text" name="name" autocomplete="name" required />
 				</label>
 				<label class="block">
-					<span class="mb-1.5 block text-xs text-muted">Email</span>
+					<span class="mb-1.5 block text-xs text-secondary">Email</span>
 					<input
 						bind:value={email}
 						class="field"
@@ -91,12 +91,12 @@
 			</div>
 
 			<label class="block">
-				<span class="mb-1.5 block text-xs text-muted">Organisation <span class="text-muted">(optional)</span></span>
+				<span class="mb-1.5 block text-xs text-secondary">Organisation <span class="text-secondary">(optional)</span></span>
 				<input bind:value={org} class="field" type="text" name="organization" autocomplete="organization" />
 			</label>
 
 			<label class="block">
-				<span class="mb-1.5 block text-xs text-muted">What are you putting online?</span>
+				<span class="mb-1.5 block text-xs text-secondary">What are you putting online?</span>
 				<textarea
 					bind:value={message}
 					class="field min-h-32 resize-y"
@@ -113,14 +113,14 @@
 			</label>
 
 			{#if error}
-				<p class="text-sm text-[#fca5a5]" role="alert">{error}</p>
+				<p class="text-sm text-danger" role="alert">{error}</p>
 			{/if}
 
 			<div class="flex items-center gap-4">
 				<button type="submit" class="btn-primary" disabled={!valid || busy}>
 					{busy ? 'Sending…' : 'Send it'}
 				</button>
-				<p class="text-xs text-muted">No newsletter. We reply and that is all.</p>
+				<p class="text-xs text-secondary">No newsletter. We reply and that is all.</p>
 			</div>
 		</form>
 	{/if}

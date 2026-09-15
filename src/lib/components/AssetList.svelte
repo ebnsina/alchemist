@@ -49,11 +49,11 @@
 </script>
 
 {#if loading && assets.length === 0}
-	<p class="mt-4 text-sm text-muted">Loading…</p>
+	<p class="mt-4 text-sm text-secondary">Loading…</p>
 {:else if assets.length === 0}
 	<div class="card mt-4 p-8 text-center">
 		<p class="font-semibold">Nothing here yet</p>
-		<p class="mx-auto mt-2 max-w-sm text-sm text-muted">
+		<p class="mx-auto mt-2 max-w-sm text-sm text-secondary">
 			Send your first video and watch it come back smaller. It takes about a minute for a
 			ten-minute clip.
 		</p>
@@ -64,7 +64,7 @@
 		<table class="w-full text-sm">
 			<caption class="vh">Your videos, newest first</caption>
 			<thead>
-				<tr class="text-xs text-muted">
+				<tr class="text-xs text-secondary">
 					<th class="px-5 py-3 text-left font-normal">Video</th>
 					<th class="px-5 py-3 text-left font-normal">State</th>
 					<th class="px-5 py-3 text-right font-normal">Length</th>
@@ -75,9 +75,9 @@
 			<tbody>
 				{#each assets as a (a.id)}
 					{@const state = STATE[a.state] ?? { label: a.state, tone: 'work' }}
-					<tr class="border-t border-hairline transition-colors hover:bg-white/[0.03]">
+					<tr class="border-t border-outline transition-colors hover:bg-neutral">
 						<td class="px-5 py-3">
-							<a href="/app/videos/{a.id}/" class="font-mono text-xs text-brand-light">
+							<a href="/app/videos/{a.id}/" class="font-mono text-xs text-tertiary">
 								{a.id.slice(0, 8)}
 							</a>
 						</td>
@@ -85,20 +85,20 @@
 							<span class="inline-flex items-center gap-2">
 								<span
 									class="h-1.5 w-1.5 flex-none rounded-full {state.tone === 'ok'
-										? 'bg-brand-mid'
+										? 'bg-tertiary'
 										: state.tone === 'bad'
-											? 'bg-[#f87171]'
-											: 'bg-gold'}"
+											? 'bg-danger'
+											: 'bg-secondary'}"
 								></span>
 								{state.label}
 							</span>
 							{#if a.error_code}
-								<span class="block text-xs text-muted">{a.error_code}</span>
+								<span class="block text-xs text-secondary">{a.error_code}</span>
 							{/if}
 						</td>
 						<td class="px-5 py-3 text-right tabular-nums">{length(a.duration_sec)}</td>
 						<td class="px-5 py-3 text-right tabular-nums">{size(a.source_bytes)}</td>
-						<td class="px-5 py-3 text-right text-muted">{when(a.created_at)}</td>
+						<td class="px-5 py-3 text-right text-secondary">{when(a.created_at)}</td>
 					</tr>
 				{/each}
 			</tbody>

@@ -46,24 +46,20 @@
 	const progress = $derived(Math.min(100, Math.round((elapsed / 3200) * 100)));
 </script>
 
-<div class="card shine relative w-full p-4 text-left sm:p-6">
-	<ol class="mb-5 flex items-center justify-center gap-2.5 text-[11px] sm:gap-2 sm:text-xs">
+<div class="card-flush w-full p-6 text-left">
+	<ol class="label-caps mb-6 flex items-center justify-between gap-2">
 		{#each steps as s, i (s.label)}
 			<li
-				class="flex items-center gap-2 whitespace-nowrap transition-colors duration-500"
-				class:text-ink={i === stage}
-				class:text-muted={i !== stage}
+				class="flex items-center gap-2 whitespace-nowrap transition-colors duration-500 {i === stage
+					? 'text-primary'
+					: 'text-secondary'}"
 			>
 				<span
-					class="h-1.5 w-1.5 rounded-full transition-all duration-500 {i <= stage
-						? 'bg-brand-mid'
-						: 'bg-black/15'}"
-					class:scale-150={i === stage}
+					class="status-dot transition-colors duration-500 {i <= stage
+						? 'bg-tertiary'
+						: 'bg-outline'}"
 				></span>
-				{s.label}
-				{#if i < steps.length - 1}
-					<span class="ml-1 hidden h-px w-5 bg-black/10 sm:inline-block sm:w-8" aria-hidden="true"></span>
-				{/if}
+				<span class="hidden sm:inline">{s.label}</span>
 			</li>
 		{/each}
 	</ol>
@@ -72,34 +68,39 @@
 		{#key stage}
 			<div
 				class="absolute inset-0"
-				in:fly={{ y: 14, duration: 420, delay: 130, easing: cubicOut }}
-				out:fade={{ duration: 120 }}
+				in:fly={{ y: 10, duration: 360, delay: 120, easing: cubicOut }}
+				out:fade={{ duration: 110 }}
 			>
 				{#if stage === 0}
 					<div
-						class="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-hairline"
+						class="flex h-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-outline"
 					>
 						<div
-							class="flex items-center gap-3 rounded-lg border border-hairline bg-card px-3 py-2"
-							in:fly={{ y: -26, duration: 560, delay: 260, easing: cubicOut }}
+							class="flex items-center gap-2 rounded-md border border-outline bg-neutral px-3 py-2"
+							in:fly={{ y: -20, duration: 480, delay: 240, easing: cubicOut }}
 						>
-							<HugeiconsIcon icon={Video01Icon} size={20} strokeWidth={1.6} class="flex-none text-brand-light" />
-							<span class="text-sm">lecture-week-4.mov</span>
-							<span class="text-xs text-muted">1.2 GB</span>
+							<HugeiconsIcon
+								icon={Video01Icon}
+								size={18}
+								strokeWidth={1.6}
+								class="flex-none text-tertiary"
+							/>
+							<span class="body-sm">lecture-week-4.mov</span>
+							<span class="numeric text-secondary">1.2 GB</span>
 						</div>
-						<p class="text-xs text-muted" in:fade={{ duration: 400, delay: 620 }}>
+						<p class="body-sm text-secondary" in:fade={{ duration: 360, delay: 560 }}>
 							Straight to storage, never through your servers
 						</p>
 					</div>
 				{:else if stage === 1}
 					<div class="flex h-full flex-col justify-center gap-4">
 						<div class="flex items-baseline justify-between">
-							<p class="text-sm">Making every size their viewers need</p>
-							<p class="tabular-nums text-xs text-muted">{progress}%</p>
+							<p class="body-sm">Making every size their viewers need</p>
+							<p class="numeric text-secondary">{progress}%</p>
 						</div>
-						<div class="h-1.5 overflow-hidden rounded-full bg-black/10">
+						<div class="h-1.5 overflow-hidden rounded-full bg-outline">
 							<div
-								class="h-full rounded-full bg-brand-mid transition-[width] duration-100 ease-linear"
+								class="h-full rounded-full bg-tertiary transition-[width] duration-100 ease-linear"
 								style="width: {progress}%"
 							></div>
 						</div>
@@ -107,10 +108,15 @@
 							{#each outputs as o (o.name)}
 								{#if elapsed >= o.at}
 									<li
-										class="flex items-center gap-1.5 rounded-lg border border-hairline px-2.5 py-1 text-xs"
-										in:scale={{ start: 0.86, duration: 320, easing: cubicOut }}
+										class="numeric flex items-center gap-2 rounded-sm border border-outline px-2.5 py-1"
+										in:scale={{ start: 0.9, duration: 260, easing: cubicOut }}
 									>
-										<HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2.6} class="flex-none text-brand-light" />
+										<HugeiconsIcon
+											icon={Tick02Icon}
+											size={12}
+											strokeWidth={2.6}
+											class="flex-none text-success"
+										/>
 										{o.name}
 									</li>
 								{/if}
@@ -119,25 +125,29 @@
 					</div>
 				{:else}
 					<div class="flex h-full flex-col justify-center gap-4">
-						<div class="flex items-center gap-3">
+						<div class="flex items-center gap-2">
 							<span
-								class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-brand-mid text-on-brand"
-								in:scale={{ start: 0.5, duration: 420, easing: cubicOut }}
+								class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-tertiary text-on-primary"
+								in:scale={{ start: 0.6, duration: 360, easing: cubicOut }}
 							>
 								<HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={2.6} />
 							</span>
 							<div>
-								<p class="text-sm">Ready to play</p>
-								<p class="text-xs text-muted">84 MB · signed, expiring, plays anywhere</p>
+								<p class="body-sm font-medium">Ready to play</p>
+								<p class="body-sm text-secondary">84 MB · signed, expiring, plays anywhere</p>
 							</div>
 						</div>
 						<div
-							class="flex items-center gap-2 rounded-lg border border-hairline bg-card px-3 py-2"
-							in:fly={{ y: 12, duration: 420, delay: 180, easing: cubicOut }}
+							class="flex items-center gap-2 rounded-md border border-outline bg-neutral px-3 py-2"
+							in:fly={{ y: 10, duration: 360, delay: 160, easing: cubicOut }}
 						>
-							<HugeiconsIcon icon={Link01Icon} size={16} strokeWidth={1.7} class="flex-none text-brand-light" />
-							<span class="truncate font-mono text-xs text-muted">alchemist.video/w/8fc21a</span>
-							<span class="ml-auto flex-none text-xs text-brand-light">Copy</span>
+							<HugeiconsIcon
+								icon={Link01Icon}
+								size={15}
+								strokeWidth={1.7}
+								class="flex-none text-tertiary"
+							/>
+							<span class="numeric truncate text-secondary">alchemist.video/w/8fc21a</span>
 						</div>
 					</div>
 				{/if}

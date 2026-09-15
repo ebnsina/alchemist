@@ -21,12 +21,12 @@
 	<div class="glow-2 pointer-events-none absolute top-10 -right-20 -z-10 h-[26rem] w-[26rem]" aria-hidden="true"></div>
 	<div class="mx-auto max-w-6xl px-4 sm:px-6">
 		<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
-			<p class="text-xs tracking-widest text-brand-light uppercase">
+			<p class="label-caps text-tertiary">
 				How it works
 			</p>
 			<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
 				Three easy steps.
-				<span class="gradient-text">That's it.</span>
+				<span class="text-tertiary">That's it.</span>
 			</h2>
 		</div>
 
@@ -35,11 +35,11 @@
 				<li class="card p-8" use:scrollReveal={{ delay: i * 90 }}>
 					<div class="flex items-start justify-between gap-5">
 						<h3 class="text-lg font-semibold tracking-tight">{s.ten}</h3>
-						<span class="flex-none text-3xl leading-none font-semibold text-brand-light" aria-hidden="true"
+						<span class="flex-none text-3xl leading-none font-semibold text-tertiary" aria-hidden="true"
 							>{i + 1}</span
 						>
 					</div>
-					<p class="mt-3.5 text-sm leading-[1.75] text-muted">{s.ben}</p>
+					<p class="mt-3.5 text-sm leading-[1.75] text-secondary">{s.ben}</p>
 				</li>
 			{/each}
 		</ol>

@@ -1,225 +1,336 @@
 @import 'tailwindcss';
 
-/* Deep sea green on onyx. Alchemy: base metal in, refined metal out — the green
-   is the only colour that carries meaning rather than decoration.
+/* The Alchemist design system. DESIGN.md is the reference; this file is the
+   implementation, and the two are meant to agree.
 
-   Dark is the default because the aurora needs a dark ground to read as light
-   rather than as a tint, and because the emerald has somewhere to glow.
+   Ink on warm paper, one deep teal for action, alta red only for loss. There is no
+   elevation scale: depth is surface colour against paper plus a 1px outline. One
+   shadow exists, for things that float.
 
-   Contrast computed against the onyx ground #0B0B0C, not eyeballed:
-     ink #e5e7eb ............. 15.59:1
-     muted white @ 0.55 ...... 6.24:1   (0.40 measures 3.80:1 and fails AA)
-     brand #047857 ........... 3.59:1   — a surface, never text on onyx
-     brand mid #10b981 ....... 7.76:1
-     brand light #34d399 ..... 10.23:1
-   White on the brand button is 5.48:1, and --color-on-brand is what any fill of
-   brand mid carries: onyx here, ink on paper. Every surface below is a token, so
-   the light palette is the one override block at the end of this file rather than
-   a second pass over every component. */
+   Contrast measured on the paper ground #FBF9F5, not eyeballed:
+     ink #15181B ............ 16.95:1
+     secondary #666E74 ...... 4.93:1   — captions and metadata, never body copy
+     teal #1F5F5B ........... 7.02:1
+     danger #A8342A ......... 6.26:1
+     success #2F6B3A ........ 6.08:1
+   Paper on teal is 7.02:1, paper on ink 16.95:1. */
 @theme {
-	--color-body: #0B0B0C;
-	--color-card: #141416;
-	--color-elevated: #1C1C1F;
-	--color-deep: #064e3b;
-	--color-brand-mid: #10b981;
-	--color-brand: #047857;
-	/* Named for where it sits, not how light it is: the accent that carries text. */
-	--color-brand-light: #34d399;
-	/* What text on a brand-mid fill has to be. Flips with the theme. */
-	--color-on-brand: #0B0B0C;
-	--color-gold: #fbbf24;
-	--color-seafoam: #2dd4bf;
-	--color-ink: #e5e7eb;
-	--color-muted: rgba(255, 255, 255, 0.55);
-	--color-hairline: rgba(255, 255, 255, 0.08);
-	--color-hairline-strong: rgba(255, 255, 255, 0.14);
+	--color-primary: #15181b;
+	--color-on-primary: #fbf9f5;
+	--color-secondary: #666e74;
+	--color-tertiary: #1f5f5b;
+	--color-tertiary-container: #174744;
+	--color-neutral: #fbf9f5;
+	--color-surface: #ffffff;
+	--color-outline: #e3dfd8;
+	--color-danger: #a8342a;
+	--color-on-danger: #fbf9f5;
+	--color-success: #2f6b3a;
 
-	/* Surfaces the theme owns, so components never name a raw colour. */
-	--card-stock: linear-gradient(180deg, #17171b, #121214);
-	--card-shadow: 0 1px 1px rgba(0, 0, 0, 0.5), 0 2px 8px -2px rgba(0, 0, 0, 0.6);
-	--card-shadow-hover: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 28px -10px rgba(0, 0, 0, 0.8);
-	--wash-1: rgba(16, 185, 129, 0.12);
-	--wash-2: rgba(4, 120, 87, 0.14);
-	--grain-blend: overlay;
-	--grain-opacity: 0.045;
-	--aurora-1: #1b4332;
-	--aurora-2: #2d6a4f;
-	--aurora-3: #40916c;
-	--aurora-4: #52b788;
-	--aurora-5: #74c69d;
-	--aurora-scrim-top: 46%;
-	--aurora-scrim-mid: 62%;
-	--aurora-scrim-bottom: 68%;
-	--aurora-grain-opacity: 0.25;
-	--aurora-grain-blend: overlay;
-
-		/* Oddval headings over Mona Sans body, which is also Oddval's fallback. The free Oddval on cdnfonts ships exactly
-	   one weight — SemiBold 600 — so every heading is 600; asking for 700 makes the
-	   browser synthesise bold and smear the stems. */
 	--font-sans: 'Mona Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-	--font-heading: 'Oddval', var(--font-sans);
 	--font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+	/* Four radii and no more. They do not scale with size: a large card and a small
+	   card share lg. */
+	--radius-sm: 4px;
+	--radius-md: 8px;
+	--radius-lg: 14px;
+	--radius-full: 999px;
+
+	/* The 8px scale is Tailwind's own numeric one: 1=4, 2=8, 4=16, 6=24, 10=40,
+	   16=64. Naming it xs..xxl in @theme would shadow the container sizes — max-w-md
+	   would resolve to 16px rather than 28rem, which is exactly the bug it caused. */
+
+	/* The only shadow in the system. Menus, dialogs, toasts — nothing static. */
+	--shadow-float: 0 8px 24px rgba(21, 24, 27, 0.1);
 }
 
 @layer base {
 	html {
 		scroll-behavior: smooth;
 	}
+
 	body {
-		background: var(--color-body);
-		color: var(--color-ink);
+		background: var(--color-neutral);
+		color: var(--color-primary);
 		font-family: var(--font-sans);
-		font-size: var(--step-0);
-		line-height: 1.65;
+		font-size: 1rem;
+		line-height: 1.6;
 		-webkit-font-smoothing: antialiased;
 	}
 
-	/* The page is warm paper, not white. Two soft washes and a fine grain sit behind
-	   every section so long scrolls are not a flat field. */
-	body::before,
-	body::after {
-		content: '';
-		position: fixed;
-		inset: 0;
-		z-index: -1;
-		pointer-events: none;
-	}
-	body::before {
-		background:
-			radial-gradient(70rem 45rem at 12% -10%, var(--wash-1), transparent 62%),
-			radial-gradient(60rem 45rem at 45% 112%, var(--wash-2), transparent 65%);
-	}
-	body::after {
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
-		opacity: var(--grain-opacity);
-		mix-blend-mode: var(--grain-blend);
-	}
-
-	/* Headings globally, not scoped to a wrapper. The previous rule lived under
-	   .shell, which these pages do not use, so it never matched and the heading
-	   face never even downloaded. */
-	:is(h1, h2, h3, h4) {
-		font-family: var(--font-heading);
-		/* 600 is the only weight Oddval ships. */
+	/* Three heading levels. A fourth means the page needs splitting. */
+	h1 {
+		font-size: 2.25rem;
 		font-weight: 600;
+		line-height: 1.15;
 		letter-spacing: -0.02em;
-		/* Measured, not chosen: Miriam Libre's ascenders and descenders are tall for
-		   its em, and anything under 1.32 clipped headings on this page. Vertical
-		   metrics differ per family, so this is worth re-measuring on a font change
-		   rather than carrying over. */
-		line-height: 1.32;
 	}
+	h2 {
+		font-size: 1.5rem;
+		font-weight: 600;
+		line-height: 1.25;
+		letter-spacing: -0.01em;
+	}
+	h3 {
+		font-size: 1.125rem;
+		font-weight: 600;
+		line-height: 1.35;
+	}
+
 	:focus-visible {
-		outline: 2px solid var(--color-brand-light);
+		outline: 2px solid var(--color-tertiary);
 		outline-offset: 2px;
-		border-radius: 4px;
+		border-radius: var(--radius-sm);
 	}
+
 	::selection {
-		background: var(--color-brand-mid);
-		color: var(--color-on-brand);
+		background: var(--color-tertiary);
+		color: var(--color-on-primary);
+	}
+
+	/* Every number, id and timestamp is mono with tabular figures, so columns line
+	   up without anybody padding them by hand. */
+	code,
+	kbd,
+	samp,
+	pre {
+		font-family: var(--font-mono);
+		font-variant-numeric: tabular-nums;
 	}
 }
 
-/* Was a clipped background gradient. Removed: it washed the headline out against
-   the aurora and background-clip:text trims descenders on its own. A solid accent
-   reads better and cannot clip. */
-@utility gradient-text {
-	color: var(--color-brand-light);
-}
+@layer components {
+	.display {
+		font-size: clamp(2.5rem, 1.9rem + 2.6vw, 3.5rem);
+		font-weight: 600;
+		line-height: 1.05;
+		letter-spacing: -0.03em;
+	}
 
+	.body-sm {
+		font-size: 0.875rem;
+		line-height: 1.55;
+	}
 
-@utility glow {
-	background: radial-gradient(closest-side, rgba(16, 185, 129, 0.22), transparent);
-}
-@utility glow-2 {
-	background: radial-gradient(closest-side, rgba(45, 212, 191, 0.16), transparent);
-}
-@utility glow-gold {
-	background: radial-gradient(closest-side, rgba(251, 191, 36, 0.12), transparent);
+	/* Uppercase, tracked. Buttons, table headers, eyebrows — never a sentence. */
+	.label-caps {
+		font-size: 0.75rem;
+		font-weight: 600;
+		line-height: 1.2;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.numeric {
+		font-family: var(--font-mono);
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1.4;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Prose stops at 68ch whatever the viewport does. */
+	.measure {
+		max-width: 68ch;
+	}
 }
 
 @utility card {
-	/* A white stock over the paper ground, held by a hairline shadow rather than a
-	   border — a drawn edge on every card reads as a table. corner-shape falls
-	   back to a plain round where it is not supported yet. */
-	background: var(--card-stock);
-	border: 0;
-	border-radius: 18px;
-	corner-shape: squircle;
-	box-shadow: var(--card-shadow);
-	transition:
-		box-shadow 200ms ease,
-		transform 200ms ease;
-}
-@utility card-hover {
-	&:hover {
-		box-shadow: var(--card-shadow-hover);
-		transform: translateY(-2px);
-	}
+	background: var(--color-surface);
+	border: 1px solid var(--color-outline);
+	border-radius: var(--radius-lg);
+	padding: 24px;
 }
 
-/* The one card that has to stand out, now that no card has an edge. */
-@utility card-featured {
-	box-shadow:
-		0 0 0 2px var(--color-brand-mid),
-		var(--card-shadow);
+/* Cards that are containers for their own layout, not padded boxes. */
+@utility card-flush {
+	background: var(--color-surface);
+	border: 1px solid var(--color-outline);
+	border-radius: var(--radius-lg);
 }
 
-/* Pills at a fixed 46px, hover handled by opacity rather than a second colour so
-   one transition covers every variant. */
-@utility btn-primary {
-	font-size: var(--step-0);
+@utility btn-base {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 20px;
+	border-radius: var(--radius-md);
+	font-size: 0.75rem;
 	font-weight: 600;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.625rem;
-	height: 46px;
-	padding-inline: 1.25rem;
-	border: 1px solid transparent;
-	border-radius: 999px;
-	corner-shape: squircle;
-	background: var(--color-brand);
-	color: #fff;
+	line-height: 1.2;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	white-space: nowrap;
 	transition:
-		opacity 160ms cubic-bezier(0.165, 0.84, 0.44, 1),
-		border-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1),
-		background-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1);
-	&:hover {
-		opacity: 0.88;
-	}
+		background 140ms ease,
+		border-color 140ms ease,
+		color 140ms ease;
 	&:disabled,
 	&[aria-disabled='true'] {
 		pointer-events: none;
-		opacity: 0.4;
+		opacity: 0.45;
 	}
 }
-@utility btn-ghost {
-	font-size: var(--step-0);
-	font-weight: 500;
+
+/* One per view. Everything else is secondary or a text link. */
+@utility btn-primary {
+	@apply btn-base;
+	background: var(--color-tertiary);
+	color: var(--color-on-primary);
+	border: 1px solid transparent;
+	&:hover {
+		background: var(--color-tertiary-container);
+	}
+}
+
+@utility btn-secondary {
+	@apply btn-base;
+	background: var(--color-surface);
+	color: var(--color-primary);
+	border: 1px solid var(--color-outline);
+	&:hover {
+		border-color: var(--color-secondary);
+	}
+}
+
+/* Only behind a confirmation, and only for something irreversible. */
+@utility btn-danger {
+	@apply btn-base;
+	background: var(--color-danger);
+	color: var(--color-on-danger);
+	border: 1px solid transparent;
+	&:hover {
+		filter: brightness(0.92);
+	}
+}
+
+@utility field {
+	width: 100%;
+	height: 40px;
+	padding: 0 12px;
+	background: var(--color-surface);
+	color: var(--color-primary);
+	border: 1px solid var(--color-outline);
+	border-radius: var(--radius-md);
+	font: inherit;
+	font-size: 0.875rem;
+	transition: border-color 140ms ease;
+	&::placeholder {
+		color: var(--color-secondary);
+	}
+	&:focus {
+		outline: none;
+		border-color: var(--color-tertiary);
+	}
+	/* The border carries the error, and the helper text below says what to do. A red
+	   placeholder would be an error message nobody can act on. */
+	&[aria-invalid='true'] {
+		border-color: var(--color-danger);
+	}
+}
+
+@utility field-area {
+	@apply field;
+	height: auto;
+	min-height: 120px;
+	padding: 10px 12px;
+	line-height: 1.55;
+	resize: vertical;
+}
+
+/* Ink pill, paper text. Counts and primary status. */
+@utility badge-inverse {
 	display: inline-flex;
 	align-items: center;
-	justify-content: center;
-	gap: 0.625rem;
-	height: 46px;
-	padding-inline: 1.25rem;
-	border: 1px solid var(--color-hairline-strong);
-	border-radius: 999px;
-	corner-shape: squircle;
-	background: transparent;
-	color: var(--color-ink);
-	transition:
-		opacity 160ms cubic-bezier(0.165, 0.84, 0.44, 1),
-		border-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1),
-		background-color 160ms cubic-bezier(0.165, 0.84, 0.44, 1);
-	&:hover {
-		opacity: 0.88;
-		border-color: rgba(255, 255, 255, 0.24);
+	gap: 6px;
+	padding: 4px 10px;
+	background: var(--color-primary);
+	color: var(--color-on-primary);
+	border-radius: var(--radius-full);
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1.2;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+@utility badge-outline {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 10px;
+	background: var(--color-surface);
+	color: var(--color-secondary);
+	border: 1px solid var(--color-outline);
+	border-radius: var(--radius-full);
+	font-size: 0.75rem;
+	line-height: 1.2;
+}
+
+/* Status is a dot and a word. Never a coloured block. */
+@utility status-dot {
+	display: inline-block;
+	height: 6px;
+	width: 6px;
+	flex: none;
+	border-radius: var(--radius-full);
+}
+
+@utility float {
+	box-shadow: var(--shadow-float);
+}
+
+/* Sidebar rows and icon-only controls. */
+@layer components {
+	.side-link {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 10px;
+		border-radius: var(--radius-md);
+		font-size: 0.875rem;
+		color: var(--color-secondary);
+		transition:
+			background 140ms ease,
+			color 140ms ease;
 	}
-	&:disabled,
-	&[aria-disabled='true'] {
-		pointer-events: none;
-		opacity: 0.4;
+	.side-link:hover {
+		color: var(--color-primary);
+		background: var(--color-neutral);
+	}
+	.side-link--on {
+		color: var(--color-primary);
+		background: var(--color-neutral);
+		font-weight: 500;
+	}
+
+	.icon-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 32px;
+		width: 32px;
+		border-radius: var(--radius-md);
+		color: var(--color-secondary);
+		transition:
+			background 140ms ease,
+			color 140ms ease;
+	}
+	.icon-btn:hover {
+		color: var(--color-primary);
+		background: var(--color-neutral);
+	}
+
+	.link {
+		color: var(--color-tertiary);
+		text-decoration: none;
+	}
+	.link:hover {
+		text-decoration: underline;
+		text-underline-offset: 3px;
 	}
 }
 
@@ -227,41 +338,14 @@
    and leaves the element correct. */
 .scroll-fade {
 	opacity: 0;
-	transform: translateY(16px);
+	transform: translateY(10px);
 	transition:
-		opacity 620ms cubic-bezier(0.22, 0.8, 0.28, 1),
-		transform 620ms cubic-bezier(0.22, 0.8, 0.28, 1);
+		opacity 460ms cubic-bezier(0.22, 0.8, 0.28, 1),
+		transform 460ms cubic-bezier(0.22, 0.8, 0.28, 1);
 }
 .scroll-fade.is-visible {
 	opacity: 1;
 	transform: none;
-}
-
-@utility shine {
-	position: relative;
-	overflow: hidden;
-	&::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(
-			110deg,
-			transparent 35%,
-			rgba(255, 255, 255, 0.14) 50%,
-			transparent 65%
-		);
-		transform: translateX(-100%);
-		animation: shine 3.6s ease-in-out infinite;
-	}
-}
-@keyframes shine {
-	0%,
-	62% {
-		transform: translateX(-100%);
-	}
-	100% {
-		transform: translateX(100%);
-	}
 }
 
 .ticker {
@@ -282,13 +366,13 @@
 }
 
 .chevron {
-	transition: transform 200ms ease;
+	transition: transform 180ms ease;
 }
 details[open] > summary .chevron {
 	transform: rotate(180deg);
 }
 
-/* Every animation on this page is decoration. All of it stops. */
+/* Every animation here is decoration. All of it stops. */
 @media (prefers-reduced-motion: reduce) {
 	html {
 		scroll-behavior: auto;
@@ -309,116 +393,16 @@ details[open] > summary .chevron {
 	}
 }
 
-
-@layer components {
-	/* Form fields. One rule rather than a class on every input, so a field added later
-	   cannot arrive unstyled. */
-	.field {
-		width: 100%;
-		background: var(--color-body);
-		border: 1px solid var(--color-hairline-strong);
-		border-radius: 12px;
-		corner-shape: squircle;
-		padding: 0.7rem 0.9rem;
-		color: var(--color-ink);
-		font: inherit;
-		font-size: var(--step-1);
-		transition:
-			border-color 160ms ease,
-			background 160ms ease;
-	}
-	.field::placeholder {
-		color: var(--color-muted);
-	}
-	.field:focus {
-		outline: none;
-		border-color: var(--color-brand-mid);
-	}
-	.field[aria-invalid='true'] {
-		border-color: #f87171;
-	}
+/* The header sits on paper and earns a hairline once the page moves under it.
+   No glass: the system has no blur, and a translucent bar over a white card is
+   just a dirty white. */
+.nav-shell {
+	background: var(--color-neutral);
+	border-bottom: 1px solid transparent;
+	transition: border-color 160ms ease;
 }
-
-@layer components {
-	/* Step dots. The current one is wide rather than merely coloured, so progress is
-	   legible without relying on colour alone. */
-	.step-dot {
-		height: 4px;
-		border-radius: 999px;
-		background: var(--color-hairline-strong);
-		transition:
-			width 320ms cubic-bezier(0.25, 0.8, 0.35, 1),
-			background 320ms ease;
-		width: 1.25rem;
-	}
-	.step-dot[data-state='done'] {
-		background: var(--color-brand-mid);
-	}
-	.step-dot[data-state='current'] {
-		background: var(--color-brand-light);
-		width: 2.5rem;
-	}
-
-}
-
-@layer components {
-	/* Dashboard chrome. The sidebar and the inset panel share these. */
-	.side-link {
-		display: flex;
-		align-items: center;
-		gap: 0.65rem;
-		padding: 0.5rem 0.65rem;
-		border-radius: 10px;
-		corner-shape: squircle;
-		font-size: var(--step-0);
-		color: var(--color-muted);
-		transition:
-			background 160ms ease,
-			color 160ms ease;
-	}
-	.side-link:hover {
-		color: var(--color-ink);
-		background: rgba(255, 255, 255, 0.04);
-	}
-	.side-link--on {
-		color: var(--color-ink);
-		background: rgba(255, 255, 255, 0.07);
-	}
-	.side-link--on:hover {
-		background: rgba(255, 255, 255, 0.09);
-	}
-
-	.icon-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		height: 2rem;
-		width: 2rem;
-		border-radius: 10px;
-		corner-shape: squircle;
-		color: var(--color-muted);
-		transition:
-			background 160ms ease,
-			color 160ms ease;
-	}
-	.icon-btn:hover {
-		color: var(--color-ink);
-		background: rgba(255, 255, 255, 0.06);
-	}
-}
-
-/* Card icons sit tilted and straighten when the card is hovered. */
-.tilt {
-	transform: rotate(-14deg);
-	transition: transform 260ms cubic-bezier(0.25, 0.8, 0.35, 1);
-}
-.card-hover:hover .tilt {
-	transform: rotate(0deg);
-}
-
-/* Nav sits over the aurora, where text-muted measures 4.24:1. */
-.nav-link {
-	color: rgba(255, 255, 255, 0.68);
+.nav-shell[data-stuck='true'] {
+	border-bottom-color: var(--color-outline);
 }
 
 .vh {
@@ -428,317 +412,4 @@ details[open] > summary .chevron {
 	overflow: hidden;
 	clip-path: inset(50%);
 	white-space: nowrap;
-}
-
-/* ---------------------------------------------------------------------------
-   The six pages behind the landing page (course platforms, news, pricing,
-   developers, about, 404) were authored against an earlier token set. Aliasing
-   those names onto the sea-green theme re-skins all six for free instead of
-   rewriting them; the classes below are the handful they share.
-   Contrast on #0B0B0C: --graphite 0.72 -> 9.87:1, --ink-3 0.55 -> 6.24:1.
-   --------------------------------------------------------------------------- */
-:root {
-	--paper: var(--color-body);
-	--leaf: var(--color-card);
-	--sink: #0e201a;
-	--ink: var(--color-ink);
-	--graphite: rgba(255, 255, 255, 0.72);
-	--ink-3: rgba(255, 255, 255, 0.55);
-	--rule: var(--color-hairline);
-	--rule-firm: var(--color-hairline-strong);
-	--brass: var(--color-brand-light);
-	--brass-hi: var(--color-seafoam);
-	--brass-ink: var(--color-on-brand);
-	--wash: rgba(16, 185, 129, 0.08);
-	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-	--font: var(--font-sans);
-	--mono: var(--font-mono);
-	--ease: cubic-bezier(0.25, 0.8, 0.35, 1);
-	--r: var(--radius-xl);
-	--r-sm: var(--radius-xl);
-	--maxw: 1100px;
-	--gap: clamp(1rem, 0.8rem + 1vw, 1.5rem);
-	--bay: clamp(2.75rem, 2rem + 2.8vw, 4.5rem);
-	--step--1: 0.75rem;
-	--step-0: 0.875rem;
-	--step-1: 0.9375rem;
-	--step-2: 1.0625rem;
-	--step-3: 1.25rem;
-	--step-4: clamp(1.3125rem, 1.15rem + 0.7vw, 1.5rem);
-	--step-5: clamp(1.5rem, 1.28rem + 1.1vw, 2rem);
-	--step-6: clamp(1.9375rem, 1.4rem + 2.4vw, 3rem);
-}
-
-.shell :is(h1, h2, h3) {
-	margin: 0;
-	font-family: var(--font-heading);
-	font-weight: 600;
-	letter-spacing: -0.02em;
-	line-height: 1.18;
-	padding-bottom: 0.08em;
-	text-wrap: balance;
-}
-.shell h1 {
-	font-size: var(--step-6);
-}
-.shell h2 {
-	font-size: var(--step-5);
-	line-height: 1.2;
-}
-.shell h3 {
-	font-size: var(--step-2);
-	font-weight: 600;
-	line-height: 1.35;
-}
-.shell p {
-	margin: 0;
-	max-width: 70ch;
-	text-wrap: pretty;
-}
-.shell a:not([class]) {
-	color: inherit;
-}
-
-.shell {
-	width: 100%;
-	max-width: var(--maxw);
-	margin-inline: auto;
-	padding-inline: clamp(1rem, 0.5rem + 2vw, 2rem);
-}
-.bay {
-	padding-block: var(--bay);
-}
-.bay + .bay {
-	border-top: 1px solid var(--rule);
-}
-.flow > * + * {
-	margin-top: 0.9rem;
-}
-.flow > * + :is(h2, h3) {
-	margin-top: 1.9rem;
-}
-.split {
-	display: grid;
-	gap: var(--gap) clamp(2rem, 4.5vw, 4rem);
-	align-items: start;
-}
-.split > * {
-	min-width: 0;
-}
-@media (min-width: 900px) {
-	.split {
-		grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-	}
-	.split--even {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-}
-.lede {
-	font-size: var(--step-3);
-	line-height: 1.45;
-	letter-spacing: -0.014em;
-	max-width: 48ch;
-}
-.quiet {
-	color: var(--graphite);
-}
-.small {
-	font-size: var(--step-0);
-	color: var(--graphite);
-}
-.fine {
-	font-size: var(--step-0);
-	color: var(--ink-3);
-	max-width: 64ch;
-}
-.row {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
-}
-.btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.5rem;
-	padding: 0.6rem 1.1rem;
-	border: 1px solid var(--rule-firm);
-	border-radius: var(--radius-xl);
-	background: var(--leaf);
-	color: var(--ink);
-	font: inherit;
-	font-size: var(--step-0);
-	font-weight: 500;
-	text-decoration: none;
-	transition:
-		background 150ms var(--ease),
-		border-color 150ms var(--ease);
-}
-.btn:hover {
-	border-color: rgba(255, 255, 255, 0.24);
-}
-.btn--solid {
-	background: var(--color-brand);
-	border-color: transparent;
-	color: #ffffff;
-	font-weight: 600;
-}
-.btn--solid:hover {
-	opacity: 0.88;
-}
-.tlink {
-	color: var(--ink);
-	text-decoration: none;
-	box-shadow: inset 0 -1px 0 var(--rule-firm);
-	transition: box-shadow 150ms var(--ease);
-}
-.tlink:hover {
-	color: var(--brass);
-	box-shadow: inset 0 -1px 0 var(--brass);
-}
-.figure {
-	font-family: var(--mono);
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-}
-.scroll-x {
-	overflow-x: auto;
-}
-.price {
-	margin: 0.7rem 0 0.5rem;
-	font-size: var(--step-4);
-	font-weight: 600;
-	letter-spacing: -0.03em;
-	line-height: 1.15;
-}
-/* Was `.price span`, which caught every span inside the price — including the
-   ones the currency formatter emits, breaking the symbol onto its own line and
-   restyling it. Scoped to the caption it was written for. */
-.price .note {
-	display: block;
-	font-size: var(--step-0);
-	font-weight: 400;
-	letter-spacing: 0;
-	color: var(--graphite);
-	margin-top: 0.25rem;
-}
-.shell table {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: var(--step-0);
-}
-.shell caption {
-	text-align: left;
-	color: var(--ink-3);
-	font-size: var(--step--1);
-	padding-bottom: 0.7rem;
-}
-.shell :is(th, td) {
-	text-align: left;
-	padding: 0.55rem 0.8rem 0.55rem 0;
-	border-bottom: 1px solid var(--rule);
-	vertical-align: baseline;
-	font-weight: 400;
-}
-.shell thead th {
-	color: var(--ink-3);
-	font-size: var(--step--1);
-}
-.shell pre {
-	margin: 0;
-	padding: 1rem 1.1rem;
-	background: var(--leaf);
-	border: 1px solid var(--rule);
-	border-radius: var(--radius-xl);
-	overflow-x: auto;
-	font-family: var(--mono);
-	font-size: var(--step--1);
-	line-height: 1.75;
-	color: var(--graphite);
-}
-.shell :is(code, .mono) {
-	font-family: var(--mono);
-	font-size: 0.9em;
-}
-.shell :is(dl, dd) {
-	margin: 0;
-}
-
-
-/* The header never ends on a line. Over the hero it is fully transparent so the
-   shader shows through; once scrolled it fades in a backdrop that dissolves toward
-   the bottom edge, which blends instead of cutting. A hard border there is the
-   single most obvious seam on the page. */
-.nav-shell::before {
-	content: '';
-	position: absolute;
-	inset: 0;
-	/* Blur is on from the first pixel, so the header always reads as glass over
-	   the hero. Only the paper tint waits for the scroll. */
-	-webkit-backdrop-filter: blur(14px) saturate(1.3);
-	backdrop-filter: blur(14px) saturate(1.3);
-	background: linear-gradient(
-		to bottom,
-		color-mix(in srgb, var(--color-body) 30%, transparent) 0%,
-		color-mix(in srgb, var(--color-body) 16%, transparent) 55%,
-		transparent 100%
-	);
-	transition: background 220ms ease;
-	-webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
-	mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
-	pointer-events: none;
-}
-
-.nav-shell[data-stuck='true']::before {
-	background: linear-gradient(
-		to bottom,
-		color-mix(in srgb, var(--color-body) 90%, transparent) 0%,
-		color-mix(in srgb, var(--color-body) 74%, transparent) 55%,
-		transparent 100%
-	);
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.nav-shell::before {
-		transition: none;
-	}
-}
-
-
-/* ---------------------------------------------------------------------------
-   The light palette, whole, in one place. data-theme="light" on <html> flips
-   every surface; no component names a raw colour, so nothing else changes.
-   Contrast on the paper ground #F6F6F3: ink 16.62:1, muted 6.09:1,
-   brand-light #065f46 7.10:1.
-   --------------------------------------------------------------------------- */
-:root[data-theme='light'] {
-	--color-body: #F6F6F3;
-	--color-card: #ffffff;
-	--color-elevated: #ffffff;
-	--color-brand-light: #065f46;
-	--color-on-brand: #14171A;
-	--color-ink: #14171A;
-	--color-muted: rgba(0, 0, 0, 0.62);
-	--color-hairline: rgba(0, 0, 0, 0.09);
-	--color-hairline-strong: rgba(0, 0, 0, 0.16);
-	--card-stock: linear-gradient(180deg, #ffffff, #fcfcfa);
-	--card-shadow: 0 1px 1px rgba(16, 24, 40, 0.04), 0 2px 6px -2px rgba(16, 24, 40, 0.08);
-	--card-shadow-hover: 0 1px 1px rgba(16, 24, 40, 0.05), 0 8px 20px -6px rgba(16, 24, 40, 0.12);
-	--wash-1: rgba(16, 185, 129, 0.14);
-	--wash-2: rgba(4, 120, 87, 0.09);
-	--grain-blend: multiply;
-	--grain-opacity: 0.05;
-	--aurora-1: #a7d9bf;
-	--aurora-2: #bfe5ce;
-	--aurora-3: #d3eedd;
-	--aurora-4: #e3f4e9;
-	--aurora-5: #f1faf4;
-	--aurora-scrim-top: 30%;
-	--aurora-scrim-mid: 20%;
-	--aurora-scrim-bottom: 36%;
-	--aurora-grain-opacity: 0.16;
-	--aurora-grain-blend: multiply;
-	--graphite: rgba(0, 0, 0, 0.68);
-	--ink-3: rgba(0, 0, 0, 0.58);
-	--sink: #edf4ef;
-	--lift: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }

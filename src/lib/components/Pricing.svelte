@@ -43,12 +43,12 @@
 
 <section id="pricing" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
-		<p class="text-xs tracking-widest text-brand-light uppercase">Pricing</p>
+		<p class="label-caps text-tertiary">Pricing</p>
 		<h2 class="mt-3 text-3xl leading-[1.32] font-semibold tracking-tight sm:text-4xl">
 			You pay for three things.
-			<span class="gradient-text">Nothing else.</span>
+			<span class="text-tertiary">Nothing else.</span>
 		</h2>
-		<p class="mt-4 text-sm text-muted">
+		<p class="mt-4 text-sm text-secondary">
 			Per unit, with no plans to choose between and nobody to negotiate with. Rates are not final
 			until launch.
 		</p>
@@ -57,20 +57,20 @@
 	<div class="mt-12 grid gap-4 md:grid-cols-3">
 		{#each meters as m, i (m.title)}
 			<article class="card flex flex-col px-6 py-8" use:scrollReveal={{ delay: i * 80 }}>
-				<h3 class="text-sm font-semibold tracking-wide text-muted uppercase">{m.title}</h3>
-				<p class="mt-4 text-4xl font-semibold tracking-tight">
+				<h3 class="label-caps text-secondary">{m.title}</h3>
+				<p class="mt-4 font-mono text-4xl font-medium tracking-tight tabular-nums">
 					<Money amount={m.amount} />
 				</p>
-				<p class="mt-1 text-sm text-muted">{m.unit} · about {m.usd}</p>
+				<p class="mt-1 text-sm text-secondary">{m.unit} · about {m.usd}</p>
 
 				{#if m.second}
-					<p class="mt-4 text-2xl font-semibold tracking-tight">
+					<p class="mt-4 font-mono text-2xl font-medium tracking-tight tabular-nums">
 						<Money amount={m.second.amount} />
 					</p>
-					<p class="mt-1 text-sm text-muted">{m.second.unit} · about {m.second.usd}</p>
+					<p class="mt-1 text-sm text-secondary">{m.second.unit} · about {m.second.usd}</p>
 				{/if}
 
-				<p class="mt-5 flex-1 text-sm leading-[1.75] text-muted">{m.body}</p>
+				<p class="mt-5 flex-1 text-sm leading-[1.75] text-secondary">{m.body}</p>
 			</article>
 		{/each}
 	</div>
@@ -84,7 +84,7 @@
 						icon={Tick02Icon}
 						size={15}
 						strokeWidth={2.4}
-						class="mt-1 flex-none text-brand-light"
+						class="mt-1 flex-none text-tertiary"
 					/>
 					<span>{row}</span>
 				</li>
@@ -92,7 +92,7 @@
 		</ul>
 		<div class="mt-7 flex flex-wrap items-center gap-3">
 			<a href="/signup/" class="btn-primary">Start free</a>
-			<a href="/contact/" class="btn-ghost">Ask about volume</a>
+			<a href="/contact/" class="btn-secondary">Ask about volume</a>
 		</div>
 	</div>
 </section>

@@ -40,11 +40,11 @@
 		return () => clearInterval(id);
 	});
 
-	const fade = (idx: number) => Math.max(0.18, 1 - Math.abs(idx - (i + CENTER)) * 0.3);
+	const fade = (idx: number) => Math.max(0.25, 1 - Math.abs(idx - (i + CENTER)) * 0.26);
 </script>
 
-<section class="flex min-h-svh flex-col items-center justify-center border-y border-hairline py-16">
-	<p class="mb-10 text-center text-xs tracking-widest text-muted uppercase">
+<section class="flex min-h-svh flex-col items-center justify-center border-y border-outline py-16">
+	<p class="label-caps mb-6 text-center text-secondary">
 		Built for creators, teachers, and small businesses
 	</p>
 
@@ -62,10 +62,10 @@
 				{@const active = idx === i + CENTER}
 				<li
 					class="flex items-center justify-between rounded-xl px-5 text-lg whitespace-nowrap transition-colors duration-300 sm:text-xl"
-					class:bg-brand-mid={active}
-					class:text-on-brand={active}
+					class:bg-tertiary={active}
+					class:text-on-primary={active}
 					class:font-semibold={active}
-					class:text-muted={!active}
+					class:text-secondary={!active}
 					style="height: var(--row); line-height: var(--row); opacity: {fade(idx)}"
 					aria-hidden={idx >= kinds.length ? 'true' : undefined}
 				>

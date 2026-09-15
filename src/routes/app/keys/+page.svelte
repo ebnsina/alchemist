@@ -73,7 +73,7 @@
 <Seo title="API keys — Alchemist" description="Create and revoke the keys your code uses." />
 
 <h1 class="text-2xl font-semibold tracking-tight">API keys</h1>
-<p class="mt-1 max-w-xl text-sm text-muted">
+<p class="mt-1 max-w-xl text-sm text-secondary">
 	A key is how your own code talks to us. We keep only a scrambled copy, so a key is shown
 	once — if one goes missing, revoke it and make another.
 </p>
@@ -81,12 +81,12 @@
 {#if fresh}
 	<div class="card mt-6 p-6" in:fly={{ y: 12, duration: 340, easing: cubicOut }}>
 		<p class="text-sm font-semibold">{fresh.name}</p>
-		<p class="mt-1 text-xs text-muted">Copy it now. This is the only time it is on screen.</p>
-		<div class="mt-3 flex items-center gap-2 rounded-xl border border-hairline bg-body px-3 py-2">
+		<p class="mt-1 text-xs text-secondary">Copy it now. This is the only time it is on screen.</p>
+		<div class="mt-3 flex items-center gap-2 rounded-xl border border-outline bg-neutral px-3 py-2">
 			<code class="truncate font-mono text-xs">{fresh.api_key}</code>
 			<button
 				type="button"
-				class="ml-auto flex flex-none items-center gap-1.5 text-xs text-brand-light"
+				class="ml-auto flex flex-none items-center gap-1.5 text-xs text-tertiary"
 				onclick={() => fresh && copy(fresh.api_key)}
 			>
 				<HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={14} strokeWidth={2} />
@@ -94,10 +94,10 @@
 			</button>
 		</div>
 
-		<p class="mt-5 text-xs text-muted">Try it:</p>
+		<p class="mt-5 text-xs text-secondary">Try it:</p>
 		<pre
-			class="mt-2 overflow-x-auto rounded-xl border border-hairline bg-body p-3 font-mono text-xs text-muted">{sample}</pre>
-		<button type="button" class="btn-ghost mt-4" onclick={() => (fresh = null)}>
+			class="mt-2 overflow-x-auto rounded-xl border border-outline bg-neutral p-3 font-mono text-xs text-secondary">{sample}</pre>
+		<button type="button" class="btn-secondary mt-4" onclick={() => (fresh = null)}>
 			I have saved it
 		</button>
 	</div>
@@ -112,27 +112,27 @@
 </form>
 
 {#if error}
-	<p class="mt-4 text-sm text-[#fca5a5]" role="alert">{error}</p>
+	<p class="mt-4 text-sm text-danger" role="alert">{error}</p>
 {/if}
 
 {#if loading}
-	<p class="mt-6 text-sm text-muted">Loading…</p>
+	<p class="mt-6 text-sm text-secondary">Loading…</p>
 {:else}
 	<ul class="mt-6 grid gap-3">
 		{#each keys as k (k.id)}
 			<li class="card flex flex-wrap items-center gap-3 p-4">
 				<div class="min-w-0 flex-1">
 					<p class="truncate text-sm font-semibold">{k.name}</p>
-					<p class="mt-0.5 text-xs text-muted">
+					<p class="mt-0.5 text-xs text-secondary">
 						Made {when(k.created_at)}{#if k.revoked_at} · switched off {when(k.revoked_at)}{/if}
 					</p>
 				</div>
 				{#if k.revoked_at}
-					<span class="text-xs text-muted">Off</span>
+					<span class="text-xs text-secondary">Off</span>
 				{:else}
 					<button
 						type="button"
-						class="flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-[#fca5a5]"
+						class="flex items-center gap-1.5 text-xs text-secondary transition-colors hover:text-danger"
 						onclick={() => revoke(k)}
 						disabled={live.length === 1}
 						title={live.length === 1 ? 'Make another key before switching this one off' : undefined}

@@ -88,20 +88,20 @@
 
 <Seo title="Video — Alchemist" description="What we made from this video." />
 
-<a href="/app/" class="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-ink">
+<a href="/app/" class="inline-flex items-center gap-1.5 text-sm text-secondary transition-colors hover:text-primary">
 	<HugeiconsIcon icon={ArrowLeft01Icon} size={15} strokeWidth={2} />
 	All videos
 </a>
 
 {#if loading}
-	<p class="mt-6 text-sm text-muted">Loading…</p>
+	<p class="mt-6 text-sm text-secondary">Loading…</p>
 {:else if error}
-	<p class="mt-6 text-sm text-[#fca5a5]" role="alert">{error}</p>
+	<p class="mt-6 text-sm text-danger" role="alert">{error}</p>
 {:else if asset}
 	<header class="mt-4 flex flex-wrap items-start justify-between gap-4">
 		<div class="min-w-0">
 			<h1 class="truncate font-mono text-xl font-semibold tracking-tight">{asset.id}</h1>
-			<p class="mt-1 text-sm text-muted">
+			<p class="mt-1 text-sm text-secondary">
 				{STATE[asset.state] ?? asset.state}
 				{#if asset.duration_seconds} · {length(asset.duration_seconds)}{/if}
 				{#if asset.width && asset.height} · {asset.width}×{asset.height}{/if}
@@ -109,15 +109,15 @@
 			</p>
 		</div>
 		{#if working}
-			<span class="flex items-center gap-2 text-xs text-muted">
-				<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-gold"></span>
+			<span class="flex items-center gap-2 text-xs text-secondary">
+				<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary"></span>
 				Still working — this page keeps itself up to date
 			</span>
 		{/if}
 	</header>
 
 	{#if asset.error_code}
-		<p class="mt-4 rounded-xl bg-[#f87171]/10 px-4 py-3 text-sm text-[#fca5a5]" role="alert">
+		<p class="mt-4 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger" role="alert">
 			This one did not work: <code class="font-mono text-xs">{asset.error_code}</code>
 		</p>
 	{/if}
@@ -130,13 +130,13 @@
 
 	<section class="mt-8">
 		<h2 class="text-lg font-semibold tracking-tight">The sizes we made</h2>
-		<p class="mt-1 text-sm text-muted">
+		<p class="mt-1 text-sm text-secondary">
 			Each one is encoded in chunks, in parallel. The ones marked on demand are only made when
 			somebody actually asks for that size.
 		</p>
 
 		{#if asset.renditions.length === 0}
-			<p class="mt-4 text-sm text-muted">Nothing yet — the ladder is worked out after we look the file over.</p>
+			<p class="mt-4 text-sm text-secondary">Nothing yet — the ladder is worked out after we look the file over.</p>
 		{:else}
 			<ul class="mt-4 grid gap-3">
 				{#each asset.renditions as r (r.height + r.codec)}
@@ -146,9 +146,9 @@
 							<div>
 								<p class="font-semibold">
 									{r.height}p
-									<span class="ml-1 font-normal text-muted">{r.codec.toUpperCase()} · {mbps(r.bitrate_bps)}</span>
+									<span class="ml-1 font-normal text-secondary">{r.codec.toUpperCase()} · {mbps(r.bitrate_bps)}</span>
 								</p>
-								<p class="mt-0.5 text-xs text-muted">
+								<p class="mt-0.5 text-xs text-secondary">
 									{#if r.lazy && r.state !== 'ready'}
 										Made on demand, when someone plays it
 									{:else if r.chunks_total > 0}
@@ -159,15 +159,15 @@
 									{#if r.bytes} · {size(r.bytes)}{/if}
 								</p>
 							</div>
-							<span class="tabular-nums text-sm {r.state === 'ready' ? 'text-brand-light' : 'text-muted'}">
+							<span class="tabular-nums text-sm {r.state === 'ready' ? 'text-tertiary' : 'text-secondary'}">
 								{r.state === 'ready' ? 'Ready' : `${done}%`}
 							</span>
 						</div>
-						<div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+						<div class="mt-3 h-1.5 overflow-hidden rounded-full bg-outline">
 							<div
 								class="h-full rounded-full transition-[width] duration-500 ease-out {r.state === 'ready'
-									? 'bg-brand-mid'
-									: 'bg-gold'}"
+									? 'bg-tertiary'
+									: 'bg-secondary'}"
 								style="width: {done}%"
 							></div>
 						</div>
@@ -180,18 +180,18 @@
 	{#if asset.playback}
 		<section class="mt-8">
 			<h2 class="text-lg font-semibold tracking-tight">The links</h2>
-			<p class="mt-1 text-sm text-muted">
+			<p class="mt-1 text-sm text-secondary">
 				Signed, good for four hours. Ask for the asset again when you need fresh ones rather
 				than building them yourself.
 			</p>
-			<div class="card mt-4 divide-y divide-hairline">
+			<div class="card mt-4 divide-y divide-outline">
 				{#each Object.entries(asset.playback) as [kind, url] (kind)}
 					<div class="flex items-center gap-3 p-4">
-						<span class="w-20 flex-none text-xs text-muted">{kind}</span>
-						<code class="min-w-0 flex-1 truncate font-mono text-xs text-muted">{url}</code>
+						<span class="w-20 flex-none text-xs text-secondary">{kind}</span>
+						<code class="min-w-0 flex-1 truncate font-mono text-xs text-secondary">{url}</code>
 						<button
 							type="button"
-							class="flex flex-none items-center gap-1.5 text-xs text-brand-light"
+							class="flex flex-none items-center gap-1.5 text-xs text-tertiary"
 							onclick={() => copy(url, kind)}
 						>
 							<HugeiconsIcon icon={copied === kind ? Tick02Icon : Copy01Icon} size={13} strokeWidth={2} />

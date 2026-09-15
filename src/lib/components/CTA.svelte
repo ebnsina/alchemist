@@ -9,12 +9,12 @@
 		<h2 class="relative mx-auto max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
 			Ready to try the magic?
 		</h2>
-		<p class="relative mx-auto mt-4 max-w-md text-sm text-muted">
+		<p class="relative mx-auto mt-4 max-w-md text-sm text-secondary">
 			A hundred videos a month, free, with no card and nothing to install. See what comes back before you decide anything.
 		</p>
 		<div class="relative mt-8 flex flex-wrap justify-center gap-3">
 			<a href="/signup/" class="btn-primary">Start free</a>
-			<a href="/#faq" class="btn-ghost">Read the questions</a>
+			<a href="/#faq" class="btn-secondary">Read the questions</a>
 		</div>
 	</div>
 </section>

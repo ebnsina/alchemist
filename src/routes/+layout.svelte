@@ -13,7 +13,7 @@
 
 <a
 	href="#main"
-	class="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[60] focus:rounded-br-lg focus:bg-brand-mid focus:px-4 focus:py-2 focus:font-semibold focus:text-body"
+	class="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[60] focus:rounded-br-lg focus:bg-tertiary focus:px-4 focus:py-2 focus:font-semibold focus:text-body"
 >
 	Skip to content
 </a>
