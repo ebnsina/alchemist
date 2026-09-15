@@ -174,6 +174,7 @@ const player = new AlchemistPlayer(document.getElementById('stage'), {
   dataSaver: 'auto',     // true | false | 'auto'
   maxHeight: 720,
   country: 'BD',
+  live: asset.state === 'live',   // the broadcast is going out; omit and shaka decides
 });
 
 player.addEventListener('needs-refresh', async () => {

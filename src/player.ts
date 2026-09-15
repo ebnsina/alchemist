@@ -32,6 +32,12 @@ export interface AlchemistOptions {
   /** Override when the host knows it is serving from BDIX. Never guessed. */
   network?: NetworkKind;
   country?: string;
+  /**
+   * True while the broadcast is going out. The live playlist is EXT-X-PLAYLIST-TYPE:EVENT
+   * so a viewer can seek back to its start, and shaka reads EVENT as a growing VOD --
+   * its own isLive() is false for the whole broadcast. Omit and shaka decides.
+   */
+  live?: boolean;
   /** Set false to send no QoE telemetry at all. */
   beacon?: boolean;
   /** How long before expiry to ask the host for a fresh URL. */
@@ -128,8 +134,8 @@ export class AlchemistPlayer extends EventTarget {
   get currentTime(): number { return this.video.currentTime; }
   get duration(): number { return Number.isFinite(this.video.duration) ? this.video.duration : 0; }
 
-  /** True while a broadcast is still going out. shaka knows from the manifest. */
-  get isLive(): boolean { return this.player?.isLive() ?? false; }
+  /** True while a broadcast is still going out. The host overrides; shaka answers otherwise. */
+  get isLive(): boolean { return this.opts.live ?? this.player?.isLive() ?? false; }
   get paused(): boolean { return this.video.paused; }
   get muted(): boolean { return this.video.muted; }
   get volume(): number { return this.video.volume; }
