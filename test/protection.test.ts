@@ -4,7 +4,7 @@ import { siblingURL, viewerLabel, withSignatureOf } from '../src/signed-url.ts';
 import { classifyShakaError } from '../src/errors.ts';
 import { makeT } from '../src/i18n.ts';
 
-const SIGNED = 'https://o.test/playback/t1/a1/master.m3u8?exp=1800000000&kid=k7&sig=abc123&vl=STU-2291';
+const SIGNED = 'https://o.test/playback/t1/a1/master.m3u8?exp=1800000000&kid=k7&sig=abc123&wm=STU-2291';
 
 test('the Clear Key licence URL is the manifest sibling, signature intact', () => {
   const key = new URL(siblingURL(SIGNED, 'key'));
@@ -18,13 +18,13 @@ test('the Clear Key licence URL is the manifest sibling, signature intact', () =
 test('the viewer label is read from the signed URL, never configured separately', () => {
   assert.equal(viewerLabel(SIGNED), 'STU-2291');
   assert.equal(viewerLabel('https://o.test/a/master.m3u8?exp=1&sig=b'), null);
-  assert.equal(viewerLabel('https://o.test/a/master.m3u8?vl=%20%20'), null);
+  assert.equal(viewerLabel('https://o.test/a/master.m3u8?wm=%20%20'), null);
   assert.equal(viewerLabel('not a url at all'), null);
 });
 
 test('the label travels with the signature onto sprite URIs, or thumbnails 403', () => {
   const tile = withSignatureOf(SIGNED, 'sprite.jpg');
-  assert.equal(new URL(tile).searchParams.get('vl'), 'STU-2291');
+  assert.equal(new URL(tile).searchParams.get('wm'), 'STU-2291');
 });
 
 test('a browser with no Clear Key key system gets its own copy, not a raw DRM failure', () => {

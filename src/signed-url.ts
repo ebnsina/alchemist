@@ -47,7 +47,7 @@ export function siblingURL(src: string, file: string, base?: string): string {
  */
 export function viewerLabel(src: string, base?: string): string | null {
   try {
-    const v = toURL(src, base).searchParams.get('vl');
+    const v = toURL(src, base).searchParams.get('wm');
     return v && v.trim() ? v.trim().slice(0, 48) : null;
   } catch {
     return null;
@@ -59,7 +59,7 @@ export function withSignatureOf(signed: string, target: string, base?: string): 
   const from = toURL(signed, base);
   const to = toURL(target, from.toString());
   if (to.origin !== from.origin) return target;
-  for (const k of ['exp', 'kid', 'sig', 'vl']) {
+  for (const k of ['exp', 'kid', 'sig', 'wm']) {
     const v = from.searchParams.get(k);
     if (v !== null && !to.searchParams.has(k)) to.searchParams.set(k, v);
   }

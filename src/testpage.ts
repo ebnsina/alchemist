@@ -92,7 +92,7 @@ $('expire').addEventListener('click', () => {
 
 $('label').addEventListener('click', () => {
   const u = new URL(srcInput.value.trim() || 'http://x/a/master.m3u8', DEFAULT_ORIGIN);
-  u.searchParams.set('vl', 'STU-2291 · 017•••4456');
+  u.searchParams.set('wm', 'STU-2291 · 017•••4456');
   srcInput.value = u.toString();
   log('vl added — press Load to watch the watermark drift (the real one is signed)');
 });
