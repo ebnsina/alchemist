@@ -118,34 +118,39 @@
 		if (!asset) return [];
 		const probed = asset.duration_seconds != null;
 		const failed = asset.state === 'failed';
+		// Once an asset stops working, a missing number is missing for good. Treating
+		// it as pending leaves a skeleton spinning forever on every video ingested
+		// before we started recording sizes.
+		const settled = ['ready', 'partially_ready', 'failed', 'live_ended'].includes(asset.state);
+		const never = 'Not recorded for this video';
 		return [
 			{
 				k: 'Length',
 				v: probed ? length(asset.duration_seconds) : '',
 				why: 'How long it plays for',
-				pending: failed ? '' : 'Measuring it now',
-				absent: 'We never got far enough to read it'
+				pending: settled ? '' : 'Measuring it now',
+				absent: failed ? 'We never got far enough to read it' : never
 			},
 			{
 				k: 'Recorded at',
 				v: asset.width && asset.height ? `${asset.width}\u00d7${asset.height}` : '',
 				why: 'The size it came in at',
-				pending: failed ? '' : 'Reading the file',
-				absent: 'We could not read the file'
+				pending: settled ? '' : 'Reading the file',
+				absent: failed ? 'We could not read the file' : never
 			},
 			{
 				k: 'They sent',
 				v: asset.source_bytes ? size(asset.source_bytes) : '',
 				why: 'What the original weighed',
-				pending: failed ? '' : 'Still arriving',
-				absent: 'Nothing reached us'
+				pending: settled ? '' : 'Still arriving',
+				absent: failed ? 'Nothing reached us' : never
 			},
 			{
 				k: 'Smallest we made',
 				v: smallest ? size(smallest.bytes) : '',
 				why: saving ? `${saving}% lighter than the original` : 'The lightest size a viewer gets',
-				pending: failed ? '' : 'Nothing finished yet',
-				absent: 'No size was ever made'
+				pending: settled ? '' : 'Nothing finished yet',
+				absent: failed ? 'No size was ever made' : never
 			}
 		];
 	});
