@@ -4,7 +4,7 @@
 	import { Copy01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import { setCrumbs } from '$lib/crumbs.svelte';
-	import Player from '$lib/components/Player.svelte';
+	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
 	import Advanced from '$lib/components/Advanced.svelte';
 	import { getAsset, ApiError, type AssetDetail } from '$lib/api';
 
@@ -232,10 +232,7 @@
 
 	{#if asset.playback}
 		<section class="mt-6">
-			<Player
-				hls={asset.playback.preferred === 'dash' ? asset.playback.dash : asset.playback.hls}
-				poster={asset.playback.poster}
-			/>
+			<AssetPlayer playback={asset.playback} />
 		</section>
 	{/if}
 

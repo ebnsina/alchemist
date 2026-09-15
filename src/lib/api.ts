@@ -186,16 +186,18 @@ export type AssetDetail = {
 	source_bytes?: number;
 	created_at?: string;
 	renditions: Rendition[];
-	playback?: {
-		hls: string;
-		dash: string;
-		poster: string;
-		thumbnails: string;
-		// Encrypted media is packaged cenc and HLS cannot carry cenc, so the API says
-		// which of the two to hand a player rather than the page guessing.
-		preferred: 'hls' | 'dash';
-		encrypted: boolean;
-	};
+	playback?: Playback;
+};
+
+export type Playback = {
+	hls: string;
+	dash: string;
+	poster: string;
+	thumbnails: string;
+	// Encrypted media is packaged cenc and HLS cannot carry cenc, so the API says
+	// which of the two to hand a player rather than the page guessing.
+	preferred: 'hls' | 'dash';
+	encrypted: boolean;
 };
 
 export const getAsset = (id: string) => call<AssetDetail>(`/v1/assets/${id}`);

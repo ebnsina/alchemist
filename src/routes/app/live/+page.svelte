@@ -4,7 +4,7 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Copy01Icon, Tick02Icon, Delete02Icon, RefreshIcon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
-	import Player from '$lib/components/Player.svelte';
+	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
 	import {
 		listLiveStreams,
 		getLiveStream,
@@ -141,14 +141,6 @@
 	// published to them until an encoder connects — so the stream's own state decides.
 	const onAir = $derived(streams.find((s) => s.id === watching?.id)?.state === 'live');
 
-	// cenc is a DASH thing; HLS cannot carry it, so the API names the URL to use.
-	const url = $derived(
-		watching?.asset.playback
-			? watching.asset.playback.preferred === 'dash'
-				? watching.asset.playback.dash
-				: watching.asset.playback.hls
-			: ''
-	);
 </script>
 
 <Seo title="Live streams — Alchemist" description="Create a stream, point your encoder at it, and watch it go out." />
@@ -294,9 +286,9 @@
 			<h2 class="text-lg font-semibold tracking-tight">{watching.name}</h2>
 			<button type="button" class="btn btn-sm" onclick={() => (watching = null)}>Close</button>
 		</div>
-		{#if onAir && url}
+		{#if onAir && watching.asset.playback}
 			<div class="mt-4">
-				<Player hls={url} poster={watching.asset.playback?.poster} />
+				<AssetPlayer playback={watching.asset.playback} />
 			</div>
 		{:else}
 			<p class="sub mt-4">

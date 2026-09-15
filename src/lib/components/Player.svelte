@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
 
-	// currentTime and overlay exist for Studio: picking a trim point means watching the
-	// video, and a crop box has to be drawn on the frame it applies to. Everything
-	// about HLS — native vs hls.js, the SAMPLE-AES check — stays in one place.
+	// Studio only. Previews use AssetPlayer, which is the real player customers embed.
+	// This one stays because Studio drives the raw element from its own timeline and
+	// draws a crop box on the frame, which a player that owns its chrome cannot give.
 	let {
 		hls,
 		poster,
