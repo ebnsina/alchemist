@@ -21,11 +21,20 @@
 	let loading = $state(true);
 	let error = $state('');
 	let name = $state('');
+	let source = $state<'camera' | 'encoder'>('camera');
 	let protocol = $state<'srt' | 'rtmp'>('srt');
 	// One decision per screen, even here: two fields is still two decisions, and a
 	// customer who has never set up an encoder should meet them one at a time.
 	let step = $state(1);
-	const STEPS = 3;
+	// Somebody using their own camera is never asked which encoder protocol to use,
+	// so the sequence is the state rather than a count -- a branch on step numbers
+	// drifts the moment a step moves.
+	const steps = $derived(
+		source === 'camera'
+			? ['name', 'source', 'confirm']
+			: ['name', 'source', 'protocol', 'confirm']
+	);
+	const at = $derived(steps[step - 1]);
 	let fresh = $state<{ name: string; stream_key: string } | null>(null);
 	let armed = $state<{ id: string; ingest_url: string } | null>(null);
 	let watching = $state<{ id: string; name: string; asset: AssetDetail } | null>(null);
@@ -33,10 +42,16 @@
 	let unsold = $state(false);
 
 	const STATE: Record<LiveStream['state'], { chip: string; means: string }> = {
-		idle: { chip: 'Idle', means: 'Made, never started. Start it to get the address for your encoder.' },
+		idle: { chip: 'Idle', means: 'Made, never started. Open it to go on air.' },
 		armed: { chip: 'Waiting', means: 'Holding a slot for your encoder. It goes on air the moment one connects.' },
 		live: { chip: 'On air', means: 'Going out now. Viewers can watch it.' },
 		ended: { chip: 'Ended', means: 'Finished. The recording is under Recordings.' }
+	};
+
+	const SOURCE: Record<LiveStream['protocol'], string> = {
+		camera: 'From this browser',
+		srt: 'SRT encoder',
+		rtmp: 'RTMP encoder'
 	};
 
 	const said = (e: unknown) => (e instanceof ApiError ? e.message : 'Something went wrong.');
@@ -74,9 +89,12 @@
 		e.preventDefault();
 		error = '';
 		try {
-			const s = await createLiveStream(name.trim(), protocol);
-			fresh = { name: s.name, stream_key: s.stream_key };
+			const s = await createLiveStream(name.trim(), source === 'camera' ? 'camera' : protocol);
+			// A camera stream's key is minted again when it goes on air, so there is
+			// nothing here for the customer to write down.
+			fresh = source === 'camera' ? null : { name: s.name, stream_key: s.stream_key };
 			name = '';
+			source = 'camera';
 			protocol = 'srt';
 			step = 1;
 			await load();
@@ -155,8 +173,8 @@
 	<div class="min-w-0">
 		<h1 class="text-2xl font-semibold tracking-tight">Live streams</h1>
 		<p class="sub mt-1.5 max-w-xl">
-			A stream is a standing address for your encoder. Start one, paste the address into OBS, and
-			what you send goes out to viewers and is kept as a recording.
+			Go live from the camera in this browser, or from an encoder like OBS. Either way it goes
+			out to viewers and is kept afterwards as an ordinary recording.
 		</p>
 	</div>
 	<button type="button" class="btn btn-sm flex-none" onclick={load} disabled={loading}>
@@ -221,13 +239,13 @@
 {:else}
 <form class="card mt-6" onsubmit={make}>
 	<div class="flex items-baseline justify-between gap-3">
-		<p class="label">Step {step} of {STEPS}</p>
+		<p class="label">Step {step} of {steps.length}</p>
 		{#if step > 1}
 			<button type="button" class="label hover:text-ink" onclick={() => (step -= 1)}>Back</button>
 		{/if}
 	</div>
 
-	{#if step === 1}
+	{#if at === 'name'}
 		<h3 class="mt-4">What is this stream for?</h3>
 		<p class="sub mt-1">A name only you see, so you can tell your streams apart later.</p>
 		<!-- svelte-ignore a11y_autofocus -->
@@ -248,7 +266,32 @@
 		>
 			Next
 		</button>
-	{:else if step === 2}
+	{:else if at === 'source'}
+		<h3 class="mt-4">Where will the picture come from?</h3>
+		<p class="sub mt-1">
+			You can go live straight from this browser with the camera in your laptop or phone,
+			or send it from software like OBS if you already use one.
+		</p>
+		<div class="mt-4 grid gap-2.5">
+			{#each [{ id: 'camera', title: 'This browser', why: 'Your webcam and microphone. Nothing to install.' }, { id: 'encoder', title: 'An encoder', why: 'OBS, vMix or a hardware encoder you already have.' }] as o (o.id)}
+				<label class="card flex cursor-pointer items-start gap-3 p-4" class:tier--lead={source === o.id}>
+					<input
+						type="radio"
+						name="source"
+						value={o.id}
+						checked={source === o.id}
+						onchange={() => (source = o.id as 'camera' | 'encoder')}
+						class="mt-1"
+					/>
+					<span>
+						<span class="block text-sm font-semibold">{o.title}</span>
+						<span class="sub">{o.why}</span>
+					</span>
+				</label>
+			{/each}
+		</div>
+		<button type="button" class="btn-solid mt-5" onclick={() => (step = 3)}>Next</button>
+	{:else if at === 'protocol'}
 		<h3 class="mt-4">How will your encoder send it?</h3>
 		<p class="sub mt-1">
 			If you are not sure, keep SRT. It holds a picture together on a weak uplink, which
@@ -272,12 +315,17 @@
 				</label>
 			{/each}
 		</div>
-		<button type="button" class="btn-solid mt-5" onclick={() => (step = 3)}>Next</button>
+		<button type="button" class="btn-solid mt-5" onclick={() => (step = 4)}>Next</button>
 	{:else}
 		<h3 class="mt-4">Ready to make it?</h3>
 		<p class="sub mt-1">
-			The stream key is shown once, on the next screen. Nothing goes on air until you
-			press Start and your encoder connects.
+			{#if source === 'camera'}
+				Nothing goes on air until you open the stream and press Go live. We ask for your
+				camera then, not before.
+			{:else}
+				The stream key is shown once, on the next screen. Nothing goes on air until you
+				press Start and your encoder connects.
+			{/if}
 		</p>
 		<dl class="mt-4 grid gap-2.5">
 			<div class="flex items-baseline justify-between gap-3">
@@ -285,8 +333,10 @@
 				<dd class="text-sm font-semibold">{name}</dd>
 			</div>
 			<div class="flex items-baseline justify-between gap-3">
-				<dt class="sub">Encoder sends over</dt>
-				<dd class="text-sm font-semibold">{protocol.toUpperCase()}</dd>
+				<dt class="sub">Picture comes from</dt>
+				<dd class="text-sm font-semibold">
+					{source === 'camera' ? 'This browser' : protocol.toUpperCase() + ' encoder'}
+				</dd>
 			</div>
 		</dl>
 		<button type="submit" class="btn-solid mt-5">Make a stream</button>
@@ -305,8 +355,8 @@
 	<div class="card mt-6 py-8 text-center">
 		<p class="title">No streams yet</p>
 		<p class="sub mx-auto mt-2 max-w-sm">
-			Make one above. You get an address and a key for your encoder, and the broadcast is kept
-			as an ordinary video afterwards.
+			Make one above. Use the camera in this browser, or point an encoder at the address we
+			give you. Either way the broadcast is kept as an ordinary video afterwards.
 		</p>
 	</div>
 {:else}
@@ -316,11 +366,15 @@
 				<a href="/app/live/{s.id}/" class="min-w-0 flex-1 hover:opacity-80">
 					<p class="truncate text-sm font-semibold">{s.name}</p>
 					<p class="mt-0.5 text-xs text-dim">
-						{s.protocol.toUpperCase()} · made {when(s.created_at)} · {STATE[s.state].means}
+						{SOURCE[s.protocol]} · made {when(s.created_at)} · {STATE[s.state].means}
 					</p>
 				</a>
 				<span class="chip {s.state === 'live' ? 'chip-on' : ''}">{STATE[s.state].chip}</span>
-				{#if s.state === 'idle' || s.state === 'ended'}
+				{#if s.protocol === 'camera' && s.state !== 'live'}
+					<!-- The camera is asked for on the stream's own page, at the moment it is
+					     needed. Arming from here would hand out a key nothing is holding. -->
+					<a href="/app/live/{s.id}/" class="btn btn-sm">Go live</a>
+				{:else if s.state === 'idle' || s.state === 'ended'}
 					<button type="button" class="btn btn-sm" onclick={() => start(s)}>Start</button>
 				{:else}
 					<button type="button" class="btn btn-sm" onclick={() => watch(s)}>Watch</button>

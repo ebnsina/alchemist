@@ -3,7 +3,7 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { Tick02Icon, Copy01Icon } from '@hugeicons/core-free-icons';
+	import { Tick02Icon, Copy01Icon, Video01Icon, StopIcon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import { setCrumbs } from '$lib/crumbs.svelte';
 	import {
@@ -25,6 +25,24 @@
 	let replacing = $state(false);
 	let confirming = $state(false);
 	let copied = $state('');
+
+	// Browser publishing. Nothing here runs until the customer presses a button: a page
+	// that takes the camera on load is the one dark pattern this feature invites.
+	let media = $state<MediaStream | null>(null);
+	let cams = $state<MediaDeviceInfo[]>([]);
+	let mics = $state<MediaDeviceInfo[]>([]);
+	let camId = $state('');
+	let micId = $state('');
+	let camError = $state('');
+	let phase = $state<'off' | 'preview' | 'connecting' | 'on'>('off');
+	let preview = $state<HTMLVideoElement | null>(null);
+	let peer: RTCPeerConnection | null = null;
+
+	const SOURCE: Record<LiveStream['protocol'], string> = {
+		camera: 'From this browser',
+		srt: 'SRT encoder',
+		rtmp: 'RTMP encoder'
+	};
 
 	const STATE: Record<LiveStream['state'], string> = {
 		idle: 'Made, never started.',
@@ -85,6 +103,130 @@
 		}
 	}
 
+	// Every one of these is a different thing for the customer to do next, so none of
+	// them may collapse into "something went wrong" -- and no browser text reaches them.
+	function whyNoCamera(e: unknown) {
+		const name = e instanceof DOMException ? e.name : '';
+		if (name === 'NotAllowedError' || name === 'SecurityError')
+			return 'This page is not allowed to use your camera. Allow it from the icon in your address bar, then try again.';
+		if (name === 'NotFoundError' || name === 'OverconstrainedError')
+			return 'We could not find a camera on this device. Plug one in, or use a phone or laptop that has one.';
+		if (name === 'NotReadableError' || name === 'AbortError')
+			return 'Another app or tab already has the camera. Close it, then try again.';
+		return 'We could not open your camera. Try again, or open this page in a different browser.';
+	}
+
+	async function openCamera() {
+		camError = '';
+		// getUserMedia does not exist at all on an insecure address, so this is not a
+		// refusal to explain away -- it is the address being wrong.
+		if (!navigator.mediaDevices?.getUserMedia) {
+			camError =
+				'Browsers only hand over a camera on a secure address. Open this dashboard over https, or on localhost.';
+			return;
+		}
+		try {
+			releaseCamera();
+			media = await navigator.mediaDevices.getUserMedia({
+				video: camId ? { deviceId: { exact: camId } } : true,
+				audio: micId ? { deviceId: { exact: micId } } : true
+			});
+		} catch (e) {
+			camError = whyNoCamera(e);
+			return;
+		}
+		// Device labels are blank until permission has been given once, so the lists
+		// are only worth reading after a camera has actually opened.
+		const devices = await navigator.mediaDevices.enumerateDevices();
+		cams = devices.filter((d) => d.kind === 'videoinput');
+		mics = devices.filter((d) => d.kind === 'audioinput');
+		camId ||= media.getVideoTracks()[0]?.getSettings().deviceId ?? '';
+		micId ||= media.getAudioTracks()[0]?.getSettings().deviceId ?? '';
+		phase = 'preview';
+	}
+
+	// One POST: the offer goes up as SDP and the answer comes back in the body. The key
+	// travels in the header because the ingest server ignores credentials in the query
+	// string and refuses the publish with the same 401 a wrong key would get.
+	async function whip(url: string, token: string, stream: MediaStream) {
+		const pc = new RTCPeerConnection();
+		peer = pc;
+		for (const track of stream.getTracks()) pc.addTrack(track, stream);
+		await pc.setLocalDescription(await pc.createOffer());
+		await gathered(pc);
+		const res = await fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/sdp', Authorization: `Bearer publisher:${token}` },
+			body: pc.localDescription?.sdp ?? ''
+		});
+		if (!res.ok) throw new Error('refused');
+		await pc.setRemoteDescription({ type: 'answer', sdp: await res.text() });
+	}
+
+	// No trickle: one POST carries every candidate. Capped, because a gathering state
+	// that never completes would otherwise leave the page saying "connecting" forever.
+	const gathered = (pc: RTCPeerConnection) =>
+		pc.iceGatheringState === 'complete'
+			? Promise.resolve()
+			: new Promise<void>((done) => {
+					const t = setTimeout(done, 3000);
+					pc.addEventListener('icegatheringstatechange', () => {
+						if (pc.iceGatheringState !== 'complete') return;
+						clearTimeout(t);
+						done();
+					});
+				});
+
+	async function goLive() {
+		if (!media) return;
+		phase = 'connecting';
+		error = '';
+		try {
+			const armed = await startLiveStream(id);
+			if (!armed.publish_token) throw new Error('refused');
+			await whip(armed.ingest_url, armed.publish_token, media);
+			phase = 'on';
+			await load();
+		} catch (e) {
+			peer?.close();
+			peer = null;
+			phase = 'preview';
+			error =
+				e instanceof ApiError
+					? e.message
+					: 'We could not put you on air. Check your connection and try again.';
+		}
+	}
+
+	// Stopping releases the camera as well as the connection. A recording light still
+	// on after Stop is the thing a customer would never forgive, and never forget.
+	function stopBroadcast() {
+		peer?.close();
+		peer = null;
+		releaseCamera();
+		phase = 'off';
+		load();
+	}
+
+	function releaseCamera() {
+		media?.getTracks().forEach((t) => t.stop());
+		media = null;
+		if (preview) preview.srcObject = null;
+	}
+
+	// The video element does not exist until the preview renders, so the camera is
+	// attached when both are there. Setting it inside openCamera silently did nothing
+	// and left the customer looking at a black box while actually broadcasting.
+	$effect(() => {
+		if (preview && media) preview.srcObject = media;
+	});
+
+	// Leaving the page is a stop too, camera included.
+	$effect(() => () => {
+		peer?.close();
+		releaseCamera();
+	});
+
 	const when = (iso: string) =>
 		new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(
 			new Date(iso)
@@ -101,7 +243,7 @@
 	<header>
 		<h1 class="text-2xl font-semibold tracking-tight">{stream.name}</h1>
 		<p class="sub mt-1">
-			{stream.protocol.toUpperCase()} · made {when(stream.created_at)} · {STATE[stream.state]}
+			{SOURCE[stream.protocol]} · made {when(stream.created_at)} · {STATE[stream.state]}
 		</p>
 	</header>
 
@@ -133,6 +275,92 @@
 		</div>
 	{/if}
 
+	{#if stream.protocol === 'camera'}
+		<section class="card mt-6 p-6">
+			<h2 class="text-lg font-semibold tracking-tight">Go live from this browser</h2>
+
+			{#if phase === 'off'}
+				<p class="sub mt-2 max-w-lg">
+					We will ask for your camera and microphone when you press this. Nothing is switched
+					on before then, and nothing goes out until you press Go live on the next screen.
+				</p>
+				<button type="button" class="btn-solid mt-4" onclick={openCamera}>
+					<HugeiconsIcon icon={Video01Icon} size={14} strokeWidth={2} />
+					Turn on my camera
+				</button>
+			{:else}
+				<!-- Muted because it is your own face on your own speakers: unmuted it howls. -->
+				<video
+					bind:this={preview}
+					class="mt-4 w-full rounded-xl border border-sunk bg-sunk"
+					style="aspect-ratio: 16 / 9"
+					autoplay
+					muted
+					playsinline
+				><track kind="captions" /></video>
+
+				{#if cams.length > 1 || mics.length > 1}
+					<div class="mt-4 grid gap-3 sm:grid-cols-2">
+						{#if cams.length > 1}
+							<label class="block">
+								<span class="label">Camera</span>
+								<select
+									class="select mt-2"
+									bind:value={camId}
+									disabled={phase !== 'preview'}
+									onchange={openCamera}
+								>
+									{#each cams as d (d.deviceId)}
+										<option value={d.deviceId}>{d.label || 'Camera'}</option>
+									{/each}
+								</select>
+							</label>
+						{/if}
+						{#if mics.length > 1}
+							<label class="block">
+								<span class="label">Microphone</span>
+								<select
+									class="select mt-2"
+									bind:value={micId}
+									disabled={phase !== 'preview'}
+									onchange={openCamera}
+								>
+									{#each mics as d (d.deviceId)}
+										<option value={d.deviceId}>{d.label || 'Microphone'}</option>
+									{/each}
+								</select>
+							</label>
+						{/if}
+					</div>
+					{#if phase !== 'preview'}
+						<p class="sub mt-2">Swapping camera or microphone means stopping first.</p>
+					{/if}
+				{/if}
+
+				<div class="mt-5 flex flex-wrap items-center gap-3">
+					{#if phase === 'preview'}
+						<button type="button" class="btn-solid" onclick={goLive}>Go live</button>
+						<button type="button" class="btn" onclick={stopBroadcast}>Turn the camera off</button>
+						<p class="sub">Only you can see this so far.</p>
+					{:else if phase === 'connecting'}
+						<button type="button" class="btn-solid" disabled>Going live…</button>
+						<p class="sub">Handing your picture over. This takes a second or two.</p>
+					{:else}
+						<button type="button" class="btn" onclick={stopBroadcast}>
+							<HugeiconsIcon icon={StopIcon} size={14} strokeWidth={2} />
+							Stop the broadcast
+						</button>
+						<span class="chip chip-on">On air</span>
+						<p class="sub">Viewers can watch now. Stopping also turns your camera off.</p>
+					{/if}
+				</div>
+			{/if}
+
+			{#if camError}
+				<p class="mt-4 text-sm text-red" role="alert">{camError}</p>
+			{/if}
+		</section>
+	{:else}
 	<section class="card mt-6 p-6">
 		<h2 class="text-lg font-semibold tracking-tight">Where your encoder connects</h2>
 		{#if ingest}
@@ -201,6 +429,7 @@
 			</button>
 		{/if}
 	</section>
+	{/if}
 
 	{#if stream.asset_id}
 		<section class="card mt-4 p-6">

@@ -30,6 +30,15 @@
   brand lime, and the favicon matches. The emerald-to-gold gradient is gone.
 
 ### Added
+- **Go live from the browser.** Making a stream now asks where the picture comes from
+  before it asks anything technical, and someone who picks their own camera is never
+  shown the SRT-or-RTMP question at all — the step counter drops from four to three in
+  front of them. The stream's page then asks for the camera and microphone at the
+  moment they press the button and not on load, offers a picker when there is more
+  than one of either, shows a preview only they can see, and puts them on air with one
+  WHIP POST. Stopping closes the connection and releases the camera, so the light goes
+  out. Permission refused, no camera, a camera another app is holding, an insecure
+  address and a refused publish each get their own sentence.
 - **Live**: `/app/live/` makes a stream, shows its key once — the only time it is on
   screen — and hands you the address to paste into OBS after you start it. The
   broadcast plays back in the page as it happens, over whichever URL the API says to
