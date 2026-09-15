@@ -9,6 +9,13 @@
   broadcast tells the engine and closes the connection and the camera together.
 
 ### Fixed
+- **A live broadcast keeps playing.** The watch panel and the video page poll the asset
+  while a stream is on air, and every poll returns a freshly signed playback URL. The
+  player was rebuilt on each one, so a broadcast played for a few seconds, jumped back
+  to a paused play button, and did it again five seconds later. The player is now kept
+  across a re-signed URL and only replaced when the video itself changes; it also takes
+  a fresh signature in place when its own expires, so a long broadcast does not die at
+  the end of the signature's life.
 - **The LIVE badge shows during a broadcast.** The player was left to work out for
   itself whether a stream was live and always decided it was not, so a broadcast
   played with no badge and a clock counting towards a total that kept moving. The
