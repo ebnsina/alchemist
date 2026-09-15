@@ -175,6 +175,36 @@ paths:
         "200": { description: User, tenant, email and organisation name }
         "401": { description: No live session }
 
+  /e/{tenant}/{asset}:
+    get:
+      summary: The embed page for an iframe
+      security: []
+      description: |
+        A thin page that loads the player bundle and plays the asset. Drop it in an
+        `<iframe>`; it deliberately sets no `X-Frame-Options`, because being framed is
+        the point.
+
+        Authorised by the **playback signature**, not an API key — the caller is a
+        viewer's browser. Mint the signed URL from `GET /v1/assets/{id}` and pass its
+        query through unchanged: `vid` and `wm` travel on, so a link bound to one
+        student stays bound and the watermark cannot be dropped by embedding it.
+
+        Served only where a player bundle is configured (`ALCHEMIST_PLAYER_URL`);
+        without one the page could only render an empty box.
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: asset, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: exp, in: query, required: true, schema: { type: integer } }
+        - { name: kid, in: query, required: true, schema: { type: string } }
+        - { name: sig, in: query, required: true, schema: { type: string } }
+        - name: format
+          in: query
+          description: "`dash` to embed the DASH manifest. Defaults to HLS; use the asset's `playback.preferred`."
+          schema: { type: string, enum: [hls, dash] }
+      responses:
+        "200": { description: The embed page }
+        "403": { description: playback_not_authorized }
+
   /v1/whoami:
     get:
       summary: Identify the authenticated tenant

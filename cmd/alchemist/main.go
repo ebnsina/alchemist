@@ -152,7 +152,7 @@ func main() {
 				SessionDomain: cfg.SessionDomain,
 				SessionSecure: cfg.SessionSecure,
 			},
-			liveModule).Routes(),
+			liveModule, cfg.PlayerURL).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

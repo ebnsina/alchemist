@@ -37,6 +37,7 @@ type Server struct {
 	sessionDomain string
 	sessionSecure bool
 	authLimiter   *authLimiter
+	playerURL     string
 	live          *live.Module
 }
 
@@ -48,9 +49,9 @@ type Accounts struct {
 	SessionSecure bool
 }
 
-func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry, acc Accounts, lv *live.Module) *Server {
+func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry, acc Accounts, lv *live.Module, playerURL string) *Server {
 	return &Server{db: database, store: store, river: rc, delivery: d, keys: kw,
-		adminKey: adminKey, metrics: m, live: lv,
+		adminKey: adminKey, metrics: m, live: lv, playerURL: playerURL,
 		webOrigins: acc.WebOrigins, sessionDomain: acc.SessionDomain,
 		sessionSecure: acc.SessionSecure,
 		// Ten attempts a minute from one address: generous for a person, useless for
@@ -144,6 +145,12 @@ func (s *Server) Routes() http.Handler {
 
 	// Public: a viewer with no account and no key still has to see the logo.
 	r.Get("/brand/{tenant}/logo", s.serveBrandLogo)
+
+	// The embed. Authorised by the playback signature, because the caller is a
+	// viewer's browser and holds no key.
+	if s.embedEnabled() {
+		r.Get("/e/{tenant}/{asset}", s.serveEmbed)
+	}
 
 	r.Route("/v1", func(r chi.Router) {
 		if s.authEnabled() {

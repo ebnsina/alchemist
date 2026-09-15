@@ -38,6 +38,10 @@ type Config struct {
 	// LiveIngestHost is the address encoders publish to. Empty leaves the live
 	// surface unmounted, the same way no web origin leaves the account surface off.
 	LiveIngestHost string
+	// PlayerURL is the module URL of the player bundle the embed page loads, e.g.
+	// https://cdn.example/player/v1/alchemist-player.js. Empty leaves /e/ unmounted:
+	// a page with no player could only ever render an empty box.
+	PlayerURL string
 	// LivePullBase is where the transcoder reads a published stream from, e.g.
 	// rtsp://127.0.0.1:8554. The ingest server terminates SRT and RTMP, checks the
 	// stream key against the API, and this is the private side of it.
@@ -97,6 +101,8 @@ func Load() (*Config, error) {
 
 	// Optional as a pair. Live is off unless both are set; one without the other is a
 	// boot failure rather than a surface that half exists.
+	c.PlayerURL = strings.TrimSpace(os.Getenv("ALCHEMIST_PLAYER_URL"))
+
 	c.LiveIngestHost = strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_INGEST_HOST"))
 	c.LivePullBase = strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_PULL_BASE"))
 	if (c.LiveIngestHost == "") != (c.LivePullBase == "") {

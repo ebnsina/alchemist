@@ -33,6 +33,7 @@ func TestOpenAPIMatchesRouter(t *testing.T) {
 	routes := map[string]bool{}
 	srv := &Server{webOrigins: []string{"https://example.test"},
 		live:        live.New(nil, "ingest.example", nil, nil),
+		playerURL:   "https://cdn.example/player/v1/alchemist-player.js",
 		authLimiter: newAuthLimiter(10, time.Minute)}
 	router, ok := srv.Routes().(chi.Routes)
 	if !ok {
