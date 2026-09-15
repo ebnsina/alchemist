@@ -17,6 +17,7 @@ import (
 	"github.com/riverqueue/river"
 
 	"github.com/ebnsina/alchemist/internal/modules/delivery"
+	"github.com/ebnsina/alchemist/internal/modules/live"
 	"github.com/ebnsina/alchemist/internal/platform/db"
 	"github.com/ebnsina/alchemist/internal/platform/httpx"
 	"github.com/ebnsina/alchemist/internal/platform/keys"
@@ -36,7 +37,7 @@ type Server struct {
 	sessionDomain string
 	sessionSecure bool
 	authLimiter   *authLimiter
-	live          Live
+	live          *live.Module
 }
 
 // Accounts carries what the browser-facing signup and login surface needs. Zero
@@ -47,9 +48,9 @@ type Accounts struct {
 	SessionSecure bool
 }
 
-func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry, acc Accounts, live Live) *Server {
+func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry, acc Accounts, lv *live.Module) *Server {
 	return &Server{db: database, store: store, river: rc, delivery: d, keys: kw,
-		adminKey: adminKey, metrics: m, live: live,
+		adminKey: adminKey, metrics: m, live: lv,
 		webOrigins: acc.WebOrigins, sessionDomain: acc.SessionDomain,
 		sessionSecure: acc.SessionSecure,
 		// Ten attempts a minute from one address: generous for a person, useless for
@@ -60,11 +61,18 @@ func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *del
 type ctxKey string
 
 const (
-	tenantKey ctxKey = "tenant_id"
+	// The tenant key is httpx's, so a module can read who is calling without
+	// importing the control plane.
+	tenantKey = httpx.TenantKey
 	// Set only when the caller authenticated with a session cookie. An API key is a
 	// machine credential: it must never be able to invite a person or change a role.
 	userKey ctxKey = "user_id"
 )
+
+// liveEnabled is about this deployment: with no ingest host there is nowhere for an
+// encoder to connect, so cmd/ builds no module and the endpoints are not served at
+// all rather than served and always failing.
+func (s *Server) liveEnabled() bool { return s.live != nil }
 
 func (s *Server) Routes() http.Handler {
 	r := chi.NewRouter()
@@ -91,7 +99,7 @@ func (s *Server) Routes() http.Handler {
 	// API key, so this is unauthenticated and must be bound to a private interface --
 	// the stream key inside the request is the credential. See deploy/README.md.
 	if s.liveEnabled() {
-		r.Post("/internal/live/authorize", s.authorizeIngest)
+		s.live.IngestRoutes(r)
 	}
 
 	// Operator surface, behind a separate credential so a leaked customer key cannot
@@ -169,14 +177,7 @@ func (s *Server) Routes() http.Handler {
 		// for an encoder to connect, the endpoints could only ever fail. Whether this
 		// particular tenant bought it is a separate question, asked per request.
 		if s.liveEnabled() {
-			r.Group(func(r chi.Router) {
-				r.Use(s.requireLive)
-				r.Post("/live-streams", s.createLiveStream)
-				r.Get("/live-streams", s.listLiveStreams)
-				r.Get("/live-streams/{id}", s.getLiveStream)
-				r.Post("/live-streams/{id}/start", s.startLiveStream)
-				r.Delete("/live-streams/{id}", s.deleteLiveStream)
-			})
+			s.live.Routes(r)
 		}
 
 		r.Post("/edits", s.createEdit)

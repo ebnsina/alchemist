@@ -16,6 +16,7 @@ import (
 	"github.com/ebnsina/alchemist/internal/adapters"
 	"github.com/ebnsina/alchemist/internal/api"
 	"github.com/ebnsina/alchemist/internal/modules/delivery"
+	"github.com/ebnsina/alchemist/internal/modules/live"
 	"github.com/ebnsina/alchemist/internal/pipeline"
 	"github.com/ebnsina/alchemist/internal/platform/config"
 	"github.com/ebnsina/alchemist/internal/platform/db"
@@ -90,9 +91,10 @@ func main() {
 	river.AddWorker(workers, &pipeline.SweepWorker{DB: database, Store: store})
 	river.AddWorker(workers, &pipeline.ReclaimWorker{Store: store})
 	river.AddWorker(workers, &pipeline.StorageWorker{DB: database})
-	liveWorker := &pipeline.LiveWorker{DB: database, Store: store,
+	liveBroadcast := &live.Worker{DB: database, Store: adapters.ObjectStore{Store: store},
+		Assets: adapters.LiveAssets{DB: database}, Ladder: adapters.LiveLadder{DB: database},
 		PullBase: cfg.LivePullBase, WorkDir: cfg.WorkDir}
-	river.AddWorker(workers, liveWorker)
+	river.AddWorker(workers, &pipeline.LiveWorker{Live: liveBroadcast})
 
 	riverClient, err := river.NewClient(riverpgxv5.New(database.Pool()), &river.Config{
 		Queues: map[string]river.QueueConfig{
@@ -114,7 +116,7 @@ func main() {
 	migrator.River = riverClient
 	editor.River = riverClient
 	reconciler.River = riverClient
-	liveWorker.River = riverClient
+	liveBroadcast.Events = adapters.LiveEvents{DB: database, River: riverClient}
 
 	if err := riverClient.Start(ctx); err != nil {
 		log.Error("river start", "err", err)
@@ -134,6 +136,14 @@ func main() {
 		WithResolver(adapters.DedupResolver{DB: database}).
 		WithMeter(egress)
 
+	// No ingest host means no live module and no live routes: there is nowhere for
+	// an encoder to connect, so serving them could only ever fail.
+	var liveModule *live.Module
+	if cfg.LiveIngestHost != "" {
+		liveModule = live.New(database, cfg.LiveIngestHost,
+			adapters.LiveAssets{DB: database}, adapters.LiveQueue{River: riverClient})
+	}
+
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,
 		Handler: api.New(database, store, riverClient, deliveryModule, keyWrapper, cfg.AdminKey, reg,
@@ -142,7 +152,7 @@ func main() {
 				SessionDomain: cfg.SessionDomain,
 				SessionSecure: cfg.SessionSecure,
 			},
-			api.Live{IngestHost: cfg.LiveIngestHost}).Routes(),
+			liveModule).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

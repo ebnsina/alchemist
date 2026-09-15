@@ -19,12 +19,17 @@ cmd/
 1. **A module never imports another module.** Cross-module needs go through an
    interface the *consumer* declares, wired in `cmd/` via `internal/adapters`.
 2. **A module never imports concrete infrastructure.** It declares the narrow slice it
-   needs (`ObjectStore`, `ContentKeys`) and an adapter satisfies it. Two exceptions are
-   allowed because they carry no dependencies: `platform/httpx` and `platform/signing`.
+   needs (`ObjectStore`, `ContentKeys`) and an adapter satisfies it. Four exceptions
+   are allowed: `platform/httpx` and `platform/signing` carry no dependencies, and a
+   module that owns tables carries `platform/db` and `platform/media` the way any
+   service carries its driver and its codecs.
 3. **Only `cmd/` imports `adapters`.** A module importing adapters inverts the
    dependency and makes it unextractable.
+4. **A module names only the tables it owns.** `ownership_test.go` reads the SQL
+   literals in every module and fails on a table that belongs to someone else —
+   the one rule import analysis cannot see.
 
-`boundary_test.go` enforces all three at build time. Without it the boundary erodes
+`boundary_test.go` enforces the first three at build time. Without it the boundary erodes
 within weeks: one "just this once" import turns a copy-out into a refactor, quietly,
 with nothing failing. The test is the boundary; the README is only a description of it.
 
@@ -52,6 +57,12 @@ surprises. The boundary test is what guarantees that.
 | Module | Owns | Tables | Extract when |
 |---|---|---|---|
 | `delivery` | playback origin, manifests, content keys, edge auth | `content_keys` | Request volume outgrows the API, or it needs to sit beside the BDIX edge. **Most likely first split.** |
+| `live` | streams, sessions, ingest authorisation, the broadcast worker | `live_streams`, `live_sessions` | Realtime encode wants its own hardware. Not urgent: it shares the asset model with VOD. |
+
+Live reaches the asset a broadcast is watched at through `Assets`, its ladder through
+`Ladder`, storage through `ObjectStore` and the queue through `Queue`; its River
+binding is the thirty lines of `internal/pipeline/live.go`, which is the only part a
+split rewrites.
 
 Everything else still lives in `api/` and `pipeline/`. Carving out `assets`,
 `webhooks`, `usage` and `transcode` follows the same shape; delivery went first

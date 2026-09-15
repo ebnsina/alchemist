@@ -23,6 +23,7 @@ Three tests enforce what can be enforced:
 
 - `internal/docscheck` — every path referenced in any `.md`, and in `llms.txt`, must exist.
 - `internal/modules/boundary_test.go` — module boundaries.
+- `internal/modules/ownership_test.go` — a module names only the tables it owns.
 - `internal/api/openapi_test.go` — every served route is in `api/openapi.yaml`, and
   every documented route is served. Both directions, so neither can drift.
 - `internal/platform/signing/parity_test.go` — the edge's njs signing matches Go.
@@ -91,6 +92,7 @@ adapters/   binds platform to the interfaces modules declare; only cmd/ imports 
 api/        control plane, composes modules
 ```
 
+`internal/modules` holds `delivery` (playback origin) and `live` (broadcast ingest).
 `cmd/alchemist` runs everything; `cmd/alchemist-origin` runs the delivery module
 alone. The second binary exists to prove the seam is real — keep it building.
 
@@ -171,7 +173,7 @@ These were established by measurement and are expensive to rediscover.
   `CombinedOutput()` over complete files and writes one byte-range CMAF file per
   rendition. A live packager never exits, cannot read a file still being written, and
   cannot append to an S3 object; invoking it per segment restarts the timeline every
-  two seconds. Live segments with ffmpeg instead, through `media.LiveCommand`. The
+  two seconds. Live segments with ffmpeg instead, in `internal/modules/live`. The
   roadmap's "packager as a library" line overstates what the code does.
 - **Live objects are a working set, not a library.** Live writes per-segment objects
   under `live/{tenant}/{asset}/`, which is the opposite of the byte-range CMAF rule.

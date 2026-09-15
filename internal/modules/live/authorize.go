@@ -1,4 +1,4 @@
-package api
+package live
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 // Two things must hold, not one: the key has to resolve to a live stream, and that
 // stream has to be the path being published to. Checking only the key would let a
 // customer with one valid key publish over every other stream on the server.
-func (s *Server) publishAllowed(ctx context.Context, key, path string) bool {
+func (m *Module) publishAllowed(ctx context.Context, key, path string) bool {
 	if key == "" || path == "" {
 		return false
 	}
@@ -39,7 +39,7 @@ func (s *Server) publishAllowed(ctx context.Context, key, path string) bool {
 	// Runs with no tenant in scope, so it goes through the definer function; RLS is
 	// forced on live_streams and a plain select would return no rows.
 	var streamID string
-	err := s.db.Pool().QueryRow(ctx,
+	err := m.db.Pool().QueryRow(ctx,
 		`select coalesce(resolve_stream_key($1)::text, '')`, sum[:]).Scan(&streamID)
 	if err != nil || streamID == "" {
 		return false
@@ -67,7 +67,7 @@ type mediamtxAuthRequest struct {
 }
 
 // authorizeIngest answers MediaMTX: 204 to allow, 401 to refuse.
-func (s *Server) authorizeIngest(w http.ResponseWriter, r *http.Request) {
+func (m *Module) authorizeIngest(w http.ResponseWriter, r *http.Request) {
 	var req mediamtxAuthRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -98,7 +98,7 @@ func (s *Server) authorizeIngest(w http.ResponseWriter, r *http.Request) {
 	if key == "" {
 		key = req.Token
 	}
-	if !s.publishAllowed(r.Context(), key, req.Path) {
+	if !m.publishAllowed(r.Context(), key, req.Path) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
