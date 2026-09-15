@@ -14,7 +14,7 @@
 --
 -- Access control is, and was, the signed expiring URL. Tenants that genuinely need
 -- DRM can turn this back on and accept Safari-only until a licence server exists.
-alter table tenants add column encrypt_playback boolean not null default false;
+alter table tenants add column if not exists encrypt_playback boolean not null default false;
 
 comment on column tenants.encrypt_playback is
   'cbcs playback encryption. Off by default: it is not DRM without a licence server, '

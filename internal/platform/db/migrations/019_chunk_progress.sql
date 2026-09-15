@@ -4,6 +4,6 @@
 --
 -- A chunk is only interesting once it exists, so completion is a timestamp rather
 -- than a boolean: it says when, not just whether.
-alter table chunks add column completed_at timestamptz;
+alter table chunks add column if not exists completed_at timestamptz;
 
-create index on chunks (rendition_id) where completed_at is null;
+create index if not exists chunks_rendition_id_idx on chunks (rendition_id) where completed_at is null;

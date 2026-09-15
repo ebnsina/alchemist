@@ -7,4 +7,4 @@ alter table migration_sources alter column state set default 'previewing';
 
 -- 'previewing' alone cannot say whether the list is still being fetched or is
 -- complete and waiting on a person, and those are different screens.
-alter table migration_sources add column preview_done boolean not null default false;
+alter table migration_sources add column if not exists preview_done boolean not null default false;

@@ -8,7 +8,7 @@
 -- tenant is in scope — the same bootstrapping problem signup has — so the lookup is
 -- a definer function, exactly as auth_find_user is.
 
-create table invites (
+create table if not exists invites (
   id           uuid primary key default gen_random_uuid(),
   tenant_id    uuid not null references tenants(id) on delete cascade,
   email        citext not null,
@@ -21,14 +21,15 @@ create table invites (
 );
 
 -- One live invite per address per tenant. A resend replaces rather than accumulates.
-create unique index invites_pending on invites (tenant_id, email)
+create unique index if not exists invites_pending on invites (tenant_id, email)
   where accepted_at is null;
 
 alter table invites enable row level security;
 alter table invites force row level security;
+drop policy if exists invites_tenant on invites;
 create policy invites_tenant on invites using (tenant_id = current_tenant());
 
-create table tenant_branding (
+create table if not exists tenant_branding (
   tenant_id     uuid primary key references tenants(id) on delete cascade,
   logo_key      text,
   logo_type     text,
@@ -37,12 +38,14 @@ create table tenant_branding (
 
 alter table tenant_branding enable row level security;
 alter table tenant_branding force row level security;
+drop policy if exists branding_tenant on tenant_branding;
 create policy branding_tenant on tenant_branding using (tenant_id = current_tenant());
 
 grant select, insert, update, delete on invites, tenant_branding to alchemist_app;
 
 -- Roles are a closed set. A typo that writes 'admn' would silently grant nothing and
 -- read as a permissions bug for whoever is holding it.
+alter table users drop constraint if exists users_role_known;
 alter table users add constraint users_role_known
   check (role in ('owner', 'admin', 'member'));
 
@@ -97,8 +100,10 @@ grant execute on function invite_preview(bytea) to alchemist_app;
 -- goes through a SECURITY DEFINER function, which bypasses RLS. Team management is
 -- the first code to read these tables as a tenant, and it read nothing.
 drop policy if exists users_tenant on users;
+drop policy if exists users_tenant on users;
 create policy users_tenant on users using (tenant_id = current_tenant());
 
+drop policy if exists sessions_tenant on sessions;
 drop policy if exists sessions_tenant on sessions;
 create policy sessions_tenant on sessions
   using (exists (

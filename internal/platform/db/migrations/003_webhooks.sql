@@ -1,6 +1,6 @@
 -- Webhook endpoints and delivery log. "We never got the callback" must be an
 -- answerable question, so every attempt is recorded.
-create table webhook_endpoints (
+create table if not exists webhook_endpoints (
   id         uuid primary key default gen_random_uuid(),
   tenant_id  uuid not null references tenants(id) on delete cascade,
   url        text not null,
@@ -9,9 +9,9 @@ create table webhook_endpoints (
   active     boolean not null default true,
   created_at timestamptz not null default now()
 );
-create index on webhook_endpoints (tenant_id) where active;
+create index if not exists webhook_endpoints_tenant_id_idx on webhook_endpoints (tenant_id) where active;
 
-create table webhook_deliveries (
+create table if not exists webhook_deliveries (
   id          bigserial primary key,
   endpoint_id uuid not null references webhook_endpoints(id) on delete cascade,
   tenant_id   uuid not null references tenants(id) on delete cascade,
@@ -23,18 +23,20 @@ create table webhook_deliveries (
   delivered_at timestamptz,
   created_at  timestamptz not null default now()
 );
-create index on webhook_deliveries (tenant_id, created_at desc);
+create index if not exists webhook_deliveries_tenant_id_created_at_idx on webhook_deliveries (tenant_id, created_at desc);
 
 alter table webhook_endpoints enable row level security;
 alter table webhook_endpoints force row level security;
+drop policy if exists tenant_isolation on webhook_endpoints;
 create policy tenant_isolation on webhook_endpoints using (tenant_id = current_tenant());
 
 alter table webhook_deliveries enable row level security;
 alter table webhook_deliveries force row level security;
+drop policy if exists tenant_isolation on webhook_deliveries;
 create policy tenant_isolation on webhook_deliveries using (tenant_id = current_tenant());
 
 grant select, insert, update, delete on webhook_endpoints, webhook_deliveries to alchemist_app;
 grant usage, select on sequence webhook_deliveries_id_seq to alchemist_app;
 
 -- Pull-from-URL ingest keeps the source URL for audit and re-fetch.
-alter table assets add column source_url text;
+alter table assets add column if not exists source_url text;

@@ -8,7 +8,7 @@
 -- Not every provider can be migrated from. DRM platforms hand out no source file
 -- through their API by design, so `provider` is a closed set of the ones that can.
 
-create table migration_sources (
+create table if not exists migration_sources (
   id             uuid primary key default gen_random_uuid(),
   tenant_id      uuid not null references tenants(id) on delete cascade,
   provider       text not null check (provider in ('vimeo', 'bunny')),
@@ -26,12 +26,12 @@ create table migration_sources (
   updated_at     timestamptz not null default now()
 );
 
-create index on migration_sources (tenant_id);
+create index if not exists migration_sources_tenant_id_idx on migration_sources (tenant_id);
 
 -- One row per video seen on the far side, whether or not it imported. A failure is
 -- recorded rather than retried forever: a video the provider will not hand over is a
 -- fact about that video, and hiding it makes the count lie.
-create table migration_items (
+create table if not exists migration_items (
   id         uuid primary key default gen_random_uuid(),
   source_id  uuid not null references migration_sources(id) on delete cascade,
   remote_id  text not null,
@@ -43,16 +43,18 @@ create table migration_items (
   created_at timestamptz not null default now()
 );
 
-create unique index migration_items_remote on migration_items (source_id, remote_id);
-create index on migration_items (source_id, state);
+create unique index if not exists migration_items_remote on migration_items (source_id, remote_id);
+create index if not exists migration_items_source_id_state_idx on migration_items (source_id, state);
 
 alter table migration_sources enable row level security;
 alter table migration_sources force row level security;
+drop policy if exists migration_sources_tenant on migration_sources;
 create policy migration_sources_tenant on migration_sources
   using (tenant_id = current_tenant());
 
 alter table migration_items enable row level security;
 alter table migration_items force row level security;
+drop policy if exists migration_items_tenant on migration_items;
 create policy migration_items_tenant on migration_items
   using (exists (
     select 1 from migration_sources s

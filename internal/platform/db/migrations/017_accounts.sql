@@ -8,7 +8,7 @@
 
 create extension if not exists citext;
 
-create table users (
+create table if not exists users (
   id            uuid primary key default gen_random_uuid(),
   tenant_id     uuid not null references tenants(id) on delete cascade,
   email         citext not null unique,
@@ -20,7 +20,7 @@ create table users (
 
 -- Sessions store a hash, never the token, so a database leak does not hand over
 -- live sessions.
-create table sessions (
+create table if not exists sessions (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references users(id) on delete cascade,
   token_hash bytea not null unique,
@@ -29,16 +29,20 @@ create table sessions (
   revoked_at timestamptz
 );
 
-create index on sessions (user_id);
-create index on sessions (expires_at) where revoked_at is null;
+create index if not exists sessions_user_id_idx on sessions (user_id);
+create index if not exists sessions_expires_at_idx on sessions (expires_at) where revoked_at is null;
 
 alter table users enable row level security;
 alter table users force row level security;
 alter table sessions enable row level security;
 alter table sessions force row level security;
 
+drop policy if exists users_tenant on users;
+
 create policy users_tenant on users
   using (tenant_id = current_setting('alchemist.tenant_id', true)::uuid);
+
+drop policy if exists sessions_tenant on sessions;
 
 create policy sessions_tenant on sessions
   using (exists (

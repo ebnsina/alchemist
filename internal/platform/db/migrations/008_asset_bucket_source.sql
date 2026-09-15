@@ -1,7 +1,7 @@
 -- An asset ingested from a customer bucket has to be read back with that bucket's
 -- credentials, so it needs to remember where it came from.
-alter table assets add column bucket_source_id uuid references bucket_sources(id) on delete set null;
-alter table assets add column source_object_key text;
+alter table assets add column if not exists bucket_source_id uuid references bucket_sources(id) on delete set null;
+alter table assets add column if not exists source_object_key text;
 
 -- The transcode worker resolves credentials before any tenant is in scope on its
 -- connection, so this is a definer function like the others. It returns only what is

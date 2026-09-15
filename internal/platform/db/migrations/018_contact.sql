@@ -3,7 +3,7 @@
 -- outside the tenant-scoped path entirely and are reachable only through the
 -- definer function below and the operator surface.
 
-create table contact_requests (
+create table if not exists contact_requests (
   id         uuid primary key default gen_random_uuid(),
   name       text not null,
   email      citext not null,
@@ -14,7 +14,7 @@ create table contact_requests (
   handled_at timestamptz
 );
 
-create index on contact_requests (created_at desc);
+create index if not exists contact_requests_created_at_idx on contact_requests (created_at desc);
 
 alter table contact_requests enable row level security;
 alter table contact_requests force row level security;

@@ -11,7 +11,7 @@
 alter type asset_state add value if not exists 'live';
 alter type asset_state add value if not exists 'live_ended';
 
-create table live_streams (
+create table if not exists live_streams (
   id          uuid primary key default gen_random_uuid(),
   tenant_id   uuid not null references tenants(id) on delete cascade,
   name        text not null,
@@ -27,9 +27,9 @@ create table live_streams (
   updated_at  timestamptz not null default now()
 );
 
-create index on live_streams (tenant_id, created_at desc);
+create index if not exists live_streams_tenant_id_created_at_idx on live_streams (tenant_id, created_at desc);
 
-create table live_sessions (
+create table if not exists live_sessions (
   id           uuid primary key default gen_random_uuid(),
   stream_id    uuid not null references live_streams(id) on delete cascade,
   tenant_id    uuid not null references tenants(id) on delete cascade,
@@ -45,14 +45,16 @@ create table live_sessions (
   created_at   timestamptz not null default now()
 );
 
-create index on live_sessions (stream_id, created_at desc);
+create index if not exists live_sessions_stream_id_created_at_idx on live_sessions (stream_id, created_at desc);
 
 alter table live_streams enable row level security;
 alter table live_streams force row level security;
+drop policy if exists live_streams_tenant on live_streams;
 create policy live_streams_tenant on live_streams using (tenant_id = current_tenant());
 
 alter table live_sessions enable row level security;
 alter table live_sessions force row level security;
+drop policy if exists live_sessions_tenant on live_sessions;
 create policy live_sessions_tenant on live_sessions using (tenant_id = current_tenant());
 
 grant select, insert, update, delete on live_streams to alchemist_app;

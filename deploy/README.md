@@ -49,7 +49,13 @@ systemctl enable --now alchemist
 ```
 
 Migrations are plain SQL applied in filename order; there is no migration tool and no
-version table, so each is written to be safe to re-run. `internal/platform/db/migrations/020_members_branding.sql`
+version table, so each is written to be safe to re-run. That claim is now enforceable:
+apply them with `ON_ERROR_STOP=1` and a second run must be silent. Sixteen of them
+were not re-runnable until 2026-09-16 — the loop above only appeared to work because
+it ignored errors, which also meant a genuinely broken migration was indistinguishable
+from "already exists". Keep new ones idempotent: `if not exists` on tables, columns and
+named indexes, `drop policy if exists` before a policy, a guard around a type, and
+`on conflict do nothing` on a seed. `internal/platform/db/migrations/020_members_branding.sql`
 also repairs the `users` and `sessions` policies from `internal/platform/db/migrations/017_accounts.sql`, which named a setting
 nothing sets and so matched no rows. `internal/platform/db/migrations/027_dedup_renditions.sql` deletes rows rather than
 adding a column: deduplicated assets carried copies of the canonical asset's rendition
@@ -117,7 +123,12 @@ customer's valid key publish over everyone else's broadcast. Verified by refusin
 wrong key: the ingest server logs `authentication failed: server replied with code
 401` and the publisher is dropped.
 
-**That endpoint carries no API key and must never be publicly reachable.** The caller
+**That endpoint carries no API key and must never be publicly reachable.** It is
+served on the same listener as the customer API, which has to be public, so "bind it
+privately" is not something the app can do for you: whatever proxies the API must
+return 404 for `/internal/`, the way `deploy/edge/nginx.conf` now does for the origin.
+Both internal routes fail closed without credentials, but neither is a viewer's
+business and nothing rate-limits them. The caller
 is the ingest server on the same host, so bind it to loopback or a private interface
 and firewall it like a database port.
 

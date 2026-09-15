@@ -8,7 +8,7 @@
 -- constant-frame-rate master with keyframes on a fixed grid, so a trim lands where it
 -- was asked to and the original is never touched again (it may not even still exist).
 
-create table edits (
+create table if not exists edits (
   id              uuid primary key default gen_random_uuid(),
   tenant_id       uuid not null references tenants(id) on delete cascade,
   source_asset_id uuid not null references assets(id) on delete cascade,
@@ -21,11 +21,12 @@ create table edits (
   updated_at      timestamptz not null default now()
 );
 
-create index on edits (tenant_id);
-create index on edits (source_asset_id);
+create index if not exists edits_tenant_id_idx on edits (tenant_id);
+create index if not exists edits_source_asset_id_idx on edits (source_asset_id);
 
 alter table edits enable row level security;
 alter table edits force row level security;
+drop policy if exists edits_tenant on edits;
 create policy edits_tenant on edits using (tenant_id = current_tenant());
 
 grant select, insert, update, delete on edits to alchemist_app;

@@ -11,21 +11,21 @@ do $$ begin
 end $$;
 
 -- Ladder profiles are data, not code: this is what makes a new market a row insert.
-create table ladder_profiles (
+create table if not exists ladder_profiles (
   name        text primary key,
   description text not null,
   rungs       jsonb not null,
   created_at  timestamptz not null default now()
 );
 
-create table tenants (
+create table if not exists tenants (
   id             uuid primary key default gen_random_uuid(),
   name           text not null,
   ladder_profile text not null references ladder_profiles(name),
   created_at     timestamptz not null default now()
 );
 
-create table api_keys (
+create table if not exists api_keys (
   id         uuid primary key default gen_random_uuid(),
   tenant_id  uuid not null references tenants(id) on delete cascade,
   name       text not null,
@@ -34,12 +34,14 @@ create table api_keys (
   revoked_at timestamptz
 );
 
-create type asset_state as enum (
-  'created', 'uploading', 'uploaded', 'probing', 'mezzanine', 'analyzing',
-  'encoding', 'packaging', 'ready', 'partially_ready', 'failed'
-);
+do $$ begin
+  if not exists (select 1 from pg_type where typname = 'asset_state') then
+    create type asset_state as enum ('created', 'uploading', 'uploaded', 'probing', 'mezzanine', 'analyzing',
+  'encoding', 'packaging', 'ready', 'partially_ready', 'failed');
+  end if;
+end $$;
 
-create table assets (
+create table if not exists assets (
   id             uuid primary key default gen_random_uuid(),
   tenant_id      uuid not null references tenants(id) on delete cascade,
   state          asset_state not null default 'created',
@@ -55,14 +57,14 @@ create table assets (
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );
-create index on assets (tenant_id, created_at desc);
+create index if not exists assets_tenant_id_created_at_idx on assets (tenant_id, created_at desc);
 -- Dedup is scoped within tenant; cross-tenant dedup would leak content existence.
 -- Not unique: several assets may share content. Uploading the same file twice yields
 -- two assets with independent lifecycles, sharing only the encoding work.
-create index assets_dedup_lookup on assets (tenant_id, source_sha256)
+create index if not exists assets_dedup_lookup on assets (tenant_id, source_sha256)
   where source_sha256 is not null;
 
-create table renditions (
+create table if not exists renditions (
   id              uuid primary key default gen_random_uuid(),
   asset_id        uuid not null references assets(id) on delete cascade,
   tenant_id       uuid not null references tenants(id) on delete cascade,
@@ -80,7 +82,7 @@ create table renditions (
   unique (asset_id, height, codec)
 );
 
-create table chunks (
+create table if not exists chunks (
   rendition_id uuid not null references renditions(id) on delete cascade,
   idx          int not null,
   tenant_id    uuid not null references tenants(id) on delete cascade,
@@ -91,7 +93,7 @@ create table chunks (
 );
 
 -- Billing data cannot be backfilled. Emit from the first request.
-create table usage_events (
+create table if not exists usage_events (
   id         bigserial primary key,
   tenant_id  uuid not null references tenants(id) on delete cascade,
   asset_id   uuid,
@@ -100,7 +102,7 @@ create table usage_events (
   unit       text not null,
   occurred_at timestamptz not null default now()
 );
-create index on usage_events (tenant_id, occurred_at desc);
+create index if not exists usage_events_tenant_id_occurred_at_idx on usage_events (tenant_id, occurred_at desc);
 
 -- RLS on every tenant-scoped table.
 create or replace function current_tenant() returns uuid
@@ -115,6 +117,9 @@ begin
   loop
     execute format('alter table %I enable row level security', t);
     execute format('alter table %I force row level security', t);
+    -- Dropped first so the whole file stays safe to re-run; policies have no
+    -- IF NOT EXISTS and the deploy applies every migration on every release.
+    execute format('drop policy if exists tenant_isolation on %I', t);
     if t = 'tenants' then
       execute format(
         'create policy tenant_isolation on %I using (id = current_tenant())', t);
@@ -162,4 +167,5 @@ insert into ladder_profiles (name, description, rungs) values
   {"height":480,"codec":"h264","profile":"main","preset":"medium","crf":24,"maxrate_bps":1400000},
   {"height":720,"codec":"h264","profile":"high","preset":"medium","crf":23,"maxrate_bps":3000000},
   {"height":1080,"codec":"h264","profile":"high","preset":"medium","crf":22,"maxrate_bps":6000000}
-]'::jsonb);
+]'::jsonb)
+on conflict (name) do nothing;
