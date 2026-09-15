@@ -51,7 +51,13 @@ systemctl enable --now alchemist
 Migrations are plain SQL applied in filename order; there is no migration tool and no
 version table, so each is written to be safe to re-run. `internal/platform/db/migrations/020_members_branding.sql`
 also repairs the `users` and `sessions` policies from `internal/platform/db/migrations/017_accounts.sql`, which named a setting
-nothing sets and so matched no rows.
+nothing sets and so matched no rows. `internal/platform/db/migrations/027_dedup_renditions.sql` deletes rows rather than
+adding a column: deduplicated assets carried copies of the canonical asset's rendition
+rows, and those copies are now resolved rather than stored.
+`internal/platform/db/migrations/028_usage_bytes.sql` adds `tenant_stored_bytes()`, another
+`SECURITY DEFINER` reader for a cross-tenant job, and the unique index the daily egress
+and storage rows upsert onto -- without it every flush inserts a new row instead of
+folding into the day.
 
 `ALCHEMIST_ENCODE_WORKERS` should be roughly the core count. Encoding already uses a
 per-job worker pool, so setting it far above that only lengthens the tail.

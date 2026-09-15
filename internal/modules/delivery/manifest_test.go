@@ -40,3 +40,17 @@ func TestSignManifestLeavesAbsoluteURLsAlone(t *testing.T) {
 		t.Errorf("absolute URL was rewritten:\n%s", got)
 	}
 }
+
+// The cue payload carries an #xywh fragment. A query appended after it is read as
+// part of the fragment, so the tile request arrives unsigned and 403s.
+func TestSignManifestVTTKeepsQueryBeforeFragment(t *testing.T) {
+	in := []byte("WEBVTT\n\n00:00:00.000 --> 00:00:05.000\nsprite.jpg#xywh=160,0,160,90\n")
+	got := string(signManifest(in, "exp=1&sig=abc", "sprite.vtt"))
+
+	if !strings.Contains(got, "sprite.jpg?exp=1&sig=abc#xywh=160,0,160,90") {
+		t.Errorf("cue image was not signed before its fragment:\n%s", got)
+	}
+	if strings.Contains(got, "WEBVTT?") || strings.Contains(got, "00:00:05.000?") {
+		t.Errorf("a header or timing line was treated as a URI:\n%s", got)
+	}
+}

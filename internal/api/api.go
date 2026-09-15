@@ -136,6 +136,7 @@ func (s *Server) Routes() http.Handler {
 		r.Post("/uploads", s.createUpload)
 		r.Post("/assets/{id}/complete", s.completeUpload)
 		r.Get("/assets/{id}", s.getAsset)
+		r.Delete("/assets/{id}", s.deleteAsset)
 		r.Get("/assets", s.listAssets)
 		r.Get("/assets/{id}/chunks", s.listChunks)
 		r.Get("/assets/{id}/activity", s.listActivity)

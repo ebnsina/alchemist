@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -152,7 +153,10 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 
 		rows, err := tx.Query(r.Context(),
 			`select height, codec, bitrate_bps, state, chunks_done, chunks_total, bytes, lazy
-			   from renditions where asset_id = $1 order by height desc, codec`, assetID)
+			   from renditions
+			  where asset_id = (select coalesce(deduplicated_from, id)
+			                      from assets where id = $1)
+			  order by height desc, codec`, assetID)
 		if err != nil {
 			return err
 		}
@@ -190,4 +194,103 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// deleteAsset removes the video and queues its objects for reclamation.
+//
+// The media is reclaimed only when nothing else plays it. A deduplicated asset shares
+// the canonical asset's files, so deleting those would leave every duplicate reporting
+// ready while every byte range 404s -- the failure this platform has already had once.
+func (s *Server) deleteAsset(w http.ResponseWriter, r *http.Request) {
+	tenantID, _ := r.Context().Value(tenantKey).(string)
+	assetID := chi.URLParam(r, "id")
+
+	var mediaPrefix string
+	var sourceKey, mezzKey *string
+	var owns bool
+	var heir *string
+	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(r.Context(),
+			`select coalesce(media_prefix, 'cmaf/' || tenant_id::text || '/' ||
+			          coalesce(deduplicated_from, id)::text),
+			        deduplicated_from is null, source_key, mezzanine_key
+			   from assets where id = $1`, assetID).
+			Scan(&mediaPrefix, &owns, &sourceKey, &mezzKey); err != nil {
+			return err
+		}
+		// The oldest asset still playing this media, if any. Everything below hangs
+		// off whether one exists.
+		if err := tx.QueryRow(r.Context(),
+			`select (select id::text from assets
+			          where id <> $1 and (deduplicated_from = $1 or media_prefix = $2)
+			          order by created_at limit 1)`, assetID, mediaPrefix).Scan(&heir); err != nil {
+			return err
+		}
+		if heir != nil {
+			if err := promoteHeir(r.Context(), tx, assetID, *heir, mediaPrefix); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.Exec(r.Context(), `delete from assets where id = $1`, assetID); err != nil {
+			return err
+		}
+		// Queued in the same transaction as the delete: a row that is gone with no
+		// job behind it is an object nobody will ever reclaim.
+		_, err := s.river.InsertTx(r.Context(), tx,
+			reclaimFor(mediaPrefix, sourceKey, mezzKey, owns && heir == nil), nil)
+		return err
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeErrFor(w, r, http.StatusNotFound, "asset_not_found", "We couldn't find that video.")
+		return
+	}
+	if err != nil {
+		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
+			"Something went wrong on our side.")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// promoteHeir moves what the departing asset owned on behalf of the group onto one
+// survivor, so every other duplicate keeps resolving through deduplicated_from exactly
+// as it did before.
+//
+// Nulling the pointers instead is not enough and the failure is silent: content_keys
+// and renditions are children of assets with on delete cascade, so the key every
+// duplicate decrypts with and the rendition rows the API reads for them would vanish
+// with the parent. Playback would keep working off the surviving objects while /key
+// returned 404 and the asset reported no renditions at all.
+func promoteHeir(ctx context.Context, tx pgx.Tx, assetID, heir, mediaPrefix string) error {
+	// Every survivor gets the prefix written out: it is named after an id that is
+	// about to stop existing, and only the heir would otherwise resolve correctly.
+	for _, q := range []string{
+		`update assets set media_prefix = $3
+		  where id <> $1 and (deduplicated_from = $1 or media_prefix = $3)`,
+		`update content_keys set asset_id = $2 where asset_id = $1`,
+		`update renditions set asset_id = $2 where asset_id = $1`,
+		`update assets set deduplicated_from = null where id = $2`,
+		`update assets set deduplicated_from = $2 where deduplicated_from = $1 and id <> $2`,
+	} {
+		if _, err := tx.Exec(ctx, q, assetID, heir, mediaPrefix); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// reclaimFor lists what this asset alone was keeping alive. The source is always its
+// own; the media and the mezzanine belong to it only when it is nobody else's source.
+func reclaimFor(mediaPrefix string, sourceKey, mezzKey *string, ownsMedia bool) pipeline.ReclaimArgs {
+	var args pipeline.ReclaimArgs
+	if sourceKey != nil && *sourceKey != "" {
+		args.Keys = append(args.Keys, *sourceKey)
+	}
+	if ownsMedia {
+		if mezzKey != nil && *mezzKey != "" {
+			args.Keys = append(args.Keys, *mezzKey)
+		}
+		args.Prefixes = append(args.Prefixes, mediaPrefix+"/")
+	}
+	return args
 }

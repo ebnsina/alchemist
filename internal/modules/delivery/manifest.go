@@ -19,6 +19,12 @@ func signManifest(body []byte, query, file string) []byte {
 	if query == "" {
 		return body
 	}
+	if strings.HasSuffix(file, ".vtt") {
+		// The scrubbing index: every cue payload is a relative image URL with an
+		// #xywh fragment. Left unsigned the tile request 403s and the customer sees
+		// no thumbnails at all, even though the API advertised the URL.
+		return signVTT(body, query)
+	}
 	if strings.HasSuffix(file, ".mpd") {
 		// A raw & is not well-formed XML, so the query must be entity-escaped or
 		// every DASH player fails to parse the manifest at all.
@@ -47,10 +53,30 @@ func signManifest(body []byte, query, file string) []byte {
 	return []byte(strings.Join(lines, "\n"))
 }
 
+// signVTT signs the cue payload lines and nothing else: the header, the timing lines
+// and any NOTE are not URIs.
+func signVTT(body []byte, query string) []byte {
+	lines := strings.Split(string(body), "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.Contains(trimmed, "-->") ||
+			strings.HasPrefix(trimmed, "WEBVTT") || strings.HasPrefix(trimmed, "NOTE") {
+			continue
+		}
+		lines[i] = appendQuery(trimmed, query)
+	}
+	return []byte(strings.Join(lines, "\n"))
+}
+
 // appendQuery leaves absolute URLs alone; only our own relative paths are signed.
 func appendQuery(uri, query string) string {
 	if strings.Contains(uri, "://") || strings.Contains(uri, "?") {
 		return uri
+	}
+	// The query goes before the fragment. After it, the browser reads the whole thing
+	// as part of the fragment and the request arrives with no signature.
+	if base, frag, ok := strings.Cut(uri, "#"); ok {
+		return base + "?" + query + "#" + frag
 	}
 	return uri + "?" + query
 }

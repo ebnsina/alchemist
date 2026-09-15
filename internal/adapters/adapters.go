@@ -52,12 +52,21 @@ type ContentKeys struct {
 	Wrapper *keys.Wrapper
 }
 
+// Get resolves through deduplicated_from, the same way playback does.
+//
+// A duplicate owns no media and therefore no key: it plays the canonical asset's
+// encrypted bytes, so asking for its own key returns nothing and the player fails to
+// decrypt with no error anywhere but a 404 on /key. The canonical id is also what the
+// key was wrapped under, so it has to come back from the same query.
 func (c ContentKeys) Get(ctx context.Context, tenantID, assetID string) ([]byte, error) {
 	var wrapped, nonce []byte
+	var canonical string
 	err := c.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx,
-			`select wrapped_key, nonce from content_keys where asset_id = $1`,
-			assetID).Scan(&wrapped, &nonce)
+			`select k.wrapped_key, k.nonce, k.asset_id::text
+			   from assets a
+			   join content_keys k on k.asset_id = coalesce(a.deduplicated_from, a.id)
+			  where a.id = $1`, assetID).Scan(&wrapped, &nonce, &canonical)
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, delivery.ErrNotFound
@@ -65,7 +74,7 @@ func (c ContentKeys) Get(ctx context.Context, tenantID, assetID string) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	return c.Wrapper.Unwrap(wrapped, nonce, assetID)
+	return c.Wrapper.Unwrap(wrapped, nonce, canonical)
 }
 
 func (c ContentKeys) Put(ctx context.Context, tenantID, assetID string, keyID, key []byte) error {
@@ -96,23 +105,29 @@ type LazyRenditions struct {
 // low ladder is already playing.
 func (l LazyRenditions) OnPlaybackStarted(ctx context.Context, tenantID, assetID string) {
 	type pending struct {
-		height int
-		codec  string
+		assetID string
+		height  int
+		codec   string
 	}
 	var want []pending
 
+	// Resolved through deduplicated_from: a duplicate shares the canonical asset's
+	// media, so a rung generated under the duplicate's own id is published where no
+	// playback request will ever look for it.
 	if err := l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx,
 			`update renditions set requested_at = now()
-			  where asset_id = $1 and lazy and state = 'pending' and requested_at is null
-			 returning height, codec`, assetID)
+			  where asset_id = (select coalesce(deduplicated_from, id)
+			                      from assets where id = $1)
+			    and lazy and state = 'pending' and requested_at is null
+			 returning asset_id::text, height, codec`, assetID)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
 		for rows.Next() {
 			var p pending
-			if err := rows.Scan(&p.height, &p.codec); err != nil {
+			if err := rows.Scan(&p.assetID, &p.height, &p.codec); err != nil {
 				return err
 			}
 			want = append(want, p)
@@ -125,7 +140,7 @@ func (l LazyRenditions) OnPlaybackStarted(ctx context.Context, tenantID, assetID
 	for _, p := range want {
 		// Unique-by-args on the job means a burst of viewers produces one encode.
 		_, _ = l.River.Insert(ctx, pipeline.JITArgs{
-			AssetID: assetID, TenantID: tenantID, Height: p.height, Codec: p.codec,
+			AssetID: p.assetID, TenantID: tenantID, Height: p.height, Codec: p.codec,
 		}, nil)
 	}
 }
@@ -136,15 +151,19 @@ type DedupResolver struct{ DB *db.DB }
 // StoragePrefix follows deduplicated_from so several assets can reference one copy of
 // the media. Resolving at read time rather than copying objects is the entire saving:
 // duplicating the files would make dedup pointless.
+//
+// media_prefix overrides it, and is set only when the asset the prefix was named
+// after has been deleted while others still play its bytes.
 func (d DedupResolver) StoragePrefix(ctx context.Context, tenantID, assetID string) (string, error) {
-	var canonical string
+	var prefix string
 	err := d.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx,
-			`select coalesce(deduplicated_from, id)::text from assets where id = $1`,
-			assetID).Scan(&canonical)
+			`select coalesce(media_prefix, 'cmaf/' || tenant_id::text || '/' ||
+			          coalesce(deduplicated_from, id)::text)
+			   from assets where id = $1`, assetID).Scan(&prefix)
 	})
 	if err != nil {
 		return "", err
 	}
-	return "cmaf/" + tenantID + "/" + canonical, nil
+	return prefix, nil
 }

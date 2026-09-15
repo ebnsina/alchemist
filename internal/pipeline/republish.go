@@ -67,6 +67,7 @@ func (w *TranscodeWorker) buildRendition(ctx context.Context, a JITArgs, mezz, d
 	}
 
 	prefix := fmt.Sprintf("cmaf/%s/%s", a.TenantID, a.AssetID)
+	bytes := fileBytes(filepath.Join(outDir, name+".cmfv"))
 	for _, f := range []string{name + ".cmfv", name + ".m3u8"} {
 		src := filepath.Join(outDir, f)
 		fh, err := os.Open(src)
@@ -89,11 +90,11 @@ func (w *TranscodeWorker) buildRendition(ctx context.Context, a JITArgs, mezz, d
 			`update renditions
 			    set state = 'ready', object_key = $4, width = $5,
 			        codec_string = $6, avg_bandwidth_bps = $7, lazy = false,
-			        dash_representation = $8
+			        dash_representation = $8, bytes = nullif($9,0)::bigint
 			  where asset_id = $1 and height = $2 and codec = $3`,
 			a.AssetID, rung.Height, rung.Codec,
 			fmt.Sprintf("%s/%dp.cmfv", prefix, rung.Height),
-			width, codecString(rung), rung.MaxrateBPS, reps[rung.Height])
+			width, codecString(rung), rung.MaxrateBPS, reps[rung.Height], bytes)
 		return err
 	})
 }
@@ -205,7 +206,8 @@ func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID, dir 
 	w.emit(ctx, TranscodeArgs{AssetID: assetID, TenantID: tenantID}, "rendition.ready",
 		map[string]any{"asset_id": assetID, "renditions": len(variants)})
 
-	// Everything the profile asked for now exists, so the asset is fully ready.
+	// Everything the profile asked for now exists, so the asset is fully ready --
+	// and so is every duplicate, which plays these same renditions.
 	return w.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx,
 			`update assets set state = case
@@ -213,7 +215,7 @@ func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID, dir 
 			                   where asset_id = $1 and state <> 'ready')
 			     then 'partially_ready'::asset_state else 'ready'::asset_state end,
 			    updated_at = now()
-			  where id = $1 and state <> 'failed'`, assetID)
+			  where (id = $1 or deduplicated_from = $1) and state <> 'failed'`, assetID)
 		return err
 	})
 }
