@@ -37,7 +37,7 @@ async function load(): Promise<void> {
   log(exp ? `signature expires ${new Date(exp).toISOString()}` : 'URL carries no exp — unsigned');
   log(`beacon would POST to ${new URL(beaconURL(src, DEFAULT_ORIGIN)).pathname}`);
   log(`clear key licence would POST to ${new URL(siblingURL(src, 'key'), DEFAULT_ORIGIN).pathname}${new URL(src, DEFAULT_ORIGIN).search}`);
-  log(viewerLabel(src) ? `viewer label ${viewerLabel(src)} — watermark on` : 'no vl in the URL — no watermark');
+  log(viewerLabel(src) ? `viewer label ${viewerLabel(src)} — watermark on` : 'no wm in the URL — no watermark');
 
   player = new AlchemistPlayerUI(host, {
     src,

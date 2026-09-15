@@ -118,7 +118,7 @@ protected-video one — *"This browser cannot play protected video. Open the sam
 in Chrome, Firefox or Edge on a computer."* — in Bangla and English. Chrome, Firefox
 and Edge all play it, on desktop and Android.
 
-**The viewer watermark.** If the signed URL carries a `vl` parameter — a short display
+**The viewer watermark.** If the signed URL carries a `wm` parameter — a short display
 label the customer chose, typically a student id or a masked phone number — the player
 draws it over the picture and moves it to a new position every seven seconds with a
 CSS transform. It is inside the signature, so it cannot be stripped or swapped without
@@ -194,7 +194,7 @@ player.captionTracks();
 player.estimatedMbPerHour(); // what Data Saver promises right now
 player.getStats();           // the QoE beacon body, before it is sent
 player.thumbnailTiles;
-player.viewerLabel;          // the signed `vl` label, or null
+player.viewerLabel;          // the signed `wm` label, or null
 ```
 
 `AlchemistPlayer` is an `EventTarget`; every event above is a `CustomEvent` with the
