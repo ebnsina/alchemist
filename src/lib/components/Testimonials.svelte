@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Mortarboard01Icon, PlaySquareIcon, StarIcon } from '@hugeicons/core-free-icons';
-	import { reveal } from '$lib/utils/reveal';
 
 	// The reference put three invented people with names, roles, avatars and star
 	// ratings here. Same grid, same cards, same reveal — but they describe the work
@@ -25,7 +24,7 @@
 	];
 </script>
 
-<section class="screen px-4 sm:px-6" use:reveal>
+<section class="screen px-4 sm:px-6">
 	<div class="mx-auto max-w-2xl text-center">
 		<p class="label text-ink">
 			Who it's for

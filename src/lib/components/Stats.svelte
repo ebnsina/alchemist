@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { reveal } from '$lib/utils/reveal';
 
 	// The reference used customer counts, video counts and a star rating here. These
 	// are facts about the product instead, which is both true and more persuasive.
@@ -11,7 +10,7 @@
 	];
 </script>
 
-<section class="screen px-4 sm:px-6" use:reveal>
+<section class="screen px-4 sm:px-6">
 	<dl class="grid grid-cols-2 gap-x-6 gap-y-10 text-center md:grid-cols-4">
 		{#each stats as s, i (s.value)}
 			<div>

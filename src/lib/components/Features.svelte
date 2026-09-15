@@ -8,7 +8,6 @@
 		Database01Icon,
 		GlobalIcon
 	} from '@hugeicons/core-free-icons';
-	import { reveal } from '$lib/utils/reveal';
 
 	const features = [
 		{
@@ -44,7 +43,7 @@
 	];
 </script>
 
-<section id="features" class="screen px-4 sm:px-6" use:reveal>
+<section id="features" class="screen px-4 sm:px-6">
 	<div class="mx-auto max-w-2xl text-center">
 		<p class="label text-ink">
 			What you get

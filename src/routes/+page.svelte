@@ -9,19 +9,31 @@
 	import Testimonials from '$lib/components/Testimonials.svelte';
 	import FAQ from '$lib/components/FAQ.svelte';
 	import CTA from '$lib/components/CTA.svelte';
+	import { veil } from '$lib/utils/veil';
+
+	let stack: HTMLElement | null = $state(null);
+
+	// The stack finds its own sections. They are components, and a second list of
+	// them here would be one more thing to keep in step with this file.
+	$effect(() => {
+		if (!stack) return;
+		return veil(stack);
+	});
 </script>
 
 <Seo
-	title="Alchemist — big videos in, small videos out"
-	description="Drop in a video and get back one that plays anywhere, loads fast, and is up to 95% smaller. 100 free videos a month, no card needed, and playback behind links that expire."
+	title="Alchemist — video infrastructure for your product"
+	description="An API for upload, encoding and delivery. Your users send video, we make every size their viewers need, and you hand out signed links. Usage pricing, isolated accounts, no seats."
 />
 
-<Hero />
-<LogoTicker />
-<Stats />
-<Features />
-<HowItWorks />
-<Pricing />
-<Testimonials />
-<FAQ />
-<CTA />
+<div class="stack" bind:this={stack}>
+	<Hero />
+	<LogoTicker />
+	<Stats />
+	<Features />
+	<HowItWorks />
+	<Pricing />
+	<Testimonials />
+	<FAQ />
+	<CTA />
+</div>

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Tick02Icon } from '@hugeicons/core-free-icons';
-	import { reveal } from '$lib/utils/reveal';
 	import Money from '$lib/Money.svelte';
 
 	// Three meters, not three tiers. A platform that charges per seat punishes its
@@ -41,7 +40,7 @@
 	];
 </script>
 
-<section id="pricing" class="screen px-4 sm:px-6" use:reveal>
+<section id="pricing" class="screen px-4 sm:px-6">
 	<div class="mx-auto max-w-2xl text-center">
 		<p class="label text-ink">Pricing</p>
 		<h2 class="mt-3 text-3xl leading-[1.32] font-semibold tracking-tight sm:text-4xl">

@@ -3,18 +3,6 @@
 	import Logo from './Logo.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
 
-	let stuck = $state(false);
-
-	// Scroll position, not an observer. The sentinel this replaced sat at top:0
-	// inside the fixed header, so a negative rootMargin put it outside the
-	// observer's box on the first frame and stuck latched true before the page had
-	// moved — which painted the scrolled backdrop over the hero.
-	$effect(() => {
-		const read = () => (stuck = window.scrollY > 8);
-		read();
-		window.addEventListener('scroll', read, { passive: true });
-		return () => window.removeEventListener('scroll', read);
-	});
 	const links = [
 		{ href: '/#features', en: 'Features' },
 		{ href: '/#how', en: 'How it works' },
@@ -22,47 +10,117 @@
 		{ href: '/#faq', en: 'Questions' },
 		{ href: '/contact/', en: 'Talk to us' }
 	];
-	const lang = $derived(page.url.pathname);
+
+	const here = $derived(page.url.pathname + page.url.hash);
 </script>
 
-<!-- The nav never draws an edge. Over the hero it is fully transparent so the
-     shader runs behind it; once scrolled it fades in a background that dissolves
-     downward rather than ending on a line, so there is no seam in either state. -->
-<header
-	class="nav-shell fixed inset-x-0 top-0 z-50 transition-opacity duration-200"
-	data-stuck={stuck}
->
-	<!-- relative, so the nav content paints above the absolutely-positioned
-	     backdrop. Without it the backdrop-filter treats the links and buttons as
-	     part of what it blurs. -->
-	<div
-		class="relative z-10 mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:px-6"
-	>
-		<a href="/" class="flex flex-none items-center gap-2 text-lg font-semibold tracking-tight">
-			<Logo size={26} />
-			Alchemist
-		</a>
+<!-- A dock rather than a header: the page is one screen, so a bar across the top
+     spends the most valuable strip on navigation nobody is using yet. At the bottom
+     it is in reach and out of the way, and it needs no scrolled state because it
+     never sits over the content it would otherwise have to hide behind. -->
+<nav class="dock" aria-label="Main">
+	<a href="/" class="dock__mark" aria-label="Alchemist home">
+		<Logo size={22} />
+	</a>
 
-		<nav aria-label="Sections" class="order-3 w-full sm:order-none sm:w-auto sm:justify-self-center">
-			<ul class="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-sunk pt-2 sm:border-0 sm:pt-0">
-				{#each links as l (l.href)}
-					<li>
-						<a
-							href={l.href}
-							class="block py-1 text-sm text-dim transition-colors hover:text-ink"
-							>{l.en}</a
-						>
-					</li>
-				{/each}
-			</ul>
-		</nav>
+	<span class="dock__rule" aria-hidden="true"></span>
 
-		<div class="ml-auto flex flex-none items-center gap-2 sm:ml-0 sm:justify-self-end">
-			<ThemeToggle />
-			<a href="/login/" class="hidden text-sm text-dim transition-colors hover:text-ink sm:inline-block">Sign in</a>
-			<a href="/signup/" class="btn-solid hidden text-sm sm:inline-flex">
-				Start free
-			</a>
-		</div>
-	</div>
-</header>
+	<ul class="dock__links">
+		{#each links as l (l.href)}
+			<li>
+				<a href={l.href} class="dock__link" aria-current={here === l.href ? 'page' : undefined}>
+					{l.en}
+				</a>
+			</li>
+		{/each}
+	</ul>
+
+	<span class="dock__rule" aria-hidden="true"></span>
+
+	<ThemeToggle />
+	<a href="/signup/" class="btn-solid btn-sm">Get started</a>
+</nav>
+
+<style>
+	.dock {
+		position: fixed;
+		z-index: 50;
+		bottom: 16px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		max-width: calc(100vw - 24px);
+		padding: 8px 10px;
+		background: var(--color-card);
+		border: 1px solid var(--color-sunk);
+		border-radius: 18px;
+		corner-shape: squircle;
+		box-shadow: var(--shadow-bulk);
+	}
+
+	.dock__mark {
+		display: grid;
+		place-items: center;
+		height: 32px;
+		width: 32px;
+		border-radius: 10px;
+		corner-shape: squircle;
+	}
+	.dock__mark:hover {
+		background: var(--color-sunk);
+	}
+
+	.dock__rule {
+		height: 20px;
+		width: 1px;
+		flex: none;
+		background: var(--color-sunk);
+	}
+
+	.dock__links {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		min-width: 0;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+	.dock__links::-webkit-scrollbar {
+		display: none;
+	}
+
+	.dock__link {
+		display: block;
+		padding: 6px 10px;
+		border-radius: 10px;
+		corner-shape: squircle;
+		font-size: 13px;
+		font-weight: 700;
+		white-space: nowrap;
+		color: var(--color-dim);
+		transition:
+			background 120ms ease,
+			color 120ms ease;
+	}
+	.dock__link:hover,
+	.dock__link[aria-current='page'] {
+		background: var(--color-sunk);
+		color: var(--color-ink);
+	}
+
+	/* On a phone the dock is the whole width and the links scroll inside it. */
+	@media (max-width: 640px) {
+		.dock {
+			left: 12px;
+			right: 12px;
+			transform: none;
+			max-width: none;
+		}
+		.dock__mark,
+		.dock__rule {
+			display: none;
+		}
+	}
+</style>

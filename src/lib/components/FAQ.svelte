@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { ArrowDown01Icon } from '@hugeicons/core-free-icons';
-	import { reveal } from '$lib/utils/reveal';
 
 	const qs = [
 		{
@@ -31,7 +30,7 @@
 	];
 </script>
 
-<section id="faq" class="screen px-4 sm:px-6" use:reveal>
+<section id="faq" class="screen px-4 sm:px-6">
 	<div class="text-center">
 		<p class="label text-ink">
 			Questions

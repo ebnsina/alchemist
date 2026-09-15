@@ -17,7 +17,16 @@ const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.
 const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 
 const browser = await chromium.launch();
-const p = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+// Reduced motion, deliberately. The landing page stacks its sections under a pinned
+// veil, so eight of the nine are clipped away at any moment and sampling them reads
+// the page ground rather than their own surface. Reduced motion is the same markup
+// and the same colours as an ordinary column, which is what this measures.
+const context = await browser.newContext({
+	viewport: { width: W, height: H },
+	deviceScaleFactor: 1,
+	reducedMotion: 'reduce'
+});
+const p = await context.newPage();
 let fails = 0, checked = 0;
 
 // Both themes. A palette that only passes in one of them is half a system, and the

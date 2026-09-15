@@ -26,7 +26,7 @@
 	--color-done: #1b1b1e;
 	--color-red: #e08a8a;
 
-	--font-sans: 'Mona Sans', system-ui, -apple-system, sans-serif;
+	--font-sans: 'Geist', system-ui, -apple-system, sans-serif;
 	--font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
 	--radius-sk: 6px;
@@ -187,6 +187,7 @@
 	padding: 11px 20px;
 	border: 0;
 	border-radius: var(--radius-md);
+	corner-shape: squircle;
 	background: var(--color-sunk);
 	color: var(--color-ink);
 	font-family: var(--font-sans);
@@ -220,6 +221,7 @@
 	padding: 8px 14px;
 	font-size: 12px;
 	border-radius: var(--radius-sm);
+	corner-shape: squircle;
 }
 
 /* Red is destruction, never emphasis. */
@@ -232,6 +234,7 @@
 @utility card {
 	background: var(--color-card);
 	border-radius: var(--radius-md);
+	corner-shape: squircle;
 	padding: 20px;
 }
 
@@ -241,6 +244,7 @@
 	gap: 12px;
 	padding: 8px 12px;
 	border-radius: var(--radius-row);
+	corner-shape: squircle;
 	transition: background 100ms ease;
 	&:hover {
 		background: var(--color-sunk);
@@ -309,6 +313,7 @@
 	color: var(--color-ink);
 	border: 0;
 	border-radius: var(--radius-md);
+	corner-shape: squircle;
 	font-family: var(--font-sans);
 	font-size: 14px;
 	font-weight: 600;
@@ -339,6 +344,7 @@
 		gap: 10px;
 		padding: 8px 12px;
 		border-radius: var(--radius-row);
+		corner-shape: squircle;
 		font-size: 14px;
 		font-weight: 700;
 		color: var(--color-dim);
@@ -362,6 +368,7 @@
 		height: 32px;
 		width: 32px;
 		border-radius: var(--radius-sm);
+		corner-shape: squircle;
 		color: var(--color-faint);
 		transition:
 			background 100ms ease,
@@ -388,6 +395,7 @@
 .sk {
 	background: var(--color-sunk);
 	border-radius: var(--radius-sk);
+	corner-shape: squircle;
 	position: relative;
 	overflow: hidden;
 }
@@ -467,47 +475,35 @@ details[open] > summary .chevron {
 	}
 }
 
-/* The header paints its own ground. Without this it is transparent and whatever
-   scrolls under it decides whether the links are readable. */
-.nav-shell {
-	background: var(--color-bg);
-	border-bottom: 1px solid transparent;
-	transition: border-color 160ms ease;
-}
-.nav-shell[data-stuck='true'] {
-	border-bottom-color: var(--color-sunk);
-}
-
-/* A landing section is a screen. Snapping is CSS, not script: the browser already
-   knows how to page a list of full-height sections, and it keeps the keyboard, the
-   scrollbar and the trackpad behaving the way the reader expects. GSAP animates
-   what is inside a screen; it does not move the page.
-
-   Proximity rather than mandatory: a section taller than the viewport — the feature
-   grid on a phone — must still be scrollable through, and mandatory fights that. */
-@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-	html {
-		scroll-snap-type: y proximity;
-	}
-}
-
+/* The landing page is one screen. The stack pins while each section wipes in from
+   the right — see src/lib/utils/veil.ts — and without that script the same markup is
+   an ordinary column of full-height sections, which is what a phone and anyone who
+   asked for less motion gets. */
 .screen {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
-	align-items: stretch;
+	align-items: center;
 	min-height: 100svh;
+	width: 100%;
+	padding: 64px 0 104px;
+	background: var(--color-bg);
+	overflow: hidden;
+}
+
+.screen > * {
 	width: 100%;
 	max-width: 72rem;
 	margin-inline: auto;
-	padding-block: 64px;
-	scroll-snap-align: start;
-	scroll-margin-top: 0;
+	padding-inline: 16px;
 }
 
-/* The two that span the full width own their own inner measure. */
-.screen > * {
-	width: 100%;
+/* Only while the veil runs: the sections are lifted out of flow and stacked, so the
+   container has to hold the screen open on its own. */
+.stack--on {
+	position: relative;
+	height: 100svh;
+	overflow: hidden;
 }
 
 .vh {

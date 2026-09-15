@@ -47,9 +47,9 @@ The filled button inverts: `solid` background, `on-solid` text, 17:1 either way.
 
 ## Typography
 
-Mona Sans for everything human, Geist Mono for everything counted. The base weight
-is 600; headings and values are 800. The console this is copied from uses Plus
-Jakarta and JetBrains; the families are ours and the weights are its.
+Geist for everything human, Geist Mono for everything counted — one family in two
+voices, drawn for product interfaces, which is what this is. The base weight is 600;
+headings and values are 800.
 
 | Role | Size / weight |
 |---|---|
@@ -69,7 +69,9 @@ in mono.
 ## Shapes and spacing
 
 Radii: `6px` skeletons and inline chips, `9px` rows, `10px` small buttons and bulk
-bars, `12px` buttons, `20px` dialogs, `99px` chips, dots and progress bars.
+bars, `12px` buttons, `18px` the dock, `20px` dialogs, `99px` chips, dots and
+progress bars. Every drawn corner is `corner-shape: squircle`, which degrades to a
+plain round where it is not supported.
 
 Rows are 8px/12px padded with a 12px gap. Rails are 22px/20px. Sections separate
 with a 1px `sunk` rule, never with a shadow.
@@ -115,20 +117,33 @@ Every surface that can load, be empty, or fail ships all three states.
 
 ## Motion
 
-The landing page is a stack of screens: every section is `min-height: 100svh`,
-centred, and a scroll-snap stop. Snapping is CSS — the browser already knows how to
-page a list of full-height sections, and doing it in script costs the keyboard, the
-scrollbar and the trackpad their normal behaviour. It is `proximity` rather than
-`mandatory`, because a section taller than the viewport must still scroll through,
-and it is off below 1024px and under reduced motion.
+The landing page never scrolls. It is one screen, and each section wipes in from the
+right over the one before it — the way a Barba transition brings a page in.
 
-GSAP animates what is inside a screen, not the page itself. One ScrollTrigger per
-section staggers its children in as the section arrives — one trigger, not one per
-element, because a landing page has dozens of children and a trigger each is dozens
-of listeners doing the same arithmetic.
+GSAP pins the stack for as long as there are sections left, so the wheel spends its
+distance on the reveal rather than on moving the page. Scrub ties the veil to the
+scroll position, so dragging back closes it again, and snap settles on whole
+sections when the gesture stops — the page is never left half-veiled.
 
-Under reduced motion there is no animation at all, not a gentler one: the resting
-state is the final state, so doing nothing leaves every section correct.
+The mechanism is `clip-path`, not `transform`. The incoming section does not move,
+it is uncovered by an edge travelling right to left; sliding it would drag type
+across type, which is what makes stacked pages feel cheap.
+
+Below 1024px and under reduced motion none of this runs, and the same markup is an
+ordinary column of full-height sections. The script only adds behaviour — it never
+holds the content.
+
+Anchors are handled by the same module: a section that never moves cannot be
+scrolled to, so a nav link scrolls to the point in the pin where that section is
+uncovered.
+
+## Navigation
+
+There is no header. The page is one screen, and a bar across the top spends the most
+valuable strip on navigation nobody is using yet. Instead a dock sits fixed at the
+bottom centre: the mark, the sections, the theme, and one filled `Get started`.
+Signing in lives in the footer — it is for people who already have an account, and
+it does not need a permanent slot next to the thing that gets new ones.
 
 ## Where it is used
 
