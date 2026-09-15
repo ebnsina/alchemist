@@ -64,6 +64,7 @@
 		encoding: { label: 'Making the sizes', means: 'Building each size in parallel chunks. Small ones finish first.' },
 		packaging: { label: 'Almost there', means: 'Wrapping the sizes up so any player can read them.' },
 		partially_ready: { label: 'Watchable now', means: 'Enough sizes are done to play it. The rest are still coming.' },
+		live_armed: { label: 'Waiting for the encoder', means: 'A broadcast is booked on this video but nothing has been sent yet. It goes on air the moment your encoder or camera connects.' },
 		live: { label: 'On air', means: 'This is a broadcast going out right now. It plays below as it happens.' },
 		live_ended: { label: 'Broadcast finished', means: 'The live broadcast has ended. What went out is kept here to watch back.' },
 		ready: { label: 'Ready to watch', means: 'Every size is made. Nothing left to wait for.' },

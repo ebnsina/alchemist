@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+- **An armed stream no longer reads as On air.** A stream waiting for its encoder sat
+  in the video list saying On air, over a broadcast nothing had been sent to yet. The
+  new `live_armed` state gets its own chip and its own sentence, so On air means a
+  picture is actually going out.
+
 ### Changed
 - **Served by `adapter-node` instead of `adapter-static`.** A provider key cannot
   live in page script and a static build has no server to keep one in. Everything
