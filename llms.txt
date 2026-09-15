@@ -1,7 +1,7 @@
 # Alchemist
 
 > Multi-tenant video transcoding and delivery. Upload or import a video, get an
-> adaptive-bitrate encrypted stream and a signed playback URL. Self-hosted: Go,
+> adaptive-bitrate stream and a signed playback URL. Self-hosted: Go,
 > PostgreSQL, River, SeaweedFS, ffmpeg, shaka-packager. Built Bangladesh-first.
 
 Consumers integrate through the HTTP API with an API key. There is no shared
@@ -20,8 +20,11 @@ Things that will otherwise surprise you:
 - **Errors are `{"error":{"code","message"}}`.** Branch on `code`, which is stable.
   `message` is written for a human and is translated when the request sends
   `Accept-Language: bn`.
-- **Media is encrypted** with SAMPLE-AES (cbcs). Players fetch the key from the URL
-  in the manifest using the same signature. shaka-player and hls.js handle this.
+- **Media is unencrypted by default**, and the signed expiring URL is the access
+  control. Optional cbcs encryption can be turned on per tenant
+  (`PUT /v1/playback-settings`), but it is not DRM without a licence server: the
+  manifest declares `KEYFORMAT="identity"` and the key is served from the same signed
+  URL as the segments. With it on, only Safari plays — Chrome and Firefox need EME.
 - **HLS is the primary output.** DASH is produced too, but only HLS is verified
   end to end.
 - **Uploads never pass through the API.** `POST /v1/uploads` returns a presigned
@@ -46,6 +49,8 @@ POST /v1/auth/signup           -> tenant + owner + first api_key, in one transac
 POST /v1/auth/login            -> session cookie     (browser, not machine)
 POST /v1/auth/logout           -> revokes the session
 GET  /v1/auth/session          -> who the cookie belongs to
+GET  /v1/auth/invite?token=    -> who a pending invite is for (no account yet)
+POST /v1/auth/invite           -> redeem it: account inside an existing tenant + session
 
 POST /v1/uploads               -> presigned upload target + asset_id
 PUT  <upload_url>              -> the bytes, direct to storage
@@ -63,6 +68,20 @@ POST /v1/contact               -> an enquiry from the public site (no account)
 DELETE /v1/keys/{id}           -> revoke
 POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready
 GET  /v1/usage                 -> billable aggregates
+GET  /v1/branding              -> account name and logo URL
+GET  /v1/playback-settings     -> whether playback encryption is on
+
+Session only (an API key gets 403 session_required):
+GET    /v1/members             -> teammates and pending invites
+POST   /v1/members/invites     -> invite someone; token returned once
+DELETE /v1/members/invites/{id}-> withdraw a pending invite
+PATCH  /v1/members/{id}        -> change a role
+DELETE /v1/members/{id}        -> remove someone (their sessions cascade)
+PUT    /v1/playback-settings   -> turn playback encryption on or off
+PUT    /v1/branding/logo       -> raw image bytes, <=1 MB, png/jpeg/webp
+DELETE /v1/branding/logo       -> remove it
+
+GET  /brand/{tenant}/logo      -> the logo, unauthenticated (viewers have no account)
 ```
 
 The auth endpoints exist for the sign-up page, not for integrations: a session is a
@@ -71,6 +90,17 @@ them. `/v1` accepts either credential — an API key, or that session cookie whe
 request comes from a configured browser origin, which is what the customer dashboard
 uses so a key never has to live in page script. They are mounted only when `ALCHEMIST_WEB_ORIGINS` names a browser origin, so
 a deployment that has no web front end has no account surface at all.
+
+Account administration is session-only by design. An API key is something a server
+holds; letting it invite a person or grant a role would turn a leaked key into a
+permanent way back into the account. Signup always creates a *new* tenant — redeeming
+an invite is the only way a second user joins an existing one. Roles are `owner`,
+`admin` and `member`; only an owner can grant ownership, and the last owner can be
+neither demoted nor removed.
+
+Invites last seven days and the token is shown once, at creation. There is no mail
+sender in this repo yet, so the dashboard displays the link for whoever invited them
+to pass on.
 
 Webhook deliveries are signed: `X-Alchemist-Signature: sha256=<hmac of the raw body>`
 using the secret returned when the endpoint was registered. Verify it.

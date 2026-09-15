@@ -326,6 +326,459 @@ paths:
         "201": { description: Connected; first scan queued }
         "400": { description: invalid_url or invalid_request }
 
+  /v1/auth/invite:
+    get:
+      summary: Who an invite is for
+      description: |
+        Unauthenticated — the point is to show the address and organisation before
+        there is an account. An unknown token and an expired one give the same 404,
+        so this cannot be used to probe which addresses were invited where.
+      parameters:
+        - { name: token, in: query, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Email, role and organisation name }
+        "404": { description: invite_not_found }
+    post:
+      summary: Redeem an invite and sign in
+      description: |
+        Creates the user inside the inviting tenant and starts a session. This is the
+        only way a second user is ever created; signup always makes a new tenant.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 10 }
+      responses:
+        "201": { description: Account created and signed in }
+        "400": { description: invalid_request or weak_password }
+        "404": { description: invite_not_found }
+        "409": { description: email_taken }
+
+  /v1/members:
+    get:
+      summary: List teammates and pending invites
+      description: |
+        Session only. An API key is a machine credential and gets 403 `session_required`
+        on every endpoint under `/v1/members`.
+      responses:
+        "200": { description: Members and pending invites }
+        "403": { description: session_required }
+
+  /v1/members/invites:
+    post:
+      summary: Invite someone to the account
+      description: |
+        The invite token is returned once, here, and never again — there is no mail
+        sender in this repo yet, so the dashboard shows the link to pass on. Owner or
+        admin only; only an owner can invite another owner. Invites last seven days,
+        and a second invite to the same address replaces the first.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+                role: { type: string, enum: [owner, admin, member], default: member }
+      responses:
+        "201": { description: Invited; token shown once }
+        "400": { description: invalid_email or invalid_role }
+        "403": { description: session_required or not_permitted }
+        "409": { description: already_a_member }
+
+  /v1/members/invites/{id}:
+    delete:
+      summary: Withdraw a pending invite
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Withdrawn }
+        "403": { description: session_required or not_permitted }
+        "404": { description: not_found }
+
+  /v1/members/{id}:
+    patch:
+      summary: Change a teammate's role
+      description: |
+        Only an owner can grant ownership, and the last owner cannot be demoted —
+        an account with no owner is one nothing in the API can repair.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { type: string, enum: [owner, admin, member] }
+      responses:
+        "200": { description: Role changed }
+        "400": { description: invalid_role }
+        "403": { description: session_required or not_permitted }
+        "404": { description: not_found }
+        "409": { description: last_owner }
+    delete:
+      summary: Remove a teammate
+      description: |
+        Sessions cascade with the user, so this signs them out everywhere. You cannot
+        remove yourself, and you cannot remove the last owner.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Removed }
+        "403": { description: session_required or not_permitted }
+        "404": { description: not_found }
+        "409": { description: last_owner or cannot_remove_self }
+
+  /v1/migration-providers:
+    get:
+      summary: Which video hosts we can migrate a library from
+      description: |
+        Each entry names the service, what to ask for (`secret.kind` is `key` for a
+        credential or `text` for a pasted list), and any non-secret settings it needs.
+
+        Hosts that expose no downloadable original through their API are absent
+        rather than listed: a platform built around locked-down delivery hands out no
+        source file by design. The `csv` provider is the way across from those — you
+        supply the links yourself and we fetch them through the same guarded path as
+        any other URL import.
+      responses:
+        "200": { description: Providers and the settings each needs }
+
+  /v1/migrations:
+    get:
+      summary: Migrations you have started, and how far each has got
+      description: |
+        `total` is how many videos we found on the far side, `handled` how many of
+        them we have finished with, so progress reads as a proportion rather than a
+        bare number. `preview_done` says the list is complete and waiting on you.
+      responses:
+        "200": { description: Sources with total, handled, imported and skipped counts }
+    post:
+      summary: Migrate a library in from another video host
+      description: |
+        Session only — handing over another service's API key is account
+        administration, not something a machine credential should be able to do.
+
+        The key is encrypted before storage, bound to this one migration, and never
+        returned. Nothing is imported yet: the migration starts in `previewing`,
+        where we only page through the far side's library and write down what is
+        there. Call `/confirm` once you have read the list and importing begins.
+
+        Re-running is safe: videos are tracked by their remote id, so nothing is
+        imported twice.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, secret]
+              properties:
+                provider: { type: string, enum: [vimeo, bunny, csv] }
+                secret:
+                  type: string
+                  description: |
+                    The provider's API key, or for `csv` the list itself — one link
+                    per line, or a CSV with a url column and an optional title.
+                config:
+                  type: object
+                  description: Non-secret settings the provider needs, such as a Bunny library id.
+                  additionalProperties: { type: string }
+      responses:
+        "201": { description: Created in previewing; nothing is imported yet }
+        "400": { description: unknown_provider or invalid_request }
+        "403": { description: session_required }
+
+  /v1/migrations/{id}:
+    delete:
+      summary: Forget a migration
+      description: |
+        Stops it and removes the source and its stored key. Videos already brought
+        across are your assets now and are kept; nothing on the far side is touched.
+        Session only.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Removed }
+        "403": { description: session_required }
+        "404": { description: not_found }
+
+  /v1/migrations/{id}/confirm:
+    post:
+      summary: Approve the preview and start importing
+      description: |
+        Until this is called a migration has imported nothing — it has only listed
+        what is there. This moves it to `scanning`, which is when assets are created
+        and encoding is queued. Only valid once the preview has finished listing.
+        Session only.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Now scanning }
+        "403": { description: session_required }
+        "404": { description: not_found }
+        "409": { description: invalid_state }
+
+  /v1/migrations/{id}/pause:
+    post:
+      summary: Stop taking new pages
+      description: |
+        The migration stops after the page it is on. Nothing already imported is
+        undone. Session only.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Now paused }
+        "403": { description: session_required }
+        "404": { description: not_found }
+        "409": { description: invalid_state }
+
+  /v1/migrations/{id}/resume:
+    post:
+      summary: Carry on from where it stopped
+      description: |
+        Picks up at the stored cursor. Videos already across are not fetched again —
+        they are matched on their remote id, and on their source URL account-wide.
+        Session only.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Scanning again }
+        "403": { description: session_required }
+        "404": { description: not_found }
+        "409": { description: invalid_state }
+
+  /v1/migrations/{id}/items:
+    get:
+      summary: Which videos came across, and which did not
+      description: |
+        A video the far side will not hand over is recorded as skipped with a reason
+        rather than failing the whole migration, so a partial result is explainable.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Up to 500 items, newest first }
+
+  /v1/edits:
+    get:
+      summary: Edits you have made, newest first
+      parameters:
+        - { name: asset_id, in: query, schema: { type: string, format: uuid },
+            description: Only edits of this video. }
+      responses:
+        "200": { description: Up to 200 edits with their state and what they did }
+    post:
+      summary: Cut, crop, reframe or resize a video
+      description: |
+        An edit reads one video and produces a **new** one. The source is never
+        changed — somebody may already have handed out a link to it — and the result
+        goes through the ordinary pipeline, so it gets its own ladder and its own
+        playback URLs.
+
+        Editing renders from the mezzanine, not the original upload, so it keeps
+        working after the original has been deleted.
+
+        Coordinates are fractions of the source, 0 to 1, not pixels: a box drawn on a
+        preview at whatever size a browser happened to render it means nothing here.
+        `end_sec` of 0 means "to the end", `aspect` reframes by covering and centre
+        cropping (never letterboxing), and `width` sets the output size with the
+        height following the shape.
+
+        The video must have finished processing — there is nothing to cut before a
+        mezzanine exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [asset_id]
+              properties:
+                asset_id: { type: string, format: uuid }
+                ops:
+                  type: object
+                  properties:
+                    start_sec: { type: number, minimum: 0 }
+                    end_sec: { type: number, minimum: 0, description: 0 means to the end }
+                    crop_x: { type: number, minimum: 0, maximum: 1 }
+                    crop_y: { type: number, minimum: 0, maximum: 1 }
+                    crop_w: { type: number, minimum: 0, maximum: 1 }
+                    crop_h: { type: number, minimum: 0, maximum: 1 }
+                    aspect: { type: string, example: "9:16" }
+                    width: { type: integer, maximum: 7680 }
+                    mute: { type: boolean }
+                    overlays:
+                      type: array
+                      maxItems: 8
+                      description: |
+                        Text and images drawn on top, in order. Text is rendered by us
+                        in the product's own typeface rather than by ffmpeg, so it does
+                        not depend on how ffmpeg was built.
+
+                        `source` names WHAT to put on, never where it is: `logo` means
+                        this account's own logo. A storage key is refused — it would be
+                        a way to name another account's object and have us fetch it.
+
+                        `scale` and `margin` are fractions of the frame, so an overlay
+                        keeps its proportions when the video is reshaped.
+                      items:
+                        type: object
+                        required: [kind]
+                        properties:
+                          kind: { type: string, enum: [text, image] }
+                          text: { type: string }
+                          colour: { type: string, example: "#ffffff" }
+                          shadow: { type: boolean }
+                          source: { type: string, enum: [logo] }
+                          at:
+                            type: string
+                            enum: [top-left, top-right, bottom-left, bottom-right, centre, free]
+                            description: |
+                              `free` reads `x`/`y` instead of a corner. A corner keeps
+                              meaning the corner when the frame is reshaped from wide
+                              to upright; a dragged coordinate does not.
+                          x: { type: number, minimum: 0, maximum: 1, description: Top-left of the overlay, when at is free }
+                          y: { type: number, minimum: 0, maximum: 1, description: Top-left of the overlay, when at is free }
+                          scale: { type: number, minimum: 0, maximum: 1 }
+                          margin: { type: number, minimum: 0, maximum: 0.5 }
+                          opacity: { type: number, minimum: 0, maximum: 1 }
+                          start_sec: { type: number }
+                          end_sec: { type: number }
+      responses:
+        "201": { description: Queued; poll the edit for its output asset }
+        "400": { description: invalid_edit or invalid_request }
+        "404": { description: asset_not_found }
+        "409": { description: not_ready — the video is still being processed }
+
+  /v1/edits/{id}:
+    delete:
+      summary: Forget an edit
+      description: |
+        Removes the record only. The video it produced is an asset like any other and
+        is deleted through the asset, not by discarding the edit that made it.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Forgotten }
+        "404": { description: not_found }
+
+  /v1/ladder-profiles:
+    get:
+      summary: The encoding presets, and which one this account is on
+      description: |
+        A preset is a ladder: which heights we make, at what bitrates, and which of
+        them are built lazily on first play rather than on ingest.
+      responses:
+        "200": { description: Presets, each flagged whether it is the current one }
+
+  /v1/ladder-profile:
+    put:
+      summary: Choose the preset new uploads are built against
+      description: |
+        Existing assets keep the profile they were encoded with. Re-encoding a whole
+        library because a setting moved would be a surprise that costs real money.
+        Session only, owner or admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [profile]
+              properties:
+                profile: { type: string }
+      responses:
+        "200": { description: Changed }
+        "400": { description: unknown_profile }
+        "403": { description: session_required or not_permitted }
+
+  /v1/playback-settings:
+    get:
+      summary: How your videos are delivered
+      responses:
+        "200": { description: Whether playback encryption is on }
+    put:
+      summary: Turn playback encryption on or off
+      description: |
+        **Off by default, deliberately.** Without a licence server this is not DRM:
+        the manifest declares `KEYFORMAT="identity"` and the key is served from the
+        same signed URL as the segments, so anyone able to fetch a segment can fetch
+        the key. It adds nothing the expiring signed URL does not already give, and
+        it makes playback impossible in every browser but Safari — Chrome and Firefox
+        need EME, which needs a licence server.
+
+        Access control is the signed expiring URL. Turn this on only if you have a
+        reason to accept Safari-only playback.
+
+        Videos already published keep whatever they were made with: re-packaging a
+        library on a settings change would rewrite every object and evict the lot
+        from every edge cache.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [encrypt_playback]
+              properties:
+                encrypt_playback: { type: boolean }
+      responses:
+        "200": { description: Changed; applies to the next video processed }
+        "403": { description: session_required or not_permitted }
+
+  /v1/branding:
+    get:
+      summary: The account's name and logo
+      responses:
+        "200": { description: Name, logo URL and when the logo last changed }
+
+  /v1/branding/logo:
+    put:
+      summary: Replace the account logo
+      description: |
+        Raw image bytes, at most 1 MB, `Content-Type` one of image/png, image/jpeg or
+        image/webp. The magic bytes must match the declared type. SVG is refused: it
+        is a document that can carry script, and a logo is not worth that. Session
+        only, owner or admin.
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        "200": { description: Stored; returns the public URL }
+        "400": { description: invalid_image }
+        "403": { description: session_required or not_permitted }
+        "413": { description: image_too_large }
+    delete:
+      summary: Remove the account logo
+      responses:
+        "204": { description: Removed }
+        "403": { description: session_required or not_permitted }
+
+  /brand/{tenant}/logo:
+    get:
+      summary: The account logo, unauthenticated
+      description: |
+        Public on purpose: a viewer with no account and no key still has to see it.
+        Nothing else under the tenant prefix is reachable through this route.
+      parameters:
+        - { name: tenant, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: The image }
+        "404": { description: No logo set }
+
   /v1/usage:
     get:
       summary: Billable usage for a period

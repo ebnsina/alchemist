@@ -57,7 +57,12 @@ func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *del
 
 type ctxKey string
 
-const tenantKey ctxKey = "tenant_id"
+const (
+	tenantKey ctxKey = "tenant_id"
+	// Set only when the caller authenticated with a session cookie. An API key is a
+	// machine credential: it must never be able to invite a person or change a role.
+	userKey ctxKey = "user_id"
+)
 
 func (s *Server) Routes() http.Handler {
 	r := chi.NewRouter()
@@ -106,6 +111,10 @@ func (s *Server) Routes() http.Handler {
 			})
 			r.Post("/logout", s.postLogout)
 			r.Get("/session", s.getSession)
+			// Redeeming an invite is signup for an account that already exists, and
+			// it takes a password, so it is rate limited with the other two.
+			r.Get("/invite", s.getInvite)
+			r.With(s.rateLimit).Post("/invite", s.acceptInvite)
 		})
 		// The contact form is not an account endpoint, but it is the same shape:
 		// a browser, no credential, and a reason to rate limit.
@@ -114,6 +123,9 @@ func (s *Server) Routes() http.Handler {
 			r.Post("/v1/contact", s.postContact)
 		})
 	}
+
+	// Public: a viewer with no account and no key still has to see the logo.
+	r.Get("/brand/{tenant}/logo", s.serveBrandLogo)
 
 	r.Route("/v1", func(r chi.Router) {
 		if s.authEnabled() {
@@ -136,6 +148,36 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/keys", s.listKeys)
 		r.Post("/keys", s.createKey)
 		r.Delete("/keys/{id}", s.deleteKey)
+		r.Get("/branding", s.getBranding)
+		r.Get("/ladder-profiles", s.listProfiles)
+		r.Get("/playback-settings", s.getPlayback)
+		r.Get("/migration-providers", s.listProviders)
+		r.Get("/migrations", s.listMigrations)
+		r.Get("/migrations/{id}/items", s.listMigrationItems)
+		r.Post("/edits", s.createEdit)
+		r.Get("/edits", s.listEdits)
+		r.Delete("/edits/{id}", s.deleteEdit)
+
+		// Account administration. Session only — see requireSession.
+		r.Group(func(r chi.Router) {
+			r.Use(s.requireSession)
+			r.Get("/members", s.listMembers)
+			r.Post("/members/invites", s.createInvite)
+			r.Delete("/members/invites/{id}", s.deleteInvite)
+			r.Patch("/members/{id}", s.updateMember)
+			r.Delete("/members/{id}", s.removeMember)
+			r.Put("/ladder-profile", s.setProfile)
+			r.Put("/playback-settings", s.setPlayback)
+			// Handing over another service's API key is account administration, not
+			// something a machine credential should be able to do.
+			r.Post("/migrations", s.createMigration)
+			r.Post("/migrations/{id}/confirm", s.confirmMigration)
+			r.Post("/migrations/{id}/pause", s.pauseMigration)
+			r.Post("/migrations/{id}/resume", s.resumeMigration)
+			r.Delete("/migrations/{id}", s.deleteMigration)
+			r.Put("/branding/logo", s.putBrandingLogo)
+			r.Delete("/branding/logo", s.deleteBrandingLogo)
+		})
 	})
 	return r
 }
@@ -159,8 +201,9 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 			// key. A session is accepted only from a configured origin, because a
 			// cookie is sent by the browser on any site's behalf and that is what
 			// CSRF is.
-			if tenantID, ok := s.tenantFromSession(r); ok {
+			if tenantID, userID, ok := s.tenantFromSession(r); ok {
 				ctx := context.WithValue(r.Context(), tenantKey, tenantID)
+				ctx = context.WithValue(ctx, userKey, userID)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}

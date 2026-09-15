@@ -21,16 +21,16 @@ import (
 // tenantFromSession resolves the session cookie, but only for a request that came
 // from an origin we published the dashboard on. Without that check the cookie would
 // authorise any site that can make the browser send it.
-func (s *Server) tenantFromSession(r *http.Request) (string, bool) {
+func (s *Server) tenantFromSession(r *http.Request) (tenant, user string, ok bool) {
 	if !s.authEnabled() {
-		return "", false
+		return "", "", false
 	}
 	origin := r.Header.Get("Origin")
 	if origin == "" {
 		// Same-origin GETs arrive without Origin in some browsers. Sec-Fetch-Site is
 		// the modern signal and cannot be set by script.
 		if site := r.Header.Get("Sec-Fetch-Site"); site != "same-origin" && site != "none" {
-			return "", false
+			return "", "", false
 		}
 	} else {
 		listed := false
@@ -41,22 +41,36 @@ func (s *Server) tenantFromSession(r *http.Request) (string, bool) {
 			}
 		}
 		if !listed {
-			return "", false
+			return "", "", false
 		}
 	}
 
 	c, err := r.Cookie(sessionCookie)
 	if err != nil || c.Value == "" {
-		return "", false
+		return "", "", false
 	}
 	sum := sha256.Sum256([]byte(c.Value))
 	var userID, tenantID, email, org string
 	if err := s.db.Pool().QueryRow(r.Context(),
 		`select user_id::text, tenant_id::text, email::text, org_name from auth_session($1)`,
 		sum[:]).Scan(&userID, &tenantID, &email, &org); err != nil {
-		return "", false
+		return "", "", false
 	}
-	return tenantID, true
+	return tenantID, userID, true
+}
+
+// requireSession rejects an API key on the endpoints that administer the account
+// itself. A key is something a server holds; handing it the power to add a teammate
+// turns a leaked key into a permanent way back in.
+func (s *Server) requireSession(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := r.Context().Value(userKey).(string); !ok {
+			writeErrFor(w, r, http.StatusForbidden, "session_required",
+				"Sign in to change this. An API key cannot.")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 type assetRow struct {

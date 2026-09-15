@@ -146,31 +146,44 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 	defer stop()
 
 	opts := media.DefaultOptions()
-	keyID, key, err := keys.Generate()
-	if err != nil {
-		return err
-	}
-	// The key URI is relative so the playback signature is appended to it at serve
-	// time, the same way it is for manifests and segments.
-	opts.Encrypt = &media.Encryption{
-		KeyID: keyID, Key: key, KeyURI: "key", ClearLeadSeconds: 0,
+
+	// Off unless the tenant asked for it. cbcs without a licence server is not DRM —
+	// the key sits behind the same signed URL as the segments — and it makes the
+	// stream unplayable in every browser that is not Safari. See migration 025.
+	var encrypt bool
+	if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `select encrypt_playback from tenants`).Scan(&encrypt)
+	}); err != nil {
+		return fmt.Errorf("read playback setting: %w", err)
 	}
 
-	wrapped, nonce, err := w.Keys.Wrap(key, a.AssetID)
-	if err != nil {
-		return err
-	}
-	if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx,
-			`insert into content_keys (asset_id, tenant_id, key_id, wrapped_key, nonce)
-			 values ($1,$2,$3,$4,$5)
-			 on conflict (asset_id) do update set
-			   key_id = excluded.key_id, wrapped_key = excluded.wrapped_key,
-			   nonce = excluded.nonce`,
-			a.AssetID, a.TenantID, keyID, wrapped, nonce)
-		return err
-	}); err != nil {
-		return fmt.Errorf("store content key: %w", err)
+	if encrypt {
+		keyID, key, err := keys.Generate()
+		if err != nil {
+			return err
+		}
+		// The key URI is relative so the playback signature is appended to it at
+		// serve time, the same way it is for manifests and segments.
+		opts.Encrypt = &media.Encryption{
+			KeyID: keyID, Key: key, KeyURI: "key", ClearLeadSeconds: 0,
+		}
+
+		wrapped, nonce, err := w.Keys.Wrap(key, a.AssetID)
+		if err != nil {
+			return err
+		}
+		if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx,
+				`insert into content_keys (asset_id, tenant_id, key_id, wrapped_key, nonce)
+				 values ($1,$2,$3,$4,$5)
+				 on conflict (asset_id) do update set
+				   key_id = excluded.key_id, wrapped_key = excluded.wrapped_key,
+				   nonce = excluded.nonce`,
+				a.AssetID, a.TenantID, keyID, wrapped, nonce)
+			return err
+		}); err != nil {
+			return fmt.Errorf("store content key: %w", err)
+		}
 	}
 
 	// Progress, written where it can be seen. The rendition rows are created up

@@ -80,6 +80,10 @@ func main() {
 	river.AddWorker(workers, &pipeline.WebhookWorker{DB: database})
 	bucketSync := &pipeline.BucketSyncWorker{DB: database, Keys: keyWrapper}
 	river.AddWorker(workers, bucketSync)
+	migrator := &pipeline.MigrateWorker{DB: database, Keys: keyWrapper}
+	river.AddWorker(workers, migrator)
+	editor := &pipeline.EditWorker{DB: database, Store: store, WorkDir: cfg.WorkDir}
+	river.AddWorker(workers, editor)
 	reconciler := &pipeline.ReconcileWorker{DB: database}
 	river.AddWorker(workers, reconciler)
 	river.AddWorker(workers, &pipeline.JITWorker{TranscodeWorker: transcoder})
@@ -100,6 +104,8 @@ func main() {
 	// The worker emits webhook events through the same client it is registered on.
 	transcoder.River = riverClient
 	bucketSync.River = riverClient
+	migrator.River = riverClient
+	editor.River = riverClient
 	reconciler.River = riverClient
 
 	if err := riverClient.Start(ctx); err != nil {
@@ -115,8 +121,8 @@ func main() {
 		WithResolver(adapters.DedupResolver{DB: database})
 
 	srv := &http.Server{
-		Addr:              cfg.HTTPAddr,
-		Handler:           api.New(database, store, riverClient, deliveryModule, keyWrapper, cfg.AdminKey, reg,
+		Addr: cfg.HTTPAddr,
+		Handler: api.New(database, store, riverClient, deliveryModule, keyWrapper, cfg.AdminKey, reg,
 			api.Accounts{
 				WebOrigins:    cfg.WebOrigins,
 				SessionDomain: cfg.SessionDomain,

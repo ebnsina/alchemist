@@ -105,7 +105,7 @@ func TestSessionRejectedFromUnlistedOrigin(t *testing.T) {
 	req.Header.Set("Origin", "https://evil.example")
 	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: "whatever"})
 
-	if _, ok := s.tenantFromSession(req); ok {
+	if _, _, ok := s.tenantFromSession(req); ok {
 		t.Fatal("session accepted from an unlisted origin")
 	}
 }
@@ -118,7 +118,7 @@ func TestSessionRejectedForCrossSiteFetch(t *testing.T) {
 	req.Header.Set("Sec-Fetch-Site", "cross-site")
 	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: "whatever"})
 
-	if _, ok := s.tenantFromSession(req); ok {
+	if _, _, ok := s.tenantFromSession(req); ok {
 		t.Fatal("session accepted for a cross-site fetch")
 	}
 }
@@ -129,7 +129,7 @@ func TestSessionIgnoredWhenAccountsDisabled(t *testing.T) {
 	req.Header.Set("Origin", "https://app.example")
 	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: "whatever"})
 
-	if _, ok := (&Server{}).tenantFromSession(req); ok {
+	if _, _, ok := (&Server{}).tenantFromSession(req); ok {
 		t.Fatal("session accepted with no configured origin")
 	}
 }

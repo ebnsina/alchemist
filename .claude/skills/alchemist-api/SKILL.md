@@ -31,9 +31,13 @@ end-to-end example using nothing but an API key: `test/journey.sh`.
 5. **Branch on `error.code`, never on `error.message`.** Codes are stable; messages
    are prose and are returned in Bangla when the request sends `Accept-Language: bn`.
 
-5. **Do not use `/v1/auth/*` from server code.** Those four endpoints back the
-   sign-up page in a browser: they set an HttpOnly session cookie. An integration
+5. **Do not use `/v1/auth/*` from server code.** Those endpoints back the sign-up
+   page in a browser: they set an HttpOnly session cookie. An integration
    authenticates with the API key that signup returned once, as a Bearer token.
+6. **`/v1/members/*` and `/v1/branding/logo` are session-only.** An API key gets
+   `403 session_required` there, deliberately: a key is something a server holds, and
+   a leaked one that could invite an owner would be a permanent way back in. There is
+   nothing to work around here — team changes happen in the dashboard.
 
 ## Getting a key
 
@@ -149,9 +153,13 @@ curl -H "Authorization: Bearer $KEY" $ALCHEMIST/v1/assets/$ASSET_ID
              "dash":"...","poster":"...","thumbnails":"..."}}
 ```
 
-Fetch these per viewer, per session. Hand the `hls` URL to any HLS player —
-shaka-player and hls.js both handle the SAMPLE-AES encryption without configuration.
-HLS is the verified path; DASH is produced but less tested.
+Fetch these per viewer, per session. Hand the `hls` URL to any HLS player. HLS is the
+verified path; DASH is produced but less tested.
+
+Media is **unencrypted by default** and plays in every browser. If a tenant turns
+playback encryption on (`PUT /v1/playback-settings`), the stream becomes cbcs
+SAMPLE-AES and then **only Safari plays it** — hls.js and shaka-player need EME and a
+licence server for cbcs, and there is none. Do not assume a player handles it.
 
 `thumbnails` is a WebVTT file for scrubbing previews; `poster` is a JPEG.
 
@@ -174,6 +182,10 @@ Defaults to the current calendar month.
 | `source_unreadable` / `no_video_stream` | The file is corrupt, or is not video. |
 | `playback_not_authorized` | Signature expired or invalid. Re-fetch the asset. |
 | `invalid_api_key` | Key is wrong or has been revoked. |
+| `session_required` | Account administration. Not reachable with an API key, by design. |
+| `not_permitted` | The signed-in user is not an owner or admin. |
+| `last_owner` | Refused: an account cannot be left with no owner. |
+| `invite_not_found` | Expired, already redeemed, or never existed — the three are one answer on purpose. |
 
 `encode_failed`, `stitch_failed`, `package_failed` and `processing_failed` are ours,
 not yours — surface them as a generic failure and check the Alchemist logs.

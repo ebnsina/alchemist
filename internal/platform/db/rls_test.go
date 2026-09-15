@@ -47,10 +47,12 @@ func TestRLSIsolatesTenants(t *testing.T) {
 			t.Fatalf("seed asset for %s: %v", tc.name, err)
 		}
 	}
-	t.Cleanup(func() {
+	// LIFO: this runs before the deferred Close above. t.Cleanup would fire after it,
+	// against a connection that is already shut, and the rows would survive the run.
+	defer func() {
 		_, _ = admin.Exec(ctx, `delete from tenants where id = any($1::uuid[])`,
 			[]string{tenantA, tenantB})
-	})
+	}()
 
 	countAssets := func(tenantID string) int {
 		var n int

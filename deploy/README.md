@@ -48,6 +48,11 @@ river migrate-up --database-url "$ALCHEMIST_DATABASE_URL"
 systemctl enable --now alchemist
 ```
 
+Migrations are plain SQL applied in filename order; there is no migration tool and no
+version table, so each is written to be safe to re-run. `internal/platform/db/migrations/020_members_branding.sql`
+also repairs the `users` and `sessions` policies from `internal/platform/db/migrations/017_accounts.sql`, which named a setting
+nothing sets and so matched no rows.
+
 `ALCHEMIST_ENCODE_WORKERS` should be roughly the core count. Encoding already uses a
 per-job worker pool, so setting it far above that only lengthens the tail.
 

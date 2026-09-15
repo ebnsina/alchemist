@@ -19,9 +19,14 @@ storage:
 
 db-reset:
 	dropdb --if-exists alchemist && createdb alchemist
-	psql -q -d alchemist -v ON_ERROR_STOP=1 -f internal/db/migrations/001_init.sql
+	for m in internal/platform/db/migrations/*.sql; do psql -q -d alchemist -v ON_ERROR_STOP=1 -f "$$m" || exit 1; done
 	go run github.com/riverqueue/river/cmd/river@latest migrate-up --database-url "$(DB_ADMIN)"
 	psql -q -d alchemist -c "grant select,insert,update,delete on all tables in schema public to alchemist_app; grant usage,select on all sequences in schema public to alchemist_app;"
+
+# A local account with the quotas lifted, for testing the dashboard without hitting
+# the four-concurrent-job limit every few minutes. Never run against a real host.
+dev-account:
+	./scripts/dev-account.sh
 
 test:
 	ALCHEMIST_TEST_DATABASE_URL="$(DB_APP)" ALCHEMIST_TEST_ADMIN_URL="$(DB_ADMIN)" go test ./...

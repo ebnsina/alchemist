@@ -134,6 +134,11 @@ These were established by measurement and are expensive to rediscover.
 - **A deduplicated asset owns no media.** Playback resolves through
   `deduplicated_from` to the canonical asset's storage prefix; copying the objects
   instead would make deduplication pointless.
+- **Playback encryption is off by default and is not DRM.** With `KEYFORMAT="identity"`
+  the key is served from the same signed URL as the segments, so it protects nothing
+  the signed URL does not — and cbcs makes the stream unplayable outside Safari,
+  because Chrome and Firefox need EME. The signed expiring URL is the access control.
+  Tenants can opt in; assets keep whatever they were packaged with.
 - **JIT renditions must reuse the asset's existing content key and its stored
   complexity.** A fresh key produces a rung nothing can decrypt (and it fails looking
   like a corrupt file, not a key mismatch); skipping complexity leaves one asset with
@@ -153,6 +158,7 @@ These were established by measurement and are expensive to rediscover.
 
 ```
 make db-reset          schema + River migrations + grants
+make dev-account       local test account with the quotas lifted (never run remotely)
 make storage           SeaweedFS (dev object storage)
 make run               control plane + workers
 make test              all Go tests
