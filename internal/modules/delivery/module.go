@@ -43,13 +43,15 @@ type PlaybackObserver interface {
 	OnPlaybackStarted(ctx context.Context, tenantID, assetID string)
 }
 
-// EgressMeter is told how many bytes left the origin, so egress can be billed.
+// UsageMeter is told what left the origin, so it can be billed: bytes, and the
+// viewers a manifest request reveals.
 //
 // An interface for the same reason PlaybackObserver is one: delivery must not know a
 // database exists, or it stops being separable. A deployment that passes nil simply
 // does not meter.
-type EgressMeter interface {
+type UsageMeter interface {
 	RecordEgress(tenantID string, bytes int64)
+	RecordViewer(tenantID, assetID, viewer string)
 }
 
 // AssetResolver maps a requested asset to the storage prefix that actually holds its
@@ -70,7 +72,7 @@ type Module struct {
 	signer   *signing.Keyring
 	observer PlaybackObserver
 	resolver AssetResolver
-	meter    EgressMeter
+	meter    UsageMeter
 }
 
 func New(store ObjectStore, keys ContentKeys, signer *signing.Keyring) *Module {
@@ -94,10 +96,19 @@ func (m *Module) prefix(ctx context.Context, tenantID, assetID string) string {
 	return fmt.Sprintf("cmaf/%s/%s", tenantID, assetID)
 }
 
-// WithMeter attaches egress billing. Optional by design.
-func (m *Module) WithMeter(e EgressMeter) *Module {
+// WithMeter attaches usage billing. Optional by design.
+func (m *Module) WithMeter(e UsageMeter) *Module {
 	m.meter = e
 	return m
+}
+
+// meterViewer reports one viewer seen on one asset. Called on manifest requests only:
+// a player re-reads the playlist every segment duration, which is a heartbeat, while
+// segment requests are many per viewer and would count one person as a crowd.
+func (m *Module) meterViewer(tenantID, assetID, viewer string) {
+	if m.meter != nil && viewer != "" {
+		m.meter.RecordViewer(tenantID, assetID, viewer)
+	}
 }
 
 // meterEgress records what was actually written, not what was asked for: a viewer who

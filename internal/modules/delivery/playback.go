@@ -1,9 +1,12 @@
 package delivery
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"path"
 	"strings"
@@ -85,6 +88,12 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 		m.observer.OnPlaybackStarted(r.Context(), tenantID, assetID)
 	}
 
+	// A playlist read is one viewer present now: players re-read it every segment
+	// duration, and it is the only request every viewer makes and shares with nobody.
+	if isManifest(file) && r.Method == http.MethodGet {
+		m.meterViewer(tenantID, assetID, viewerKey(r))
+	}
+
 	// Manifests and the scrubbing index are small and must be rewritten so their
 	// relative URIs stay authorized; media is streamed through untouched.
 	if isRewritten(file) {
@@ -145,4 +154,27 @@ func contentTypeFor(name string) string {
 	default:
 		return "video/mp4"
 	}
+}
+
+// isManifest is the subset of rewritten files a player polls: the playlists. The
+// scrubbing index is fetched once and is not a sign anyone is still watching.
+func isManifest(name string) bool {
+	return strings.HasSuffix(name, ".m3u8") || strings.HasSuffix(name, ".mpd")
+}
+
+// viewerKey identifies one viewer well enough to count them, without storing anything
+// that identifies a person: the address and user agent are hashed together and the
+// digest is all that is ever held.
+//
+// ponytail: carrier-grade NAT puts many mobile viewers behind one address, so this
+// under-counts on exactly the network most BD viewers use. The player's beacon already
+// carries a real per-viewer session_id (internal/api/qoe.go) -- feed that in when the
+// number has to be exact rather than indicative.
+func viewerKey(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	sum := sha256.Sum256([]byte(host + "\x00" + r.Header.Get("User-Agent")))
+	return hex.EncodeToString(sum[:16])
 }

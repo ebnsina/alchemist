@@ -122,7 +122,7 @@ func main() {
 
 	// Egress is the largest line on a video bill and the origin is the only place
 	// that sees the bytes, so it is metered here and folded into a daily row.
-	egress := &adapters.Egress{DB: database}
+	egress := &adapters.Usage{DB: database}
 	go egress.Flush(ctx, time.Minute)
 
 	deliveryModule := delivery.New(

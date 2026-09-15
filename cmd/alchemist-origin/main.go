@@ -83,7 +83,7 @@ func main() {
 
 	// This binary serves bytes, so it has to bill for them too. Without it, egress
 	// stops being counted in exactly the deployment that carries all of it.
-	egress := &adapters.Egress{DB: database}
+	egress := &adapters.Usage{DB: database}
 	go egress.Flush(ctx, time.Minute)
 
 	module := delivery.New(
