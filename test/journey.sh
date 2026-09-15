@@ -72,9 +72,35 @@ check "thumbnail tile authorized" "$(curl -s -o /dev/null -w '%{http_code}' "$B$
 
 check "source size billed" "$(echo "$P"|python3 -c 'import sys,json;print("yes" if json.load(sys.stdin).get("source_bytes") else "no")')" "yes"
 
-echo "9. delete the video"
+echo "9. the same file again is deduplicated, not re-encoded"
+D=$(curl -s -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
+  -d '{"url":"http://127.0.0.1:8071/lecture.mp4"}' $B/v1/assets | python3 -c 'import sys,json;print(json.load(sys.stdin).get("asset_id",""))')
+for i in $(seq 1 30); do
+  DS=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/assets/$D | python3 -c 'import sys,json;print(json.load(sys.stdin)["state"])')
+  case "$DS" in ready|partially_ready|failed) break;; esac; sleep 2
+done
+DP=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/assets/$D)
+DHLS=$(echo "$DP"|python3 -c 'import sys,json;print(json.load(sys.stdin)["playback"]["hls"])')
+DDIR=${DHLS%%\?*}; DDIR=${DDIR%/*}; DQ=${DHLS#*\?}
+check "duplicate playable ($DS)" "$(curl -s -o /dev/null -w '%{http_code}' "$B$DHLS")" "200"
+check "duplicate reports renditions" "$(echo "$DP"|python3 -c 'import sys,json;print(len(json.load(sys.stdin)["renditions"]) > 0)')" "True"
+# Whatever the key endpoint answers now, it must answer the same after the asset the
+# media was first stored under is deleted. Encryption is off by default, so this is a
+# 404 on both sides of the delete rather than a 200 -- the invariant is that it does
+# not change.
+KBEFORE=$(curl -s -o /dev/null -w '%{http_code}' "$B$DDIR/key?$DQ")
+
+echo "10. deleting the first video leaves the duplicate whole"
 check "deleted" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "204"
 check "gone afterwards" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "404"
+DP=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/assets/$D)
+check "duplicate still ready" "$(echo "$DP"|python3 -c 'import sys,json;print(json.load(sys.stdin)["state"])')" "$DS"
+check "duplicate kept its renditions" "$(echo "$DP"|python3 -c 'import sys,json;print(len(json.load(sys.stdin)["renditions"]) > 0)')" "True"
+DHLS=$(echo "$DP"|python3 -c 'import sys,json;print(json.load(sys.stdin)["playback"]["hls"])')
+DDIR=${DHLS%%\?*}; DDIR=${DDIR%/*}; DQ=${DHLS#*\?}
+check "duplicate still plays" "$(curl -s -o /dev/null -w '%{http_code}' "$B$DHLS")" "200"
+check "duplicate key unchanged" "$(curl -s -o /dev/null -w '%{http_code}' "$B$DDIR/key?$DQ")" "$KBEFORE"
+check "duplicate deletable" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "Authorization: Bearer $KEY" $B/v1/assets/$D)" "204"
 
 echo
 echo "passed=$pass failed=$fail"

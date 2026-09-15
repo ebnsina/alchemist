@@ -135,7 +135,10 @@ These were established by measurement and are expensive to rediscover.
   three resolve through `deduplicated_from` to the canonical asset; copying the
   objects instead would make deduplication pointless, and copying the rows meant a
   deferred rung was encoded under the duplicate's id and published under a prefix no
-  playback request resolves to.
+  playback request resolves to. Deleting the canonical asset therefore promotes a
+  surviving duplicate and moves those rows onto it: `content_keys` and `renditions`
+  cascade from `assets`, so nulling the pointers instead takes the key and the ladder
+  with it while the objects, and playback, carry on.
 - **Playback encryption is off by default and is not DRM.** With `KEYFORMAT="identity"`
   the key is served from the same signed URL as the segments, so it protects nothing
   the signed URL does not — and cbcs makes the stream unplayable outside Safari,
