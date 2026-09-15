@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import Logo from './Logo.svelte';
+	import ThemeToggle from './ThemeToggle.svelte';
 
 	let stuck = $state(false);
 
@@ -57,6 +58,7 @@
 		</nav>
 
 		<div class="ml-auto flex flex-none items-center gap-2 sm:ml-0 sm:justify-self-end">
+			<ThemeToggle />
 			<a href="/login/" class="hidden text-sm text-secondary transition-colors hover:text-primary sm:inline-block">Sign in</a>
 			<a href="/signup/" class="btn-primary hidden text-sm sm:inline-flex">
 				Start free

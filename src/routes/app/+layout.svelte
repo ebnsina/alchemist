@@ -15,6 +15,7 @@
 		ArrowUpRight01Icon
 	} from '@hugeicons/core-free-icons';
 	import Logo from '$lib/components/Logo.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { session, logout, ApiError, type Session } from '$lib/api';
 
 	let { children } = $props();
@@ -175,6 +176,9 @@
 					<span class="text-secondary" aria-hidden="true">/</span>
 					<span class="font-medium">{current}</span>
 				</nav>
+				<div class="ml-auto">
+					<ThemeToggle />
+				</div>
 			</header>
 
 			<div class="panel__body">

@@ -45,6 +45,51 @@
 	--shadow-float: 0 8px 24px rgba(21, 24, 27, 0.1);
 }
 
+/* Dark, taken from the stream-migrate console: near-black ground, two lifted
+   surfaces, and state carried by weight and contrast rather than by hue. The only
+   hues that survive are the teal for action and the red for loss, both lifted a
+   step so they read on a dark ground.
+
+   Measured on the dark ground #0D0D0F:
+     ink #F2F2F3 ............ 17.35:1
+     secondary #9A9AA0 ...... 6.94:1
+     teal #4BB3AA ........... 7.70:1
+     danger #E08A8A ......... 7.56:1
+     success #7FBF8A ........ 8.99:1
+   Ink on the teal button is 6.6:1; ink on paper-solid is 17.35:1.
+
+   The system preference decides unless somebody sets data-theme explicitly, which
+   is why the media query is guarded rather than unconditional. */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--color-primary: #f2f2f3;
+		--color-on-primary: #0d0d0f;
+		--color-secondary: #9a9aa0;
+		--color-tertiary: #4bb3aa;
+		--color-tertiary-container: #6ec9c1;
+		--color-neutral: #0d0d0f;
+		--color-surface: #161618;
+		--color-outline: #2a2a2e;
+		--color-danger: #e08a8a;
+		--color-on-danger: #0d0d0f;
+		--color-success: #7fbf8a;
+	}
+}
+
+:root[data-theme='dark'] {
+	--color-primary: #f2f2f3;
+	--color-on-primary: #0d0d0f;
+	--color-secondary: #9a9aa0;
+	--color-tertiary: #4bb3aa;
+	--color-tertiary-container: #6ec9c1;
+	--color-neutral: #0d0d0f;
+	--color-surface: #161618;
+	--color-outline: #2a2a2e;
+	--color-danger: #e08a8a;
+	--color-on-danger: #0d0d0f;
+	--color-success: #7fbf8a;
+}
+
 @layer base {
 	html {
 		scroll-behavior: smooth;
@@ -176,6 +221,8 @@
 }
 
 /* One per view. Everything else is secondary or a text link. */
+/* The teal carries the paper colour in light and the ground colour in dark, which
+   is the same rule written once: whatever the page is, the button is not. */
 @utility btn-primary {
 	@apply btn-base;
 	background: var(--color-tertiary);

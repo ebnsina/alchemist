@@ -20,8 +20,14 @@ const browser = await chromium.launch();
 const p = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
 let fails = 0, checked = 0;
 
+// Both themes. A palette that only passes in one of them is half a system, and the
+// dark values are the ones nobody looks at with a meter.
+const THEMES = ['light', 'dark'];
+
+for (const theme of THEMES) {
 for (const route of PAGES) {
 	await p.goto('http://localhost:4321' + route, { waitUntil: 'networkidle' });
+	await p.evaluate(t => document.documentElement.setAttribute('data-theme', t), theme);
 	// Scroll-reveal starts elements at opacity 0. Jumping straight to an offset can
 	// outrun the observer, and an unrevealed card samples as bare page instead of
 	// its own surface. The resting state is the final state, so pin it.
@@ -86,12 +92,13 @@ for (const route of PAGES) {
 			const r = (Math.max(A, B) + 0.05) / (Math.min(A, B) + 0.05);
 			if (r < 4.5) {
 				fails++;
-				console.log(`  FAIL ${route} ${s.t.padEnd(22)} bg=rgb(${s.bg.join(',')}) ${r.toFixed(2)}:1`);
+				console.log(`  FAIL ${theme} ${route} ${s.t.padEnd(20)} bg=rgb(${s.bg.join(',')}) ${r.toFixed(2)}:1`);
 			}
 		}
 	}
 }
+}
 
-console.log(fails ? `  ${fails} failing of ${checked}` : `  all ${checked} text samples pass AA`);
+console.log(fails ? `  ${fails} failing of ${checked}` : `  all ${checked} text samples pass AA in both themes`);
 await browser.close();
 process.exit(fails ? 1 : 0);

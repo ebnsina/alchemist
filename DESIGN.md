@@ -32,8 +32,32 @@ Measured, not eyeballed. On the paper ground `#FBF9F5`: ink 16.95:1, secondary
 on ink 16.95:1. Secondary is the tightest of them, which is why it is barred from
 body copy — it passes AA for text but has no headroom to spare.
 
-Dark mode would invert primary and neutral and lift the teal one step. It does not
-introduce new hues, and it is not built yet.
+### Dark
+
+Dark inverts primary and neutral and lifts the teal and the red a step. It
+introduces no new hues, and it follows the reading of the stream-migrate console:
+near-black ground, two lifted surfaces, state carried by weight and contrast.
+
+| Token | Light | Dark |
+|---|---|---|
+| `--color-neutral` | `#FBF9F5` | `#0D0D0F` |
+| `--color-surface` | `#FFFFFF` | `#161618` |
+| `--color-outline` | `#E3DFD8` | `#2A2A2E` |
+| `--color-primary` | `#15181B` | `#F2F2F3` |
+| `--color-on-primary` | `#FBF9F5` | `#0D0D0F` |
+| `--color-secondary` | `#666E74` | `#9A9AA0` |
+| `--color-tertiary` | `#1F5F5B` | `#4BB3AA` |
+| `--color-tertiary-container` | `#174744` | `#6EC9C1` |
+| `--color-danger` | `#A8342A` | `#E08A8A` |
+| `--color-success` | `#2F6B3A` | `#7FBF8A` |
+
+Measured on the dark ground `#0D0D0F`: ink 17.35:1, secondary 6.94:1, teal 7.70:1,
+danger 7.56:1, success 8.99:1. The ground on the teal button is 7.70:1 — the button
+text is `on-primary` in both themes, which is the same rule written once: whatever
+the page is, the button is not.
+
+The system preference decides until somebody uses the toggle, which is remembered
+per browser and applied before first paint so the page never flashes the wrong one.
 
 ## Typography
 
@@ -121,5 +145,5 @@ an error state in plain language with a retry.
 ## Checks
 
 `npm run check:contrast` samples the real pixel under every text node on the public
-pages, at every viewport step, and fails under 4.5:1. It exists because the usual
+pages, in both themes, at every viewport step, and fails under 4.5:1. It exists because the usual
 walk-up-the-DOM check reads an ancestor's background rather than what is painted.
