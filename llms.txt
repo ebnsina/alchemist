@@ -78,7 +78,9 @@ GET  /v1/usage                 -> billable aggregates: ingest seconds, egress by
 GET  /v1/branding              -> account name and logo URL
 GET  /v1/playback-settings     -> whether playback encryption is on
 
-Live, present only where this deployment configures ingest:
+Live, present only where this deployment configures ingest, and only for a tenant
+who has bought it -- otherwise every endpoint here answers `live_not_enabled` (403).
+Live is a separate product from the VOD engine; a customer may hold either or both:
 POST   /v1/live-streams           -> create; the stream key is shown once
 GET    /v1/live-streams           -> your streams
 GET    /v1/live-streams/{id}      -> state and the asset the broadcast plays at

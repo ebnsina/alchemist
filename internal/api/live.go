@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -26,7 +27,43 @@ type Live struct {
 	PortHigh   int
 }
 
+// liveEnabled is about this deployment: with no ingest host there is nowhere for an
+// encoder to connect, so the endpoints are not served at all rather than served and
+// always failing.
 func (s *Server) liveEnabled() bool { return s.live.IngestHost != "" }
+
+// requireLive is about this tenant. Live is a separate product, so a VOD-only
+// customer reaching these endpoints gets a clear "not on your plan" rather than a
+// stream they were never sold.
+//
+// Absent limits row means absent entitlement: enabling live has to be deliberate, or
+// deploying an ingest host would quietly hand it to every tenant on the box.
+func (s *Server) requireLive(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tenantID, _ := r.Context().Value(tenantKey).(string)
+
+		var enabled bool
+		err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+			err := tx.QueryRow(r.Context(),
+				`select live_enabled from tenant_limits`).Scan(&enabled)
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil
+			}
+			return err
+		})
+		if err != nil {
+			writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
+				"Something went wrong on our side.")
+			return
+		}
+		if !enabled {
+			writeErrFor(w, r, http.StatusForbidden, "live_not_enabled",
+				"Live streaming isn't part of your plan yet. Talk to us and we'll turn it on.")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
 type liveStream struct {
 	ID        string    `json:"id"`

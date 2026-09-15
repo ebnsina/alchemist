@@ -80,6 +80,32 @@ paths:
         "201": { description: Key issued; api_key shown once }
         "404": { description: tenant_not_found }
 
+  /admin/tenants/{id}/live:
+    put:
+      summary: Turn the Live product on or off for a tenant
+      description: |
+        Operator surface. Live is a separate product from the VOD engine, and this is
+        the line between what a customer has paid for and what they have not — so
+        nothing a customer holds can move it.
+
+        Off by default, including for a tenant with no limits row. Configuring an
+        ingest host enables live for the *deployment*; this enables it for a tenant.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        "200": { description: Entitlement set }
+        "400": { description: invalid_request }
+        "401": { description: invalid_admin_key }
+
   /admin/keys/{keyID}:
     delete:
       summary: Revoke an API key
@@ -619,8 +645,12 @@ paths:
         Present only when this deployment has live ingest configured. Without an
         ingest host there is nowhere for an encoder to connect, so the endpoints are
         not served at all rather than served and always failing.
+
+        Live is a separate product. A tenant who has not bought it gets
+        `live_not_enabled` from every endpoint here, whatever the deployment supports.
       responses:
         "200": { description: Up to 200 streams, newest first }
+        "403": { description: live_not_enabled }
     post:
       summary: Create a live stream
       description: |

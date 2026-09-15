@@ -101,6 +101,7 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/tenants", s.listTenants)
 		r.Post("/tenants/{id}/keys", s.issueKey)
 		r.Delete("/keys/{keyID}", s.revokeKey)
+		r.Put("/tenants/{id}/live", s.setTenantLive)
 		r.Get("/contact", s.listContact)
 	})
 
@@ -164,13 +165,17 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/migrations", s.listMigrations)
 		r.Get("/migrations/{id}/items", s.listMigrationItems)
 		// Live is mounted only when an ingest host is configured: without somewhere
-		// for an encoder to connect, the endpoints could only ever fail.
+		// for an encoder to connect, the endpoints could only ever fail. Whether this
+		// particular tenant bought it is a separate question, asked per request.
 		if s.liveEnabled() {
-			r.Post("/live-streams", s.createLiveStream)
-			r.Get("/live-streams", s.listLiveStreams)
-			r.Get("/live-streams/{id}", s.getLiveStream)
-			r.Post("/live-streams/{id}/start", s.startLiveStream)
-			r.Delete("/live-streams/{id}", s.deleteLiveStream)
+			r.Group(func(r chi.Router) {
+				r.Use(s.requireLive)
+				r.Post("/live-streams", s.createLiveStream)
+				r.Get("/live-streams", s.listLiveStreams)
+				r.Get("/live-streams/{id}", s.getLiveStream)
+				r.Post("/live-streams/{id}/start", s.startLiveStream)
+				r.Delete("/live-streams/{id}", s.deleteLiveStream)
+			})
 		}
 
 		r.Post("/edits", s.createEdit)

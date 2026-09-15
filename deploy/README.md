@@ -79,6 +79,17 @@ because ffmpeg never exposes the streamid it was handed. Both TCP (RTMP) and UDP
 need the range open, and SRT needs an ffmpeg built with `--enable-libsrt` -- the
 distribution and Homebrew builds generally are not, and without it only RTMP works.
 
+### Enabling live for a customer
+
+Configuring an ingest host enables live for the **deployment**. It does not give it to
+anyone: Live is a separate product, `tenant_limits.live_enabled` is false by default,
+and a tenant with no limits row has it off. Turn it on per customer:
+
+    PUT /admin/tenants/{id}/live   {"enabled": true}
+
+Operator surface, behind `ALCHEMIST_ADMIN_KEY`. A VOD-only tenant calling the live
+endpoints gets `live_not_enabled` rather than a stream nobody sold them.
+
 ### Authorising publishers properly
 
 `deploy/live/mediamtx.yml` puts an ingest server in front, which is what makes the

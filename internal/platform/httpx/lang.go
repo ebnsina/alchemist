@@ -31,6 +31,7 @@ var bangla = map[string]string{
 	"image_too_large":         "ছবিটি ১ MB এর বেশি। ছোট একটি পাঠান।",
 	"invalid_state":           "এই মুহূর্তে এটি করা যাবে না।",
 	"invalid_api_key":         "এই API কী টি সঠিক নয়।",
+	"live_not_enabled":        "আপনার প্ল্যানে লাইভ স্ট্রিমিং নেই। আমাদের জানান, চালু করে দেব।",
 	"asset_not_found":         "এই ভিডিওটি খুঁজে পাওয়া যায়নি।",
 	"not_found":               "ফাইলটি খুঁজে পাওয়া যায়নি।",
 	"invalid_request":         "JSON বডিতে \"url\" ফিল্ডটি পাঠান।",
