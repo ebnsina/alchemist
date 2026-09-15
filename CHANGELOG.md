@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- EME Clear Key playback. The content key is fetched from `{signed prefix}/key` with
+  the same `exp`, `kid` and `sig` as the manifest; shaka POSTs to that URI verbatim,
+  so no request filter is needed to keep the signature attached. Clear Key is
+  encryption, not DRM — the key reaches the browser in the clear.
+- Safari and iOS, whose only key system is FairPlay, now get their own plain-language
+  message in both languages instead of a generic protected-video failure. Error code
+  `key_system_unavailable`.
+- A drifting viewer watermark, drawn when the signed URL carries a `vl` label and
+  moved by a CSS transform every seven seconds. It attributes a leak to an account; it
+  does not prevent recording. Honours `prefers-reduced-motion`, takes no pointer
+  events, survives fullscreen, and costs nothing when the label is absent.
+- `player.viewerLabel` on the SDK. Chrome plus core is now ~16.5 KB gzipped, up from
+  ~15.9 KB.
+
 ## 1.0.0 — 2026-09-14
 
 First release.

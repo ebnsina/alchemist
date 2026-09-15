@@ -34,6 +34,7 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
   private idleMs: number;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  private driftTimer: ReturnType<typeof setInterval> | null = null;
   private scrubbing = false;
   private menuOpen = false;
   private chromeless: boolean;
@@ -50,6 +51,7 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
     menu: HTMLElement; panel: HTMLElement; panelTitle: HTMLElement;
     panelBody: HTMLElement; panelAction: HTMLButtonElement;
     toast: HTMLElement; toastText: HTMLElement; live: HTMLElement;
+    watermark: HTMLElement | null;
   };
 
   constructor(host: HTMLElement, options: UIOptions) {
@@ -161,13 +163,23 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
 
     const live = el('span', 'alc-sr', { 'aria-live': 'polite' });
 
+    // The label rides inside the signature, so there is nothing to configure and
+    // nothing to draw when the URL carries none.
+    let watermark: HTMLElement | null = null;
+    const label = this.viewerLabel;
+    if (label) {
+      watermark = el('div', 'alc-wm');
+      watermark.textContent = label;
+      stage.appendChild(watermark);
+    }
+
     stage.append(centre, scrim, bar, menu, panel, toast, live);
 
     this.ui = {
       stage, centre, bar, playBtn, bigBtn, spinner, muteBtn, volume, time, seek,
       played, buffered, knob, preview, previewImg, previewTime,
       saver, saverRate, saverLabel, capsBtn, menuBtn, fsBtn,
-      menu, panel, panelTitle, panelBody, panelAction, toast, toastText, live,
+      menu, panel, panelTitle, panelBody, panelAction, toast, toastText, live, watermark,
     };
   }
 
@@ -219,7 +231,12 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
     });
     this.addEventListener('offline', () => this.toast(this.t('offline'), 'warn'));
 
-    document.addEventListener('fullscreenchange', () => this.render());
+    if (this.ui.watermark) {
+      this.drift();
+      this.driftTimer = setInterval(() => this.drift(), 7000);
+    }
+
+    document.addEventListener('fullscreenchange', () => { this.render(); this.drift(); });
     document.addEventListener('click', (e) => {
       if (this.menuOpen && !this.root.contains(e.target as Node)) this.closeMenu();
     });
@@ -513,6 +530,15 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
     this.toastTimer = setTimeout(() => u.toast.removeAttribute('data-show'), 3200);
   }
 
+  /** One transform every seven seconds, so no static overlay or crop can cover it. */
+  private drift(): void {
+    const wm = this.ui.watermark;
+    if (!wm) return;
+    const x = Math.random() * Math.max(0, this.ui.stage.clientWidth - wm.offsetWidth);
+    const y = Math.random() * Math.max(0, this.ui.stage.clientHeight - wm.offsetHeight);
+    wm.style.transform = `translate(${Math.round(x)}px,${Math.round(y)}px)`;
+  }
+
   private isFullscreen(): boolean {
     return document.fullscreenElement === this.root;
   }
@@ -532,6 +558,7 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
   override async destroy(): Promise<void> {
     if (this.idleTimer) clearTimeout(this.idleTimer);
     if (this.toastTimer) clearTimeout(this.toastTimer);
+    if (this.driftTimer) clearInterval(this.driftTimer);
     await super.destroy();
     this.root.remove();
   }

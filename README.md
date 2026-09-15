@@ -18,8 +18,10 @@ default here spends the viewer's data as if it were money, because it is.
 | **Data Saver is a headline control** | A labelled pill in the control bar showing live MB/hour, not a buried menu item. Default **on** for cellular and Save-Data connections, **off** on everything else. It is a hard ceiling in shaka's `restrictions`, not an ABR hint, and it flushes the buffer so the viewer stops paying immediately. |
 | **Bangla first, English one tap away** | Default language is Bangla. Numbers go through `Intl` so Bangla gets Bangla digits. Timecodes stay Latin in a monospace column. |
 | **720p is the top rung** | The BD ladder tops out at 720p with 144p and 240p rungs underneath. The quality menu shows what the asset actually has and what each rung costs per hour. |
-| **Small bundle, old WebView** | Player chrome and core are ~15 KB gzipped. Shaka loads on demand and split by manifest type, so an HLS asset never downloads the DASH parser. Build target is ES2019 / Chrome 70 / Safari 12. |
-| **No dead ends** | Loading, buffering, expired signature, network lost, not found, unsupported browser and DRM failure each have plain-language copy in both languages and a route out. |
+| **Encrypted playback without a licence vendor** | EME Clear Key over `cenc`, with the content key served from the same signed prefix as the manifest. Encryption, not DRM — see [Protecting paid video](#protecting-paid-video) for what that does and does not buy. |
+| **A viewer label on the picture** | When the signed URL carries one, the viewer's own id drifts across the frame every few seconds. It attributes a leak; it does not prevent one. |
+| **Small bundle, old WebView** | Player chrome and core are ~16.5 KB gzipped. Shaka loads on demand and split by manifest type, so an HLS asset never downloads the DASH parser. Build target is ES2019 / Chrome 70 / Safari 12. |
+| **No dead ends** | Loading, buffering, expired signature, network lost, not found, unsupported browser, DRM failure and *no Clear Key on this browser* each have plain-language copy in both languages and a route out. |
 
 ---
 
@@ -84,6 +86,61 @@ playback never breaks.
 
 ---
 
+## Protecting paid video
+
+Course piracy is what BD edtech buyers ask about first, so it is worth being exact
+about what ships here and what it is worth.
+
+**EME Clear Key.** Content is packaged `cenc` and the content key is fetched from
+`{signed playback prefix}/key` — the same `exp`, `kid` and `sig` that authorize the
+manifest and the segments authorize the key, so there is one signature and one expiry
+for the whole asset. Shaka is pointed at it with one line:
+
+```js
+player.configure({ drm: { servers: { 'org.w3.clearkey': `${prefix}/key` } } });
+```
+
+Shaka POSTs to that URI verbatim, query string included, so no request filter is
+needed to keep the signature attached. The origin answers
+`{"keys":[{"kty":"oct","kid":"…","k":"…"}],"type":"temporary"}` as
+`application/json` with `Cache-Control: no-store`.
+
+**Clear Key is encryption, not DRM.** The key arrives in the browser in the clear, and
+anyone who opens devtools can read it. What it buys is that a segment URL copied out
+of the network tab is useless on its own, and that the key dies with the signature.
+Studio DRM — Widevine, FairPlay — is deferred until there is a licence vendor; when it
+arrives it is `drm.servers` configuration here, not a rewrite.
+
+**Safari and iOS cannot play it.** Their only key system is FairPlay, which needs a
+certificate the platform does not have. Shaka raises a DRM error with no key system
+available; the player turns that into its own message rather than the generic
+protected-video one — *"This browser cannot play protected video. Open the same link
+in Chrome, Firefox or Edge on a computer."* — in Bangla and English. Chrome, Firefox
+and Edge all play it, on desktop and Android.
+
+**The viewer watermark.** If the signed URL carries a `vl` parameter — a short display
+label the customer chose, typically a student id or a masked phone number — the player
+draws it over the picture and moves it to a new position every seven seconds with a
+CSS transform. It is inside the signature, so it cannot be stripped or swapped without
+breaking playback; there is no separate option to set it, and no label means no
+element and no layout change. `prefers-reduced-motion` gets the repositioning without
+the travel.
+
+It is a deterrent and an attribution tool: it discourages casual resharing, and when a
+recording surfaces it names the account it came from. It does not stop a screen
+recorder or a phone pointed at the screen, and a determined person can crop or paint
+it out. Nothing here prevents piracy; it raises the effort and removes the anonymity.
+
+Cost: about 620 bytes gzipped for the watermark, the Clear Key wiring and the new copy
+together, one `setInterval` every seven seconds, and a compositor-only transition. No
+canvas, no per-frame JavaScript, no new dependency.
+
+> The offline fixture in `scripts/make-fixture.sh` is still SAMPLE-AES (`cbcs`) with
+> `KEYFORMAT="identity"`, and the origin stand-in has no `/key` route, so the Clear
+> Key path cannot be exercised locally yet. The watermark can.
+
+---
+
 ## SDK
 
 ```bash
@@ -137,6 +194,7 @@ player.captionTracks();
 player.estimatedMbPerHour(); // what Data Saver promises right now
 player.getStats();           // the QoE beacon body, before it is sent
 player.thumbnailTiles;
+player.viewerLabel;          // the signed `vl` label, or null
 ```
 
 `AlchemistPlayer` is an `EventTarget`; every event above is a `CustomEvent` with the
@@ -149,7 +207,7 @@ and no stylesheet at all.
 Errors never reach the viewer as codes. `player.error.kind` is one of
 `expired | network | offline | notFound | unsupported | drm | generic`, and
 `player.error.code` is the stable string that also goes in the QoE beacon
-(`playback_not_authorized`, `shaka-1001`, …). Map `kind` yourself if you are drawing
+(`playback_not_authorized`, `key_system_unavailable`, `shaka-1001`, …). Map `kind` yourself if you are drawing
 your own error UI.
 
 ---
@@ -252,7 +310,8 @@ npm run build     # dist/sdk (ES module + .d.ts) and dist/v1 (embed + test bench
 
 Covered: Data Saver bitrate capping and default policy, language negotiation, beacon
 payload construction and clamping, signature expiry and sibling-URL derivation,
-sprite-VTT parsing, error classification. No framework — `node --test` strips the
+sprite-VTT parsing, error classification, Clear Key licence URL derivation and the
+signed viewer label. No framework — `node --test` strips the
 types itself.
 
 ---

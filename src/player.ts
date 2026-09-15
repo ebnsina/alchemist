@@ -7,7 +7,7 @@ import {
   abrRestrictions, classifyNetwork, estimateBpsForHeight, getConnection,
   mbPerHour, shouldDefaultDataSaver, type NetworkKind,
 } from './network.ts';
-import { isExpired, msUntilExpiry, siblingURL } from './signed-url.ts';
+import { isExpired, msUntilExpiry, siblingURL, viewerLabel } from './signed-url.ts';
 import { newSessionId, sendBeacon } from './beacon.ts';
 import { negotiateLang, type Lang } from './i18n.ts';
 import { loadThumbnails, type Tile } from './thumbnails.ts';
@@ -131,6 +131,8 @@ export class AlchemistPlayer extends EventTarget {
   get muted(): boolean { return this.video.muted; }
   get volume(): number { return this.video.volume; }
   get quality(): number | 'auto' { return this._quality; }
+  /** The signed viewer label, when the URL carries one. Drawn as a drifting watermark. */
+  get viewerLabel(): string | null { return viewerLabel(this.opts.src); }
 
   async play(): Promise<void> {
     try {
@@ -333,6 +335,9 @@ export class AlchemistPlayer extends EventTarget {
     this.setState('loading');
     this.loadStartedAt = Date.now();
     this.armExpiryWatch();
+    // The EME Clear Key licence is a sibling of the manifest, so the same signature
+    // authorizes it. Shaka POSTs to this URI verbatim, query included — no filter needed.
+    this.player.configure('drm.servers', { 'org.w3.clearkey': siblingURL(this.opts.src, 'key') });
     try {
       await this.player.load(this.opts.src, startAt);
       if (this.destroyed) return;
