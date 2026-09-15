@@ -6,8 +6,7 @@
 		VideoReplayIcon,
 		Timer02Icon,
 		DatabaseIcon,
-		EyeIcon,
-		ArrowRight01Icon
+		EyeIcon
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import AssetList from '$lib/components/AssetList.svelte';
@@ -125,7 +124,6 @@
 		})
 	);
 
-	const recent = $derived(assets.slice(0, 5));
 </script>
 
 <Seo title="Overview — Alchemist" description="Your videos and this month's usage." />
@@ -231,15 +229,12 @@
 
 <section class="mt-8">
 	<div class="flex items-baseline justify-between gap-4">
-		<h2 class="text-lg font-semibold tracking-tight">Recently sent</h2>
-		{#if assets.length > recent.length}
-			<a href="/app/videos/" class="label flex items-center gap-1.5 hover:text-ink">
-				All {assets.length}
-				<HugeiconsIcon icon={ArrowRight01Icon} size={13} strokeWidth={2.4} />
-			</a>
+		<h2 class="text-lg font-semibold tracking-tight">Your videos</h2>
+		{#if assets.length}
+			<p class="label">{assets.length} newest first</p>
 		{/if}
 	</div>
 	<div class="card mt-4">
-		<AssetList assets={recent} {loading} />
+		<AssetList {assets} {loading} />
 	</div>
 </section>
