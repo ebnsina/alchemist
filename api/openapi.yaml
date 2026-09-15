@@ -258,7 +258,8 @@ paths:
       summary: Fetch an asset
       description: |
         `playback` appears once the state is `ready` or `partially_ready`, and
-        throughout a broadcast (`live`, then `live_ended`). URLs are signed and
+        throughout a broadcast (`live_armed` while it waits for an encoder, `live`
+        once one is publishing, then `live_ended`). URLs are signed and
         expire.
 
         **Hand the player whichever URL `playback.preferred` names.** Both `hls` and
@@ -819,6 +820,32 @@ paths:
         "404": { description: stream_not_found }
         "409": { description: stream_busy }
         "503": { description: no_ingest_port }
+
+  /v1/live-streams/{id}/stop:
+    post:
+      summary: End a broadcast that is on air
+      description: |
+        Until this existed a broadcast ended only when the encoder disconnected or the
+        health reaper timed it out, so a customer who closed OBS badly, or wanted to
+        finish a class early, had no way to stop.
+
+        It records the intent and returns immediately: the thing holding the encoder
+        is a worker in another process, and it picks this up on its next poll, within
+        a second. A stopped broadcast then goes down the ordinary ending path, so its
+        recording converts exactly as one whose encoder hung up does.
+
+        Stopping before anything was sent leaves no recording. The broadcast ends with
+        `stopped`, which is a stated outcome rather than a fault.
+
+        A broadcast that has already ended cannot be stopped, and asking answers
+        `not_broadcasting` — that is what keeps a recording part way through
+        conversion from being stranded.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "202": { description: The worker will end it on its next poll }
+        "403": { description: live_not_enabled }
+        "409": { description: not_broadcasting }
 
   /v1/edits:
     get:

@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -173,7 +174,9 @@ func (d DedupResolver) StoragePrefix(ctx context.Context, tenantID, assetID stri
 	if err != nil {
 		return "", err
 	}
-	if state == "live" || state == "live_ended" {
+	// live_armed resolves here too: nothing is written yet, so the honest answer is a
+	// 404 for a segment that does not exist, not a hit in the VOD library.
+	if state == "live_armed" || state == "live" || state == "live_ended" {
 		return "live/" + tenantID + "/" + canonical, nil
 	}
 	return prefix, nil
@@ -192,15 +195,50 @@ type LiveAssets struct{ DB *db.DB }
 
 // CreateForBroadcast mints the asset on the tenant's own ladder profile, which is
 // what the worker then resolves its single realtime rung from.
+//
+// live_armed, not live: arming is not broadcasting. An asset created in 'live' shows
+// as ON AIR the moment somebody presses Start and hands out playback URLs for
+// segments nothing has written yet. MarkLive moves it on the first segment.
 func (l LiveAssets) CreateForBroadcast(ctx context.Context, tenantID string) (string, error) {
 	var assetID string
 	err := l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx,
 			`insert into assets (tenant_id, ladder_profile, state)
-			 select $1, t.ladder_profile, 'live' from tenants t
+			 select $1, t.ladder_profile, 'live_armed' from tenants t
 			 returning id::text`, tenantID).Scan(&assetID)
 	})
 	return assetID, err
+}
+
+// Orphans lists broadcast assets that have sat in a live state past the grace period.
+// Whether one still has a session is live's own question -- this only narrows the
+// search to assets a broadcast could have left behind.
+//
+// It exists because the asset and its session are created in two steps and the second
+// can fail: the reaper walks sessions, so an asset with none was invisible to it and
+// stayed ON AIR forever, with no error anywhere.
+func (l LiveAssets) Orphans(ctx context.Context, tenantID string, olderThan time.Duration) ([]string, error) {
+	var ids []string
+	err := l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx,
+			`select id::text from assets
+			  where state in ('live_armed', 'live')
+			    and created_at < now() - make_interval(secs => $1)
+			  limit 100`, olderThan.Seconds())
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				return err
+			}
+			ids = append(ids, id)
+		}
+		return rows.Err()
+	})
+	return ids, err
 }
 
 func (l LiveAssets) MarkLive(ctx context.Context, tenantID, assetID string) error {

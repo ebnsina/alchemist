@@ -105,6 +105,12 @@ func (w *Worker) Run(ctx context.Context, sessionID, tenantID string) error {
 		if ended {
 			return w.endLive(ctx, a, assetID, streamID)
 		}
+		// Stopped before anything was sent. There is no recording to keep, so this is
+		// an ending rather than a broadcast: a stable code, and the segments -- there
+		// are none -- are swept like any other failure.
+		if w.stopRequested(ctx, a) {
+			return w.failLive(ctx, a, assetID, streamID, "stopped")
+		}
 		// Nothing published yet: nobody has connected. Keep waiting until the stream
 		// is abandoned rather than failing a broadcast that starts five minutes late.
 		if time.Now().After(waitUntil) {
@@ -130,7 +136,12 @@ type session struct {
 // and the caller should wait and try again.
 func (w *Worker) runIngest(ctx context.Context, a session, pull string, rung media.Rung,
 	dir, prefix string, published map[string]bool, assetID, streamID string) (bool, error) {
-	cmd := segmentCommand(ctx, pull, rung, dir)
+	// Its own context so a stop can end ffmpeg without cancelling the publish of the
+	// segments it already wrote -- those go out on the parent, after it exits.
+	runCtx, stopFFmpeg := context.WithCancel(ctx)
+	defer stopFFmpeg()
+
+	cmd := segmentCommand(runCtx, pull, rung, dir)
 	if err := cmd.Start(); err != nil {
 		return false, err
 	}
@@ -147,16 +158,28 @@ func (w *Worker) runIngest(ctx context.Context, a session, pull string, rung med
 			// Publish whatever the last tick missed before declaring the broadcast
 			// over, or the final segments are lost even though they were encoded.
 			_, _ = w.publishSegments(ctx, dir, prefix, published)
+			// And the playlist unconditionally: the ENDLIST ffmpeg appends on its way
+			// out is how a viewer learns the broadcast is over, and it can arrive with
+			// no new segment beside it, which publishSegments would skip.
+			if body, err := os.ReadFile(filepath.Join(dir, PlaylistName)); err == nil && len(published) > 0 {
+				_ = w.Store.Put(ctx, prefix+"/"+PlaylistName,
+					bytes.NewReader(body), "application/vnd.apple.mpegurl")
+			}
 			// An encoder that hangs up is how a broadcast normally ends, so an exit
 			// after we saw video is success. An exit with nothing published is simply
 			// nobody there yet.
 			return len(published) > 0, nil
 		case <-ticker.C:
 			added, err := w.publishSegments(ctx, dir, prefix, published)
-			if err != nil || added == 0 {
-				continue
+			if err == nil && added > 0 {
+				w.markSeen(ctx, a, assetID, streamID, len(published) == added)
 			}
-			w.markSeen(ctx, a, assetID, streamID, len(published) == added)
+			// Asked to stop. Ending ffmpeg here rather than returning straight away
+			// is what makes a stopped broadcast identical to one whose encoder hung
+			// up: the exit runs the same tail publish, and the recording converts.
+			if w.stopRequested(ctx, a) {
+				stopFFmpeg()
+			}
 		}
 	}
 }
@@ -213,6 +236,19 @@ func PlaylistFiles(body []byte) []string {
 		out = append(out, line)
 	}
 	return out
+}
+
+// stopRequested reports whether the customer has asked for this broadcast to end. A
+// read failure answers no: dropping a live class because one query timed out is worse
+// than noticing the stop a second later.
+func (w *Worker) stopRequested(ctx context.Context, a session) bool {
+	var asked bool
+	err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx,
+			`select stop_requested_at is not null from live_sessions where id = $1`,
+			a.ID).Scan(&asked)
+	})
+	return err == nil && asked
 }
 
 // markSeen records the health signal, and on the first segment flips the stream live.

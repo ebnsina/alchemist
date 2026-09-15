@@ -12,6 +12,7 @@ package live
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -31,6 +32,11 @@ type Assets interface {
 	// rather than watching for a webhook keeps the decision to delete segments on the
 	// same side as the decision to keep them.
 	State(ctx context.Context, tenantID, assetID string) (string, error)
+	// Orphans narrows the reaper's search to broadcast assets old enough to be stale.
+	// Which of them still has a session is live's own question, asked against its own
+	// table -- an asset whose session never landed is invisible to a reaper that only
+	// walks sessions, and sits ON AIR forever with no error anywhere.
+	Orphans(ctx context.Context, tenantID string, olderThan time.Duration) ([]string, error)
 }
 
 // Ladder resolves the rungs a broadcast's asset was armed with. ladder_profiles is
@@ -84,6 +90,7 @@ func (m *Module) Routes(r chi.Router) {
 		r.Get("/live-streams", m.listStreams)
 		r.Get("/live-streams/{id}", m.getStream)
 		r.Post("/live-streams/{id}/start", m.startStream)
+		r.Post("/live-streams/{id}/stop", m.stopStream)
 		r.Post("/live-streams/{id}/key", m.replaceKey)
 		r.Delete("/live-streams/{id}", m.deleteStream)
 	})
