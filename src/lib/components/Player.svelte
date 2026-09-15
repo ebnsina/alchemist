@@ -53,6 +53,14 @@
 		let instance: import('hls.js').default | null = null;
 
 		(async () => {
+			// An encrypted asset is packaged cenc, which only DASH carries, and no
+			// browser plays cenc without a licence server we have not wired up.
+			if (src.includes('.mpd')) {
+				blocked = true;
+				note = 'This video is encrypted. Playing it needs a DASH player and a licence server, which is not wired up yet.';
+				return;
+			}
+
 			// Only "probably" counts as native HLS. Chrome answers "maybe" for the HLS
 			// media type and then cannot play it, so trusting anything weaker means
 			// handing the stream to a player that will never start.

@@ -15,6 +15,8 @@
 		analyzing: { chip: 'Prep' },
 		encoding: { chip: 'Encoding' },
 		packaging: { chip: 'Packing' },
+		live: { chip: 'On air' },
+		live_ended: { chip: 'Recorded', done: true },
 		partially_ready: { chip: 'Ready', done: true },
 		ready: { chip: 'Ready', done: true },
 		failed: { chip: 'Failed', bad: true }

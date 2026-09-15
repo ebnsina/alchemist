@@ -36,7 +36,11 @@ const MESSAGES: Record<string, string> = {
 	not_ready: 'That video is still being processed. Editing opens once it is ready.',
 	unknown_provider:
 		'We cannot move a library from that service. Some hosts never hand back the original file.',
-	invalid_state: 'That has already moved on. Reload the page to see where it is now.'
+	invalid_state: 'That has already moved on. Reload the page to see where it is now.',
+	live_not_enabled: 'Live is not on this plan. Talk to us and we will switch it on.',
+	invalid_protocol: 'Pick SRT or RTMP.',
+	stream_not_found: 'We could not find that stream.',
+	stream_busy: 'That stream is already waiting for an encoder.'
 };
 
 export class ApiError extends Error {
@@ -182,7 +186,16 @@ export type AssetDetail = {
 	source_bytes?: number;
 	created_at?: string;
 	renditions: Rendition[];
-	playback?: { hls: string; dash: string; poster: string; thumbnails: string };
+	playback?: {
+		hls: string;
+		dash: string;
+		poster: string;
+		thumbnails: string;
+		// Encrypted media is packaged cenc and HLS cannot carry cenc, so the API says
+		// which of the two to hand a player rather than the page guessing.
+		preferred: 'hls' | 'dash';
+		encrypted: boolean;
+	};
 };
 
 export const getAsset = (id: string) => call<AssetDetail>(`/v1/assets/${id}`);
@@ -296,7 +309,12 @@ export const listBucketSources = () => call<{ bucket_sources: BucketSource[] }>(
 export const connectBucket = (body: NewBucketSource) =>
 	call<{ id: string }>('/v1/bucket-sources', { method: 'POST', body: JSON.stringify(body) });
 
-export type Whoami = { tenant_id: string; name: string; ladder_profile: string };
+export type Whoami = {
+	tenant_id: string;
+	name: string;
+	ladder_profile: string;
+	live_enabled: boolean;
+};
 export const whoami = () => call<Whoami>('/v1/whoami');
 
 export type LadderRung = { height: number; codec: string; maxrate_bps: number; lazy: boolean };
@@ -407,3 +425,32 @@ export const createEdit = (assetId: string, ops: EditOps) =>
 		body: JSON.stringify({ asset_id: assetId, ops })
 	});
 export const deleteEdit = (id: string) => call<void>(`/v1/edits/${id}`, { method: 'DELETE' });
+
+export type LiveStream = {
+	id: string;
+	name: string;
+	protocol: 'srt' | 'rtmp';
+	state: 'idle' | 'armed' | 'live' | 'ended';
+	asset_id?: string;
+	created_at: string;
+};
+
+export const listLiveStreams = () => call<{ live_streams: LiveStream[] }>('/v1/live-streams');
+export const getLiveStream = (id: string) => call<LiveStream>(`/v1/live-streams/${id}`);
+
+// The key comes back on this one call and is never returned again, exactly like an
+// API key.
+export const createLiveStream = (name: string, protocol: string) =>
+	call<LiveStream & { stream_key: string }>('/v1/live-streams', {
+		method: 'POST',
+		body: JSON.stringify({ name, protocol })
+	});
+
+export const startLiveStream = (id: string) =>
+	call<{ stream_id: string; session_id: string; asset_id: string; ingest_url: string }>(
+		`/v1/live-streams/${id}/start`,
+		{ method: 'POST' }
+	);
+
+export const deleteLiveStream = (id: string) =>
+	call<void>(`/v1/live-streams/${id}`, { method: 'DELETE' });
