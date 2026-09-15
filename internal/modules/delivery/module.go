@@ -52,6 +52,10 @@ type PlaybackObserver interface {
 type UsageMeter interface {
 	RecordEgress(tenantID string, bytes int64)
 	RecordViewer(tenantID, assetID, viewer string)
+	// AllowViewer answers whether one more device may stream for a bound viewer.
+	// It rides on this interface rather than a second one because it is answered
+	// from the same in-memory view of who is watching that the meter already keeps.
+	AllowViewer(ctx context.Context, tenantID, viewer, device string) bool
 }
 
 // AssetResolver maps a requested asset to the storage prefix that actually holds its
@@ -111,6 +115,12 @@ func (m *Module) meterViewer(tenantID, assetID, viewer string) {
 	}
 }
 
+// allowViewer is the per-viewer device cap. A deployment with no meter attached has
+// no cap, the same way it has no billing.
+func (m *Module) allowViewer(ctx context.Context, tenantID, viewer, device string) bool {
+	return m.meter == nil || m.meter.AllowViewer(ctx, tenantID, viewer, device)
+}
+
 // meterEgress records what was actually written, not what was asked for: a viewer who
 // abandons a seek costs the bytes that left, and nothing more.
 func (m *Module) meterEgress(tenantID string, n int64) {
@@ -148,18 +158,18 @@ func (m *Module) Routes(r chi.Router) {
 // SignPlayback mints the URLs the control plane hands to customers. It lives here
 // because the verification rules live here; keeping them together is what stops the
 // two drifting apart.
-func (m *Module) SignPlayback(prefix string, expUnix int64) (kid, sig string) {
-	return m.signer.Sign(prefix, expUnix)
+func (m *Module) SignPlayback(prefix string, expUnix int64, viewer, label string) (kid, sig string) {
+	return m.signer.Sign(prefix, expUnix, viewer, label)
 }
 
 // VerifyPlayback exposes signature checking to other modules that authorize viewer
 // traffic, such as the QoE beacon endpoint, without duplicating the rules.
-func (m *Module) VerifyPlayback(prefix, kid, sig, exp string) bool {
-	return m.verify(prefix, kid, sig, exp)
+func (m *Module) VerifyPlayback(prefix, kid, sig, exp, viewer, label string) bool {
+	return m.verify(prefix, kid, sig, exp, viewer, label)
 }
 
-func (m *Module) verify(prefix, kid, sig, exp string) bool {
-	return m.signer.Verify(prefix, kid, sig, exp)
+func (m *Module) verify(prefix, kid, sig, exp, viewer, label string) bool {
+	return m.signer.Verify(prefix, kid, sig, exp, viewer, label)
 }
 
 // Object mirrors the storage response fields the origin passes through verbatim so

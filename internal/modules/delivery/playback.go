@@ -25,7 +25,7 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 
 	prefix := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
 	q := r.URL.Query()
-	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp")) {
+	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm")) {
 		httpx.ErrorFor(w, r, http.StatusForbidden, "playback_not_authorized",
 			"This playback link has expired or is not valid.")
 		return
@@ -34,6 +34,17 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 	setCORS(w)
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// One login shared with a class is the largest leak there is, and every one of
+	// those viewers is authenticated -- so it is caught by counting devices, not by
+	// encryption. Checked on the playlist because that is what a player polls, and
+	// before storage is touched so a refusal costs nothing.
+	if vid := q.Get("vid"); vid != "" && isManifest(file) && r.Method == http.MethodGet &&
+		!m.allowViewer(r.Context(), tenantID, vid, viewerKey(r)) {
+		httpx.ErrorFor(w, r, http.StatusForbidden, "viewer_limit_reached",
+			"This account is already watching on too many devices. Close one and try again.")
 		return
 	}
 
@@ -165,6 +176,10 @@ func isManifest(name string) bool {
 // viewerKey identifies one viewer well enough to count them, without storing anything
 // that identifies a person: the address and user agent are hashed together and the
 // digest is all that is ever held.
+//
+// It is also the device identity the per-viewer cap counts, where CGNAT merges two
+// phones on the same carrier into one device: the cap errs towards letting a viewer
+// watch, which is the right direction to be wrong in on the playback path.
 //
 // ponytail: carrier-grade NAT puts many mobile viewers behind one address, so this
 // under-counts on exactly the network most BD viewers use. The player's beacon already

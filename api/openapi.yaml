@@ -226,10 +226,37 @@ paths:
         `playback` appears once the state is `ready` or `partially_ready`, and
         throughout a broadcast (`live`, then `live_ended`). URLs are signed and
         expire.
+
+        Pass `viewer` to bind the link to one person. The id is yours and stays
+        opaque to us — it is signed, echoed back in the URL as `vid`, and never
+        stored. A bound link cannot be edited to remove or change the binding, and
+        it is what the per-viewer device cap counts against
+        (`max_viewer_devices` in `/v1/playback-settings`). Beyond the cap the origin
+        answers `403 viewer_limit_reached`.
+
+        Pass `watermark` to carry a short label the player draws on screen, usually
+        the student's own phone number or roll. It travels inside the signature as
+        `wm`, so a viewer cannot strip it, and a leaked recording names the account
+        it came from. Burning it into the video server-side is not offered: that is
+        per-session encoding and costs a stream per viewer.
+
+        Both accept letters, digits and `- . _ ~ @` only — `viewer` up to 64
+        characters, `watermark` up to 48. Anything else is `400 invalid_viewer`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: viewer
+          in: query
+          required: false
+          description: Your opaque id for whoever is watching.
+          schema: { type: string, maxLength: 64, pattern: '^[A-Za-z0-9._~@-]+$' }
+        - name: watermark
+          in: query
+          required: false
+          description: Short label the player renders on screen.
+          schema: { type: string, maxLength: 48, pattern: '^[A-Za-z0-9._~@-]+$' }
       responses:
         "200": { description: Asset state and playback URLs }
+        "400": { description: invalid_viewer }
         "404": { description: asset_not_found }
     delete:
       summary: Delete a video
@@ -855,19 +882,25 @@ paths:
     get:
       summary: How your videos are delivered
       responses:
-        "200": { description: Whether playback encryption is on }
+        "200": { description: Whether playback encryption is on, and the device cap }
     put:
-      summary: Turn playback encryption on or off
+      summary: Turn playback encryption on or off, and cap devices per viewer
       description: |
-        **Off by default, deliberately.** Without a licence server this is not DRM:
-        the manifest declares `KEYFORMAT="identity"` and the key is served from the
-        same signed URL as the segments, so anyone able to fetch a segment can fetch
-        the key. It adds nothing the expiring signed URL does not already give, and
-        it makes playback impossible in every browser but Safari — Chrome and Firefox
-        need EME, which needs a licence server.
+        **Encryption is off by default, deliberately.** Without a licence server this
+        is not DRM: the manifest declares `KEYFORMAT="identity"` and the key is served
+        from the same signed URL as the segments, so anyone able to fetch a segment can
+        fetch the key. It adds nothing the expiring signed URL does not already give,
+        and it makes playback impossible in every browser but Safari — Chrome and
+        Firefox need EME, which needs a licence server.
 
-        Access control is the signed expiring URL. Turn this on only if you have a
-        reason to accept Safari-only playback.
+        `max_viewer_devices` caps how many devices one viewer may stream from at
+        once, 0–20, where **0 means no cap**. It applies only to links minted with
+        `GET /v1/assets/{id}?viewer=...`; unbound links are not counted. A device is
+        the viewer's address and browser taken together, and one that has not asked
+        for a playlist in a couple of minutes gives its slot back. Past the cap the
+        newest device is refused — `403 viewer_limit_reached` — never the one already
+        watching, so a shared password cannot boot the student who paid out of their
+        own lecture.
 
         Videos already published keep whatever they were made with: re-packaging a
         library on a settings change would rewrite every object and evict the lot
@@ -881,8 +914,10 @@ paths:
               required: [encrypt_playback]
               properties:
                 encrypt_playback: { type: boolean }
+                max_viewer_devices: { type: integer, minimum: 0, maximum: 20 }
       responses:
         "200": { description: Changed; applies to the next video processed }
+        "400": { description: invalid_request }
         "403": { description: session_required or not_permitted }
 
   /v1/branding:
@@ -956,11 +991,26 @@ paths:
         - { name: exp, in: query, required: true, schema: { type: integer } }
         - { name: kid, in: query, required: true, schema: { type: string } }
         - { name: sig, in: query, required: true, schema: { type: string } }
+        - name: vid
+          in: query
+          required: false
+          description: |
+            Present on a bound link. Covered by `sig`, so it cannot be removed or
+            changed. Playlist requests carrying it are counted against the account's
+            device cap.
+          schema: { type: string }
+        - name: wm
+          in: query
+          required: false
+          description: |
+            Present on a bound link. The watermark label the player renders, covered
+            by `sig`.
+          schema: { type: string }
       responses:
         "200": { description: Full object }
         "206": { description: Byte range }
         "304": { description: Not modified }
-        "403": { description: playback_not_authorized }
+        "403": { description: playback_not_authorized or viewer_limit_reached }
         "404": { description: not_found }
         "416": { description: range_not_satisfiable }
     head:

@@ -25,9 +25,19 @@ function loadKeyring(r) {
     return ring;
 }
 
-function compute(secret, prefix, exp) {
+/*
+ * vid (the customer's opaque viewer id) and wm (the on-screen watermark label) are
+ * inside the signature, so neither can be edited out of a link. A link carrying
+ * neither signs the original two fields, so tokens issued before binding existed
+ * keep verifying.
+ */
+function compute(secret, prefix, exp, viewer, label) {
+    var msg = prefix + '|' + exp;
+    if (viewer || label) {
+        msg += '|' + (viewer || '') + '|' + (label || '');
+    }
     return crypto.createHmac('sha256', secret)
-        .update(prefix + '|' + exp)
+        .update(msg)
         .digest('hex')
         .substring(0, SIGNATURE_LENGTH);
 }
@@ -85,7 +95,7 @@ function authorize(r) {
         return;
     }
 
-    if (!secureEqual(sig, compute(secret, prefix, exp))) {
+    if (!secureEqual(sig, compute(secret, prefix, exp, r.args.vid, r.args.wm))) {
         r.return(403);
         return;
     }

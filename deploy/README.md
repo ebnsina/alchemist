@@ -137,6 +137,35 @@ Size `proxy_cache_path max_size` to about 80% of the cache disk. The working set
 far smaller than the library: a small fraction of assets drives most views, which is
 the same power law that justifies JIT packaging.
 
+## Viewer binding, the device cap, and the cache
+
+`GET /v1/assets/{id}?viewer=<opaque-id>&watermark=<label>` mints links carrying `vid`
+and `wm`. Both are inside the HMAC, so a viewer cannot edit their id or their watermark
+out of the URL, and the njs at the edge hashes them the same way -- `internal/platform/signing/parity_test.go`
+covers bound links as well as plain ones.
+
+A link with no binding signs the original `{prefix}|{exp}` and nothing more, so tokens
+issued before this existed keep verifying. That is what stops a deploy 403ing every
+session in flight for the length of a token TTL.
+
+**This does not change the media cache key.** Media is still keyed on
+`$uri$slice_range`, so two students watching the same lecture share every cached slice
+no matter what their tokens say -- the hit ratio is untouched. Only manifests are keyed
+per full URI, and those were already per-viewer because every mint carries its own
+signature; they hold for two seconds, which is what absorbs a burst.
+
+The device cap is enforced at the **origin**, on playlist requests only. It cannot live
+at the edge: njs validates a signature with no shared state, and counting devices needs
+state shared across viewers. The consequence is that the edge's two-second manifest
+cache can serve one poll without the origin seeing it. A player re-reads its playlist
+every segment duration, so the next poll counts, and the window is a couple of seconds.
+
+`tenant_limits.max_viewer_devices` is 0 (no cap) by default. The count lives in the
+origin process, so a restart forgives everyone until each device polls again, and
+splitting `alchemist-origin` across machines gives each its own count -- both are
+deliberate. **ponytail:** the ceiling is one process; move the counter into Postgres or
+Redis only when several origins actually run at once.
+
 ## The cache key excludes the signature -- authorization must run first
 
 Media is cached under `$uri$slice_range`, deliberately **without** the signature. If
@@ -164,8 +193,9 @@ it fails closed, which is the behaviour you want.
 
 ## Rotating playback keys
 
-Signatures are HMAC-SHA256 over `{prefix}|{exp}`, verified in the nginx worker so a
-cache hit never touches the control plane. `internal/platform/signing/parity_test.go` runs the
+Signatures are HMAC-SHA256 over `{prefix}|{exp}`, or `{prefix}|{exp}|{vid}|{wm}` when
+the link is bound to a viewer, verified in the nginx worker so a cache hit never touches
+the control plane. `internal/platform/signing/parity_test.go` runs the
 real `deploy/edge/playback_auth.js` under Node and asserts it matches Go byte for byte -- if those
 diverge, every playback URL 403s at the edge while looking valid at the origin.
 

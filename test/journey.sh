@@ -72,6 +72,25 @@ check "thumbnail tile authorized" "$(curl -s -o /dev/null -w '%{http_code}' "$B$
 
 check "source size billed" "$(echo "$P"|python3 -c 'import sys,json;print("yes" if json.load(sys.stdin).get("source_bytes") else "no")')" "yes"
 
+echo "8b. a link bound to one student cannot be unbound"
+# The signature covers the viewer id and the watermark, so editing either out of the
+# URL has to fail -- otherwise the device cap and the on-screen watermark are both
+# opt-out and the whole feature is decoration.
+BP=$(curl -s -H "Authorization: Bearer $KEY" "$B/v1/assets/$A?viewer=student-8842&watermark=01712345678")
+BHLS=$(echo "$BP"|python3 -c 'import sys,json;print(json.load(sys.stdin)["playback"]["hls"])')
+check "bound link carries the viewer" "$(echo "$BHLS" | grep -c 'vid=student-8842')" "1"
+check "bound link carries the watermark" "$(echo "$BHLS" | grep -c 'wm=01712345678')" "1"
+check "bound link plays" "$(curl -s -o /dev/null -w '%{http_code}' "$B$BHLS")" "200"
+check "viewer stripped is refused" "$(curl -s -o /dev/null -w '%{http_code}' "${B}$(echo "$BHLS" | sed 's/&vid=student-8842//')")" "403"
+check "watermark swapped is refused" "$(curl -s -o /dev/null -w '%{http_code}' "${B}$(echo "$BHLS" | sed 's/&wm=01712345678/\&wm=someone-else/')")" "403"
+check "unsignable viewer id refused" "$(curl -s "$B/v1/assets/$A?viewer=a+b%20c" | python3 -c 'import sys,json;print(json.load(sys.stdin)["error"]["code"])' )" "invalid_viewer"
+
+echo "8c. delivery settings say how this account is protected"
+SET=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/playback-settings)
+check "device cap reported" "$(echo "$SET"|python3 -c 'import sys,json;print("max_viewer_devices" in json.load(sys.stdin))')" "True"
+# Changing it is session-only, like every other account setting, so this script can
+# only read it. A cap of 0 means no cap, which is what a new account has.
+
 echo "9. the same file again is deduplicated, not re-encoded"
 D=$(curl -s -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
   -d '{"url":"http://127.0.0.1:8071/lecture.mp4"}' $B/v1/assets | python3 -c 'import sys,json;print(json.load(sys.stdin).get("asset_id",""))')

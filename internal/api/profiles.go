@@ -66,20 +66,25 @@ type setProfileRequest struct {
 }
 
 type playbackSettings struct {
-	EncryptPlayback bool `json:"encrypt_playback"`
+	EncryptPlayback  bool `json:"encrypt_playback"`
+	MaxViewerDevices int  `json:"max_viewer_devices"`
 }
 
-// getPlayback and setPlayback expose the one delivery setting a customer can change.
-// Encryption is off by default: without a licence server it is not DRM — the key is
-// served from the same signed URL as the segments — and it makes playback impossible
-// outside Safari, which is most viewers.
+// getPlayback and setPlayback expose the delivery settings a customer can change.
+//
+// Encryption protects the bytes at rest: a lifted bucket or backup is useless without
+// the key. It is not DRM and does not stop a viewer who is entitled to watch from
+// keeping a copy. max_viewer_devices is the one that answers password sharing, and it
+// applies only to links minted with a viewer id.
 func (s *Server) getPlayback(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 
 	var out playbackSettings
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
-		return tx.QueryRow(r.Context(), `select encrypt_playback from tenants`).
-			Scan(&out.EncryptPlayback)
+		return tx.QueryRow(r.Context(),
+			`select t.encrypt_playback, coalesce(l.max_viewer_devices, 0)
+			   from tenants t left join tenant_limits l on l.tenant_id = t.id`).
+			Scan(&out.EncryptPlayback, &out.MaxViewerDevices)
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
@@ -99,14 +104,31 @@ func (s *Server) setPlayback(w http.ResponseWriter, r *http.Request) {
 	var req playbackSettings
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
 		writeErrFor(w, r, http.StatusBadRequest, "invalid_request",
-			"Send a JSON body with encrypt_playback.")
+			"Send a JSON body with encrypt_playback and max_viewer_devices.")
+		return
+	}
+	// Bounded: a cap of a thousand devices is a typo, not a policy, and it would read
+	// as protection while being none.
+	if req.MaxViewerDevices < 0 || req.MaxViewerDevices > 20 {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_request",
+			"max_viewer_devices is between 0 (no limit) and 20.")
 		return
 	}
 	// Videos already published keep whatever they were made with. Changing this does
 	// not silently re-package a library, which would change every ETag and evict the
 	// lot from every edge cache.
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
-		_, e := tx.Exec(r.Context(), `update tenants set encrypt_playback = $1`, req.EncryptPlayback)
+		if _, e := tx.Exec(r.Context(),
+			`update tenants set encrypt_playback = $1`, req.EncryptPlayback); e != nil {
+			return e
+		}
+		// Upsert: a tenant on plan defaults has no limits row, and setting a cap must
+		// not require one to have been created first.
+		_, e := tx.Exec(r.Context(),
+			`insert into tenant_limits (tenant_id, max_viewer_devices) values ($1, $2)
+			 on conflict (tenant_id) do update
+			   set max_viewer_devices = excluded.max_viewer_devices, updated_at = now()`,
+			tenantID, req.MaxViewerDevices)
 		return e
 	})
 	if err != nil {

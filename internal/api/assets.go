@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -133,9 +134,31 @@ type assetResponse struct {
 	Playback    *playbackURLs `json:"playback,omitempty"`
 }
 
+// bindable is what a viewer id or watermark label may contain. Restricted to
+// characters that pass through a URL untouched, so the bytes the edge hashes are the
+// bytes that were signed -- percent-encoding would make njs and Go disagree and every
+// bound link would 403 at the edge only.
+var bindable = regexp.MustCompile(`^[A-Za-z0-9._~@-]+$`)
+
+func bindingOK(v string, max int) bool {
+	return v == "" || (len(v) <= max && bindable.MatchString(v))
+}
+
 func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 	assetID := chi.URLParam(r, "id")
+
+	// The customer's own id for whoever is watching, and the label their player
+	// draws on screen. Both stay opaque to us: they are signed, echoed and never
+	// stored, so we never learn which student a link belongs to.
+	viewer := r.URL.Query().Get("viewer")
+	label := r.URL.Query().Get("watermark")
+	if !bindingOK(viewer, 64) || !bindingOK(label, 48) {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_viewer",
+			"A viewer id or watermark can use letters, numbers and - . _ ~ @ only, "+
+				"up to 64 and 48 characters.")
+		return
+	}
 
 	var resp assetResponse
 	resp.Renditions = []rendition{}
@@ -187,8 +210,14 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	case "ready", "partially_ready", "live", "live_ended":
 		exp := time.Now().Add(4 * time.Hour).Unix()
 		base := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
-		kid, sig := s.delivery.SignPlayback(base, exp)
+		kid, sig := s.delivery.SignPlayback(base, exp, viewer, label)
 		q := fmt.Sprintf("exp=%d&kid=%s&sig=%s", exp, kid, sig)
+		if viewer != "" {
+			q += "&vid=" + viewer
+		}
+		if label != "" {
+			q += "&wm=" + label
+		}
 		resp.Playback = &playbackURLs{
 			HLS:        fmt.Sprintf("%s/master.m3u8?%s", base, q),
 			DASH:       fmt.Sprintf("%s/manifest.mpd?%s", base, q),

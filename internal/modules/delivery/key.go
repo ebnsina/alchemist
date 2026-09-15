@@ -13,17 +13,14 @@ import (
 // serveContentKey hands the decryption key to an authorized player.
 //
 // It is deliberately the same signature that authorizes the manifest and segments:
-// a viewer who cannot fetch the media cannot fetch the key either. For tenants that
-// need it, binding the playback token to a user id makes a leaked link traceable to
-// the account that shared it, which is the piracy problem edtech customers actually
-// have.
+// a viewer who cannot fetch the media cannot fetch the key either, binding included.
 func (m *Module) serveContentKey(w http.ResponseWriter, r *http.Request) {
 	tenantID := chi.URLParam(r, "tenant")
 	assetID := chi.URLParam(r, "asset")
 
 	prefix := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
 	q := r.URL.Query()
-	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp")) {
+	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm")) {
 		httpx.ErrorFor(w, r, http.StatusForbidden, "playback_not_authorized",
 			"This playback link has expired or is not valid.")
 		return

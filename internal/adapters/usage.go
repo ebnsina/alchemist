@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -28,9 +29,102 @@ type Usage struct {
 	// every interval, so its size is the number watching during that interval —
 	// which is what "concurrent" means for billing.
 	viewers map[assetKey]map[string]struct{}
+	// Devices each bound viewer is streaming from, and when each was last seen.
+	// Rolling rather than drained, because a cap that resets every flush would let
+	// a shared login back in once a minute.
+	devices map[bindingKey]map[string]time.Time
+	caps    map[string]deviceCap
 }
 
 type assetKey struct{ tenant, asset string }
+
+type bindingKey struct{ tenant, viewer string }
+
+type deviceCap struct {
+	n     int
+	until time.Time
+}
+
+// deviceWindow is how long after its last playlist read a device still counts as
+// watching. A player re-reads the playlist every segment duration, so this is
+// several missed polls -- long enough that a tunnel or a lift does not free a slot,
+// short enough that closing a tab does within a minute or two.
+const deviceWindow = 2 * time.Minute
+
+// AllowViewer reports whether one more device may stream for this viewer.
+//
+// The newcomer is refused, never the incumbent: kicking the oldest session lets a
+// shared password boot the student who paid out of their own lecture, repeatedly and
+// invisibly, which is a worse product than telling the twenty-first friend no.
+//
+// ponytail: the count is per process, so a restart forgives everyone and two origins
+// count separately. Move it into Postgres or Redis when several actually run at once.
+func (e *Usage) AllowViewer(ctx context.Context, tenantID, viewer, device string) bool {
+	n := e.deviceCap(ctx, tenantID)
+	if n <= 0 {
+		return true
+	}
+	return e.allowDevice(bindingKey{tenantID, viewer}, device, n, time.Now())
+}
+
+// allowDevice is the decision itself, with the clock and the cap passed in so it can
+// be tested without a database.
+func (e *Usage) allowDevice(k bindingKey, device string, limit int, now time.Time) bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.devices == nil {
+		e.devices = map[bindingKey]map[string]time.Time{}
+	}
+	seen := e.devices[k]
+	if seen == nil {
+		seen = map[string]time.Time{}
+		e.devices[k] = seen
+	}
+	if _, known := seen[device]; !known {
+		for d, at := range seen {
+			if now.Sub(at) > deviceWindow {
+				delete(seen, d)
+			}
+		}
+		if len(seen) >= limit {
+			return false
+		}
+	}
+	seen[device] = now
+	return true
+}
+
+// deviceCap reads the tenant's cap, cached for a minute: this is on the playback
+// path, and a query per playlist read would put the database back in front of every
+// viewer. A read that fails caches nothing and allows -- a database blip must not
+// stop playback.
+func (e *Usage) deviceCap(ctx context.Context, tenantID string) int {
+	e.mu.Lock()
+	c, ok := e.caps[tenantID]
+	e.mu.Unlock()
+	if ok && time.Now().Before(c.until) {
+		return c.n
+	}
+
+	var n int
+	err := e.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		err := tx.QueryRow(ctx, `select max_viewer_devices from tenant_limits`).Scan(&n)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil // no limits row means plan defaults, which is no cap
+		}
+		return err
+	})
+	if err != nil {
+		return 0
+	}
+	e.mu.Lock()
+	if e.caps == nil {
+		e.caps = map[string]deviceCap{}
+	}
+	e.caps[tenantID] = deviceCap{n: n, until: time.Now().Add(time.Minute)}
+	e.mu.Unlock()
+	return n
+}
 
 // RecordViewer notes one viewer on one asset. Cheap on purpose: this runs on every
 // playlist read, which for a live stream is once per viewer per segment duration.
@@ -87,6 +181,20 @@ func (e *Usage) drain() (map[string]int64, map[assetKey]int) {
 		peaks[k] = len(set)
 	}
 	e.viewers = nil
+
+	// Sweep viewers nobody is watching as any more, or the map grows for the life
+	// of the process.
+	now := time.Now()
+	for k, seen := range e.devices {
+		for d, at := range seen {
+			if now.Sub(at) > deviceWindow {
+				delete(seen, d)
+			}
+		}
+		if len(seen) == 0 {
+			delete(e.devices, k)
+		}
+	}
 	return batch, peaks
 }
 

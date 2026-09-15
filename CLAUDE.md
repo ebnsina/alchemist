@@ -145,6 +145,12 @@ These were established by measurement and are expensive to rediscover.
   the signed URL does not — and cbcs makes the stream unplayable outside Safari,
   because Chrome and Firefox need EME. The signed expiring URL is the access control.
   Tenants can opt in; assets keep whatever they were packaged with.
+- **Sharing is answered by binding, not by encryption.** `?viewer=` mints a link whose
+  signature covers the viewer id and the watermark label, so neither can be edited out,
+  and `tenant_limits.max_viewer_devices` caps concurrent devices per viewer at the
+  origin. The cap cannot move to the edge: njs validates a signature with no shared
+  state, and counting devices needs state. Binding does **not** touch the media cache
+  key — `$uri$slice_range` still excludes the query, so viewers share every slice.
 - **JIT renditions must reuse the asset's existing content key and its stored
   complexity.** A fresh key produces a rung nothing can decrypt (and it fails looking
   like a corrupt file, not a key mismatch); skipping complexity leaves one asset with
