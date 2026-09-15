@@ -44,9 +44,7 @@
 		{
 			label: 'Videos',
 			items: [
-				// Overview owns the video pages: /app/videos/xyz has no nav entry of its
-				// own, and leaving nothing lit makes the sidebar look broken.
-				{ href: '/app/', label: 'Overview', icon: DashboardSquare01Icon, owns: ['/app/videos'] },
+				{ href: '/app/videos/', label: 'Videos', icon: DashboardSquare01Icon },
 				{ href: '/app/upload/', label: 'Upload', icon: Upload01Icon },
 				{ href: '/app/studio/', label: 'Studio', icon: Scissor01Icon },
 				{ href: '/app/sources/', label: 'Connected buckets', icon: CloudServerIcon },
@@ -96,7 +94,7 @@
 			? 'Studio'
 			: page.url.pathname.startsWith('/app/videos/')
 				? 'Video'
-				: (active?.label ?? 'Overview')
+				: (active?.label ?? 'Videos')
 	);
 
 	// The session lives in an HttpOnly cookie, so the page cannot read it — asking
@@ -292,7 +290,7 @@
 					<HugeiconsIcon icon={Menu01Icon} size={18} strokeWidth={1.8} />
 				</button>
 				<nav class="flex min-w-0 items-center gap-2 text-sm" aria-label="Breadcrumb">
-					<a href="/app/" class="flex-none text-dim transition-colors hover:text-ink">Dashboard</a>
+					<a href="/app/videos/" class="flex-none text-dim transition-colors hover:text-ink">Dashboard</a>
 					{#each trail as c, i (c.label + i)}
 						<span class="flex-none text-dim" aria-hidden="true">/</span>
 						{#if c.href && i < trail.length - 1}

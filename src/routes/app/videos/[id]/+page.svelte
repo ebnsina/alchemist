@@ -31,7 +31,7 @@
 	});
 
 	$effect(() => {
-		setCrumbs([{ label: 'Videos', href: '/app/' }, { label: id.slice(0, 8) }]);
+		setCrumbs([{ label: 'Videos', href: '/app/videos/' }, { label: id.slice(0, 8) }]);
 	});
 
 	// Keep asking while work is outstanding, and stop the moment it is not.
