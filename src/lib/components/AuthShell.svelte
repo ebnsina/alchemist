@@ -4,7 +4,7 @@
 	let { title, children } = $props();
 </script>
 
-<section class="mx-auto flex min-h-svh max-w-[1200px] items-center px-4 py-16 sm:px-6">
+<main id="main" class="mx-auto flex min-h-svh max-w-[1200px] items-center px-4 py-16 sm:px-6">
 	<div class="mx-auto w-full max-w-[420px]">
 		<a href="/" class="mb-6 flex items-center justify-center gap-2 text-lg font-semibold">
 			<Logo size={24} />
@@ -15,4 +15,4 @@
 			{@render children()}
 		</div>
 	</div>
-</section>
+</main>

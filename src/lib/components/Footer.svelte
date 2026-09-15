@@ -5,15 +5,6 @@
 		{
 			hen: 'Product',
 			links: [
-				{ href: '/#features', en: 'Features' },
-				{ href: '/#how', en: 'How it works' },
-				{ href: '/#pricing', en: 'Pricing' }
-			]
-		},
-		{
-			hen: 'Help',
-			links: [
-				{ href: '/#faq', en: 'Questions' },
 				{ href: '/contact/', en: 'Talk to us' },
 				{ href: '/app/docs/', en: 'API reference' }
 			]
@@ -21,7 +12,7 @@
 		{
 			hen: 'Account',
 			links: [
-				{ href: '/signup/', en: 'Start free' },
+				{ href: '/signup/', en: 'Get started' },
 				{ href: '/login/', en: 'Sign in' },
 				{ href: '/app/', en: 'Dashboard' }
 			]
@@ -39,7 +30,7 @@
 				Heavy video in, light video out. Made for creators, teachers and small businesses who would rather not think about file sizes.
 			</p>
 		</div>
-		<nav class="grid gap-8 sm:grid-cols-3" aria-label="Footer">
+		<nav class="grid gap-8 sm:grid-cols-2" aria-label="Footer">
 			{#each cols as c (c.hen)}
 				<div>
 					<h2 class="text-xs font-semibold tracking-widest text-dim uppercase">

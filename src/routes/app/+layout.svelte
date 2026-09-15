@@ -181,7 +181,7 @@
 				</div>
 			</header>
 
-			<div class="panel__body">
+			<div id="main" class="panel__body">
 				{#if !checked}
 					<p class="text-sm text-dim">Checking your session…</p>
 				{:else if me}

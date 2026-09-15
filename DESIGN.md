@@ -117,39 +117,26 @@ Every surface that can load, be empty, or fail ships all three states.
 
 ## Motion
 
-The landing page never scrolls. It is one screen, and each section wipes in from the
-right over the one before it — the way a Barba transition brings a page in.
+There is almost none. The landing page is one screen — no scroll paging, no pinned
+stack, no veil — because nine sections turned out to be nine ways of saying the same
+thing, and once there is one thing to say the page does not need a mechanism to
+reveal it.
 
-GSAP pins the stack for as long as there are sections left, so the wheel spends its
-distance on the reveal rather than on moving the page. Scrub ties the veil to the
-scroll position, so dragging back closes it again, and snap settles on whole
-sections when the gesture stops — the page is never left half-veiled.
-
-The mechanism is `clip-path`, not `transform`. The incoming section does not move,
-it is uncovered by an edge travelling right to left; sliding it would drag type
-across type, which is what makes stacked pages feel cheap.
-
-Below 1024px and under reduced motion none of this runs, and the same markup is an
-ordinary column of full-height sections. The script only adds behaviour — it never
-holds the content.
-
-Anchors are handled by the same module: a section that never moves cannot be
-scrolled to, so a nav link scrolls to the point in the pin where that section is
-uncovered.
+What is left is the hero card cycling through upload, encode, link, which is a
+diagram rather than decoration, and it stops under reduced motion.
 
 ## Navigation
 
-There is no header. The page is one screen, and a bar across the top spends the most
-valuable strip on navigation nobody is using yet. Instead a dock sits fixed at the
-bottom centre: the mark, the sections, the theme, and one filled `Get started`.
-Signing in lives in the footer — it is for people who already have an account, and
-it does not need a permanent slot next to the thing that gets new ones.
+There is no header. The landing page carries its own mark, centred, at the top of
+the single screen; the dashboard has its sidebar; everything else is in the footer.
+Signing in lives there too — it is for people who already have an account, and it
+does not need a permanent slot next to the thing that gets new ones.
 
 ## Where it is used
 
 The dashboard overview is the reference layout: the node list on the left, and a
 rail on the right holding the ring and the metrics — everything that is a figure
-rather than an action. The public site uses the same parts at a larger scale.
+rather than an action.
 
 ## Checks
 

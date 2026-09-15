@@ -6,7 +6,7 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<section class="shell bay">
+<main id="main" class="shell bay">
 	<div class="flow">
 		<p class="marker">404</p>
 		<h1>That page is not here.</h1>
@@ -19,7 +19,7 @@
 			<li><a class="tlink" href="/app/">Dashboard</a></li>
 			</ul>
 	</div>
-</section>
+</main>
 
 <style>
 	.marker {

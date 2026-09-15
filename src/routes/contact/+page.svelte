@@ -49,7 +49,7 @@
 	description="Tell us what you are trying to put online and we will tell you whether we can help."
 />
 
-<section class="mx-auto max-w-2xl px-4 pt-32 pb-20 sm:px-6 sm:pt-40 sm:pb-28">
+<main id="main" class="mx-auto max-w-2xl px-4 pt-32 pb-20 sm:px-6 sm:pt-40 sm:pb-28">
 	<h1 class="text-3xl leading-[1.32] font-semibold tracking-tight sm:text-4xl">Talk to us</h1>
 	<p class="mt-3 max-w-xl text-dim">
 		Tell us what you are putting online and roughly how much of it. We answer with what it would
@@ -124,4 +124,4 @@
 			</div>
 		</form>
 	{/if}
-</section>
+</main>
