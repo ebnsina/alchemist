@@ -260,7 +260,7 @@
 
 	{#if asset.playback}
 		<section class="mt-6">
-			<AssetPlayer playback={asset.playback} />
+			<AssetPlayer playback={asset.playback} live={asset.state === 'live'} />
 		</section>
 	{/if}
 

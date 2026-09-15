@@ -9,6 +9,10 @@
   broadcast tells the engine and closes the connection and the camera together.
 
 ### Fixed
+- **The LIVE badge shows during a broadcast.** The player was left to work out for
+  itself whether a stream was live and always decided it was not, so a broadcast
+  played with no badge and a clock counting towards a total that kept moving. The
+  dashboard already knows the asset is on air and now says so.
 - **An armed stream no longer reads as On air.** A stream waiting for its encoder sat
   in the video list saying On air, over a broadcast nothing had been sent to yet. The
   new `live_armed` state gets its own chip and its own sentence, so On air means a

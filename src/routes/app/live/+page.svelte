@@ -402,7 +402,7 @@
 		</div>
 		{#if onAir && watching.asset.playback}
 			<div class="mt-4">
-				<AssetPlayer playback={watching.asset.playback} />
+				<AssetPlayer playback={watching.asset.playback} live={onAir} />
 			</div>
 		{:else}
 			<p class="sub mt-4">
