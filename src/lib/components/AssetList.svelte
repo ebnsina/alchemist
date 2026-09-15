@@ -15,6 +15,9 @@
 		analyzing: { chip: 'Prep' },
 		encoding: { chip: 'Encoding' },
 		packaging: { chip: 'Packing' },
+		// Armed is not on air. Until a frame arrives there is nothing to watch, and a
+		// list saying On air over an empty stream is the lie this whole state exists to stop.
+		live_armed: { chip: 'Waiting' },
 		live: { chip: 'On air' },
 		live_ended: { chip: 'Recorded', done: true },
 		partially_ready: { chip: 'Ready', done: true },

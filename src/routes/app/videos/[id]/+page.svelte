@@ -64,6 +64,7 @@
 		encoding: { label: 'Making the sizes', means: 'Building each size in parallel chunks. Small ones finish first.' },
 		packaging: { label: 'Almost there', means: 'Wrapping the sizes up so any player can read them.' },
 		partially_ready: { label: 'Watchable now', means: 'Enough sizes are done to play it. The rest are still coming.' },
+		live_armed: { label: 'Waiting for the encoder', means: 'A broadcast is booked on this video but nothing has been sent yet. It goes on air the moment your encoder or camera connects.' },
 		live: { label: 'On air', means: 'This is a broadcast going out right now. It plays below as it happens.' },
 		live_ended: { label: 'Broadcast finished', means: 'The live broadcast has ended. What went out is kept here to watch back.' },
 		ready: { label: 'Ready to watch', means: 'Every size is made. Nothing left to wait for.' },
@@ -77,7 +78,11 @@
 		source_url_not_allowed: 'That link pointed somewhere we will not fetch from.',
 		source_unreachable: 'We could not download it from that link.',
 		encode_failed: 'The encode failed on our side. Nothing wrong with your file — worth trying again.',
-		processing_failed: 'The work failed on our side. Worth trying again.'
+		processing_failed: 'The work failed on our side. Worth trying again.',
+		start_failed: 'Starting this broadcast did not finish, so nothing went out. Start the stream again.',
+		stopped: 'You stopped this broadcast before anything was sent, so there is no recording.',
+		no_encoder: 'Nothing ever connected to this stream, so there is no recording.',
+		recording_unreadable: 'We could not read the broadcast back, so there is no recording to watch.'
 	};
 
 	// What each playback link is actually for. The description is a tooltip now: four
@@ -255,7 +260,7 @@
 
 	{#if asset.playback}
 		<section class="mt-6">
-			<AssetPlayer playback={asset.playback} />
+			<AssetPlayer playback={asset.playback} live={asset.state === 'live'} />
 		</section>
 	{/if}
 
