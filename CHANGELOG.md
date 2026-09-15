@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- A `live` option on the player. The LIVE badge never appeared during a broadcast:
+  the live playlist is `#EXT-X-PLAYLIST-TYPE:EVENT` so a viewer can seek back to its
+  start, and shaka reads EVENT as a growing VOD, so its `isLive()` stayed false for
+  the whole thing. A host that knows the asset is on air now says so, and `isLive`
+  falls back to shaka's answer when the option is absent, so the embed and every
+  existing SDK caller are unchanged.
+
 - EME Clear Key playback. The content key is fetched from `{signed prefix}/key` with
   the same `exp`, `kid` and `sig` as the manifest; shaka POSTs to that URI verbatim,
   so no request filter is needed to keep the signature attached. Clear Key is

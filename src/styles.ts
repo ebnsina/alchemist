@@ -125,6 +125,8 @@ export const CSS = `
   padding-top:3px;color:var(--alc-muted);
 }
 
+/* Without this the badge ignores its own hidden attribute and every video says LIVE. */
+.alc-live[hidden]{display:none}
 .alc-live{display:inline-flex;align-items:center;gap:.4rem;border:0;cursor:pointer;
   background:rgba(232,120,95,.16);color:#F0A492;font-size:11px;font-weight:700;
   letter-spacing:.06em;padding:.2rem .5rem;border-radius:999px}
