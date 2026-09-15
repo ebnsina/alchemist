@@ -32,11 +32,16 @@ Things that will otherwise surprise you:
 - **Errors are `{"error":{"code","message"}}`.** Branch on `code`, which is stable.
   `message` is written for a human and is translated when the request sends
   `Accept-Language: bn`.
-- **Media is unencrypted by default**, and the signed expiring URL is the access
-  control. Optional cbcs encryption can be turned on per tenant
-  (`PUT /v1/playback-settings`), but it is not DRM without a licence server: the
-  manifest declares `KEYFORMAT="identity"` and the key is served from the same signed
-  URL as the segments. With it on, only Safari plays — Chrome and Firefox need EME.
+- **Media is encrypted by default** for new accounts: `cenc`, with the key endpoint
+  answering an EME Clear Key licence (`{"keys":[{"kty":"oct","kid":"...","k":"..."}],
+  "type":"temporary"}`, unpadded base64url). Chrome, Firefox and Edge play it with no
+  licence vendor. **Safari and iOS cannot** — WebKit's only key system is FairPlay —
+  and they get `403 browser_not_supported` from the key endpoint rather than a black
+  screen. This is encryption at rest, not DRM: the key reaches the browser in the
+  clear behind the signed URL, so a lifted bucket is useless but an entitled viewer
+  can still keep a copy. Turn it off per account with `PUT /v1/playback-settings`.
+  Existing accounts keep the setting they have, and published videos keep whatever
+  they were packaged with.
 - **HLS is the primary output.** DASH is produced too, but only HLS is verified
   end to end.
 - **Uploads never pass through the API.** `POST /v1/uploads` returns a presigned

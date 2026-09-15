@@ -90,6 +90,20 @@ SET=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/playback-settings)
 check "device cap reported" "$(echo "$SET"|python3 -c 'import sys,json;print("max_viewer_devices" in json.load(sys.stdin))')" "True"
 # Changing it is session-only, like every other account setting, so this script can
 # only read it. A cap of 0 means no cap, which is what a new account has.
+ENC=$(echo "$SET"|python3 -c 'import sys,json;print(json.load(sys.stdin)["encrypt_playback"])')
+
+echo "8d. an encrypted asset answers an EME Clear Key licence"
+HDIR=${HLS%%\?*}; HDIR=${HDIR%/*}; HQ=${HLS#*\?}
+LIC=$(curl -s "$B$HDIR/key?$HQ")
+if [ "$ENC" = "True" ]; then
+  # The player is built against this exact body. A renamed field or padded base64 is
+  # a licence no browser accepts, and it fails as a black screen with no error.
+  check "licence shape" "$(echo "$LIC"|python3 -c 'import sys,json;d=json.load(sys.stdin);k=d["keys"][0];print(d["type"]=="temporary" and k["kty"]=="oct" and "=" not in k["k"])')" "True"
+  check "licence over POST too" "$(curl -s -o /dev/null -w '%{http_code}' -X POST --data 'challenge' "$B$HDIR/key?$HQ")" "200"
+  check "licence never cached" "$(curl -s -D- -o /dev/null "$B$HDIR/key?$HQ" | grep -ci 'cache-control: no-store')" "1"
+else
+  echo "  skip encryption checks (this account has encrypt_playback off)"
+fi
 
 echo "9. the same file again is deduplicated, not re-encoded"
 D=$(curl -s -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
@@ -104,9 +118,8 @@ DDIR=${DHLS%%\?*}; DDIR=${DDIR%/*}; DQ=${DHLS#*\?}
 check "duplicate playable ($DS)" "$(curl -s -o /dev/null -w '%{http_code}' "$B$DHLS")" "200"
 check "duplicate reports renditions" "$(echo "$DP"|python3 -c 'import sys,json;print(len(json.load(sys.stdin)["renditions"]) > 0)')" "True"
 # Whatever the key endpoint answers now, it must answer the same after the asset the
-# media was first stored under is deleted. Encryption is off by default, so this is a
-# 404 on both sides of the delete rather than a 200 -- the invariant is that it does
-# not change.
+# media was first stored under is deleted: a licence if the account encrypts, a 404 if
+# it does not. The invariant is that the answer does not change.
 KBEFORE=$(curl -s -o /dev/null -w '%{http_code}' "$B$DDIR/key?$DQ")
 
 echo "10. deleting the first video leaves the duplicate whole"

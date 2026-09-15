@@ -21,10 +21,13 @@ func (f fakeStore) GetPassthrough(context.Context, string, string) (*Object, err
 	return &Object{Body: io.NopCloser(strings.NewReader(f.body)), ContentLength: int64(len(f.body))}, nil
 }
 
-type fakeKeys struct{}
+type fakeKeys struct{ id, key []byte }
 
-func (fakeKeys) Get(context.Context, string, string) ([]byte, error) {
-	return nil, ErrNotFound
+func (f fakeKeys) Get(context.Context, string, string) ([]byte, []byte, error) {
+	if f.key == nil {
+		return nil, nil, ErrNotFound
+	}
+	return f.id, f.key, nil
 }
 func (fakeKeys) Put(context.Context, string, string, []byte, []byte) error { return nil }
 
@@ -137,5 +140,92 @@ func TestStrippedBindingIsRefused(t *testing.T) {
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, stripped, nil))
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("status %d, want 403 for a link with its binding removed", w.Code)
+	}
+}
+
+// The player is built against this exact body. A field renamed or padded base64 here
+// is a licence no browser accepts, and it fails as a black screen.
+func TestClearKeyLicenceShape(t *testing.T) {
+	kr := keyring(t)
+	id := []byte{0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88,
+		0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00}
+	m := New(fakeStore{}, fakeKeys{id: id, key: id}, kr)
+	r, _ := origin(t, m)
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet,
+		signedURL(t, kr, "/playback/t1/a1/key", "", ""), nil))
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d, want 200", w.Code)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type %q, want application/json", ct)
+	}
+	if cc := w.Header().Get("Cache-Control"); cc != "no-store" {
+		t.Errorf("Cache-Control %q, want no-store", cc)
+	}
+	want := `{"keys":[{"kty":"oct","kid":"_-7dzLuqmYh3ZlVEMyIRAA","k":"_-7dzLuqmYh3ZlVEMyIRAA"}],"type":"temporary"}`
+	if got := strings.TrimSpace(w.Body.String()); got != want {
+		t.Errorf("licence body\n got %s\nwant %s", got, want)
+	}
+}
+
+// shaka requests the licence with POST and a challenge body. Serving GET only makes
+// every encrypted asset fail with a 405 while the origin looks healthy.
+func TestClearKeyLicenceOverPOST(t *testing.T) {
+	kr := keyring(t)
+	m := New(fakeStore{}, fakeKeys{id: []byte{1, 2}, key: []byte{3, 4}}, kr)
+	r, _ := origin(t, m)
+
+	req := httptest.NewRequest(http.MethodPost,
+		signedURL(t, kr, "/playback/t1/a1/key", "", ""), strings.NewReader("challenge"))
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d, want 200", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), `"type":"temporary"`) {
+		t.Errorf("POST did not return a licence: %q", w.Body.String())
+	}
+	if allow := w.Header().Get("Access-Control-Allow-Methods"); !strings.Contains(allow, "POST") {
+		t.Errorf("Allow-Methods %q does not admit the licence POST", allow)
+	}
+}
+
+// Safari has no Clear Key, only FairPlay. An Apple viewer gets a reason instead of a
+// player that never starts.
+func TestSafariToldWhyItCannotPlay(t *testing.T) {
+	kr := keyring(t)
+	m := New(fakeStore{}, fakeKeys{id: []byte{1}, key: []byte{2}}, kr)
+	r, _ := origin(t, m)
+
+	req := httptest.NewRequest(http.MethodGet,
+		signedURL(t, kr, "/playback/t1/a1/key", "", ""), nil)
+	req.Header.Set("User-Agent",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "+
+			"(KHTML, like Gecko) Version/17.4 Safari/605.1.15")
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden || !strings.Contains(w.Body.String(), "browser_not_supported") {
+		t.Fatalf("status %d body %q, want 403 browser_not_supported", w.Code, w.Body.String())
+	}
+}
+
+func TestAppleOnlyFairPlay(t *testing.T) {
+	cases := map[string]bool{
+		"Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Version/17.4 Safari/605.1.15":      true,
+		"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4) AppleWebKit/605.1.15 CriOS/122 Mobile": true,
+		"Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/122.0 Safari/537.36":    false,
+		"Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0":         false,
+		"Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/122.0 Safari/537.36 Edg/122":  false,
+		"": false,
+	}
+	for ua, want := range cases {
+		if got := appleOnlyFairPlay(ua); got != want {
+			t.Errorf("appleOnlyFairPlay(%q) = %v, want %v", ua, got, want)
+		}
 	}
 }

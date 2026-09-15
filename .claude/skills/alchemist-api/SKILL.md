@@ -176,10 +176,27 @@ viewer watching from more devices than that gets `403 viewer_limit_reached` on t
 newest one — the sessions already playing are left alone. Unbound links are never
 counted. This, not encryption, is what answers one login shared with a class.
 
-Media is **unencrypted by default** and plays in every browser. If a tenant turns
-playback encryption on (`PUT /v1/playback-settings`), the stream becomes cbcs
-SAMPLE-AES and then **only Safari plays it** — hls.js and shaka-player need EME and a
-licence server for cbcs, and there is none. Do not assume a player handles it.
+### Encryption
+
+**On by default for new accounts.** Media is `cenc` and the key endpoint returns an EME
+Clear Key licence:
+
+```json
+{"keys":[{"kty":"oct","kid":"<base64url>","k":"<base64url>"}],"type":"temporary"}
+```
+
+Unpadded base64url. Point shaka-player's `drm.servers['org.w3.clearkey']` at the asset's
+`/key` URL with the same `exp`, `kid` and `sig`; shaka POSTs its challenge there and the
+endpoint answers the licence. Chrome, Firefox and Edge all play it.
+
+**Safari and iOS cannot.** WebKit's only key system is FairPlay, which needs an Apple
+certificate and a licence server. Those viewers get `403 browser_not_supported` from the
+key endpoint — show that message rather than an unexplained black player. Turn
+encryption off for the account if the audience is mostly on Apple devices.
+
+Be accurate with customers about what this is: **encryption at rest, not DRM.** The key
+is delivered to the browser behind the signed URL, so a stolen bucket or backup is
+useless, while a viewer entitled to watch can still keep a copy.
 
 `thumbnails` is a WebVTT file for scrubbing previews; `poster` is a JPEG.
 
@@ -202,6 +219,7 @@ Defaults to the current calendar month.
 | `source_unreadable` / `no_video_stream` | The file is corrupt, or is not video. |
 | `playback_not_authorized` | Signature expired or invalid. Re-fetch the asset. |
 | `viewer_limit_reached` | This viewer is already streaming from the maximum number of devices. |
+| `browser_not_supported` | Safari or iOS asking for a Clear Key licence. Tell them to use Chrome, Firefox or Edge. |
 | `invalid_viewer` | `viewer` or `watermark` has characters or a length that will not survive a URL. |
 | `invalid_api_key` | Key is wrong or has been revoked. |
 | `session_required` | Account administration. Not reachable with an API key, by design. |

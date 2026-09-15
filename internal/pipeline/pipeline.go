@@ -146,9 +146,9 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 
 	opts := media.DefaultOptions()
 
-	// Off unless the tenant asked for it. cbcs without a licence server is not DRM —
-	// the key sits behind the same signed URL as the segments — and it makes the
-	// stream unplayable in every browser that is not Safari. See migration 025.
+	// On by default since migration 033. cenc plus an EME Clear Key licence plays in
+	// Chrome, Firefox and Edge with no vendor; what it buys is that a lifted bucket
+	// decodes to nothing, not DRM. Safari and iOS cannot play it.
 	var encrypt bool
 	if err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx, `select encrypt_playback from tenants`).Scan(&encrypt)

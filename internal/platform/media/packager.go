@@ -36,10 +36,10 @@ type Result struct {
 
 // Encryption configures content protection.
 //
-// The scheme is cbcs (CENC common encryption), not HLS's legacy full-segment
-// AES-128. Both protect the bytes, but cbcs is the structure Widevine and FairPlay
-// expect, so adding a licence server later is key management rather than
-// re-packaging the entire library.
+// The scheme is cenc, not cbcs: Clear Key -- the only key system that works without
+// a licence vendor -- always supports cenc, and cbcs left the stream unplayable in
+// Chrome and Firefox. Both are CENC common encryption, so studio DRM later is still
+// key management rather than re-packaging the library.
 type Encryption struct {
 	KeyID  []byte
 	Key    []byte
@@ -89,7 +89,7 @@ func Package(ctx context.Context, inputs []Input, outDir string, enc *Encryption
 			"--enable_raw_key_encryption",
 			"--keys", fmt.Sprintf("label=:key_id=%s:key=%s",
 				hex.EncodeToString(enc.KeyID), hex.EncodeToString(enc.Key)),
-			"--protection_scheme", "cbcs",
+			"--protection_scheme", "cenc",
 			"--clear_lead", strconv.Itoa(enc.ClearLeadSeconds),
 		)
 		if enc.KeyURI != "" {

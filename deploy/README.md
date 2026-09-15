@@ -57,7 +57,9 @@ rows, and those copies are now resolved rather than stored.
 `internal/platform/db/migrations/028_usage_bytes.sql` adds `tenant_stored_bytes()`, another
 `SECURITY DEFINER` reader for a cross-tenant job, and the unique index the daily egress
 and storage rows upsert onto -- without it every flush inserts a new row instead of
-folding into the day.
+folding into the day. `internal/platform/db/migrations/033_encryption_default.sql` flips
+`tenants.encrypt_playback` to default true and changes **nothing** for tenants that
+already exist -- see below.
 
 `ALCHEMIST_ENCODE_WORKERS` should be roughly the core count. Encoding already uses a
 per-job worker pool, so setting it far above that only lengthens the tail.
@@ -136,6 +138,30 @@ nginx -t && systemctl reload nginx
 Size `proxy_cache_path max_size` to about 80% of the cache disk. The working set is
 far smaller than the library: a small fraction of assets drives most views, which is
 the same power law that justifies JIT packaging.
+
+## Playback encryption after migration 033
+
+New tenants get `cenc` encryption on, with the key endpoint answering an EME Clear Key
+licence. Chrome, Firefox and Edge play it with no licence vendor.
+
+Two things it deliberately does not do:
+
+- **It does not touch existing tenants.** The migration changes the column default, not
+  the rows. Turning it on for a live account is an operator decision, because **Safari
+  and iOS cannot play Clear Key** -- WebKit's only key system is FairPlay -- and those
+  viewers get `403 browser_not_supported` from `/playback/.../key`. Flip one when its
+  audience is not on Apple devices: `PUT /v1/playback-settings {"encrypt_playback":true}`,
+  or `update tenants set encrypt_playback = true where id = '...';`
+- **It does not re-package anything already published.** Assets keep whatever they were
+  encoded with. Re-encrypting a library rewrites every object, changes every ETag, and
+  evicts the lot from every edge cache -- real money for protection nobody asked for.
+  A deferred rung generated years later reuses the asset's own key, or stays clear if
+  the asset has none.
+
+And be honest about what it is: **encryption at rest, not DRM.** The key goes to the
+browser in the clear behind the signed URL, so a stolen bucket or backup decodes to
+nothing, while a viewer who is entitled to watch can still keep a copy. Password
+sharing is answered by viewer-bound tokens and the device cap below, not by this.
 
 ## Viewer binding, the device cap, and the cache
 

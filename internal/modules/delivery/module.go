@@ -26,10 +26,11 @@ type ObjectStore interface {
 	GetPassthrough(ctx context.Context, key, rangeHeader string) (*Object, error)
 }
 
-// ContentKeys resolves an asset's decryption key. The transcoder writes keys through
-// the same interface, so neither module has to know how the other stores them.
+// ContentKeys resolves an asset's decryption key and the id it was packaged under.
+// The transcoder writes keys through the same interface, so neither module has to
+// know how the other stores them.
 type ContentKeys interface {
-	Get(ctx context.Context, tenantID, assetID string) ([]byte, error)
+	Get(ctx context.Context, tenantID, assetID string) (keyID, key []byte, err error)
 	Put(ctx context.Context, tenantID, assetID string, keyID, key []byte) error
 }
 
@@ -144,7 +145,10 @@ func (m *Module) Routes(r chi.Router) {
 	// later handler to act on a verb nobody intended to expose.
 	//
 	// The key route is declared first so "key" is not matched as a filename.
+	// POST is the EME licence request shaka sends; GET stays so curl and the journey
+	// harness can still read the licence.
 	r.Get("/playback/{tenant}/{asset}/key", m.serveContentKey)
+	r.Post("/playback/{tenant}/{asset}/key", m.serveContentKey)
 	r.Head("/playback/{tenant}/{asset}/key", m.serveContentKey)
 	r.Options("/playback/{tenant}/{asset}/key", m.serveContentKey)
 
