@@ -51,7 +51,7 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
     capsBtn: HTMLButtonElement; menuBtn: HTMLButtonElement; fsBtn: HTMLButtonElement;
     menu: HTMLElement; panel: HTMLElement; panelTitle: HTMLElement;
     panelBody: HTMLElement; panelAction: HTMLButtonElement;
-    toast: HTMLElement; toastText: HTMLElement; live: HTMLElement;
+    toast: HTMLElement; toastText: HTMLElement; live: HTMLElement; live_: HTMLButtonElement;
     watermark: HTMLElement | null;
   };
 
@@ -123,6 +123,10 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
     vol.append(muteBtn, volume);
 
     const time = el('div', 'alc-time');
+    // The badge is a button: on a broadcast the useful action is jumping back to the
+    // edge after pausing, and nothing else in the bar offers that.
+    const live_ = el('button', 'alc-live', { type: 'button', hidden: 'hidden' });
+    live_.innerHTML = '<span class="alc-live-dot"></span>LIVE';
     const spacer = el('div', 'alc-spacer');
 
     const saver = el('button', 'alc-pill', {
@@ -141,7 +145,7 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
     menuBtn.setAttribute('aria-expanded', 'false');
     const fsBtn = iconBtn('fullscreen', t('fullscreen'));
 
-    row.append(playBtn, vol, time, spacer, saver, capsBtn, menuBtn, fsBtn);
+    row.append(playBtn, vol, live_, time, spacer, saver, capsBtn, menuBtn, fsBtn);
     bar.append(preview, seek, row);
 
     const menu = el('div', 'alc-menu', { role: 'menu', 'aria-label': t('settings') });
@@ -180,7 +184,7 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
       stage, centre, bar, playBtn, bigBtn, spinner, muteBtn, volume, time, seek,
       played, buffered, knob, preview, previewImg, previewTime,
       saver, saverRate, saverLabel, capsBtn, menuBtn, fsBtn,
-      menu, panel, panelTitle, panelBody, panelAction, toast, toastText, live, watermark,
+      menu, panel, panelTitle, panelBody, panelAction, toast, toastText, live, live_, watermark,
     };
   }
 
@@ -201,6 +205,8 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
     u.capsBtn.addEventListener('click', () => this.openMenu('captions'));
     u.menuBtn.addEventListener('click', () => (this.menuOpen ? this.closeMenu() : this.openMenu()));
     u.panelAction.addEventListener('click', () => this.onPanelAction());
+    // Pressing LIVE while behind returns to the edge; at the edge it does nothing.
+    u.live_.addEventListener('click', () => { this.seek(this.duration); void this.play(); });
 
     this.wireSeek();
     this.wireKeyboard();
@@ -353,7 +359,18 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
 
     const cur = this.currentTime;
     const dur = this.duration;
-    u.time.innerHTML = `<b>${formatTime(cur)}</b> / ${formatTime(dur)}`;
+    // A broadcast has no end to count towards, and a clock counting up to a total
+    // that keeps moving reads as broken. Say LIVE instead, and say whether they are
+    // at the edge of it.
+    const live = this.isLive;
+    u.live_.hidden = !live;
+    if (live) {
+      const behind = Math.max(0, dur - cur);
+      u.live_.classList.toggle('alc-live--behind', behind > 12);
+      u.time.innerHTML = behind > 12 ? `<b>${formatTime(behind)}</b> ${t('behind')}` : '';
+    } else {
+      u.time.innerHTML = `<b>${formatTime(cur)}</b> / ${formatTime(dur)}`;
+    }
     const pct = dur ? (cur / dur) * 100 : 0;
     u.played.style.width = `${pct}%`;
     u.knob.style.left = `${pct}%`;

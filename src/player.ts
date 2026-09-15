@@ -127,6 +127,9 @@ export class AlchemistPlayer extends EventTarget {
   get thumbnailTiles(): readonly Tile[] { return this._tiles; }
   get currentTime(): number { return this.video.currentTime; }
   get duration(): number { return Number.isFinite(this.video.duration) ? this.video.duration : 0; }
+
+  /** True while a broadcast is still going out. shaka knows from the manifest. */
+  get isLive(): boolean { return this.player?.isLive() ?? false; }
   get paused(): boolean { return this.video.paused; }
   get muted(): boolean { return this.video.muted; }
   get volume(): number { return this.video.volume; }

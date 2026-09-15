@@ -125,6 +125,16 @@ export const CSS = `
   padding-top:3px;color:var(--alc-muted);
 }
 
+.alc-live{display:inline-flex;align-items:center;gap:.4rem;border:0;cursor:pointer;
+  background:rgba(232,120,95,.16);color:#F0A492;font-size:11px;font-weight:700;
+  letter-spacing:.06em;padding:.2rem .5rem;border-radius:999px}
+.alc-live-dot{width:6px;height:6px;border-radius:50%;background:var(--alc-danger);
+  animation:alc-pulse 2s ease-in-out infinite}
+/* Behind the edge is not live in the sense a viewer means, so the badge goes quiet. */
+.alc-live--behind{background:rgba(255,255,255,.1);color:var(--alc-muted)}
+.alc-live--behind .alc-live-dot{background:var(--alc-muted);animation:none}
+@keyframes alc-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.alc-live-dot{animation:none}}
 .alc-time{
   font-family:var(--alc-mono);font-size:12px;color:var(--alc-muted);
   padding:0 8px;white-space:nowrap;font-variant-numeric:tabular-nums;
