@@ -73,8 +73,8 @@
 	const protections = [
 		{
 			icon: SecurityLockIcon,
-			title: 'A copy of the file is not a copy of the video',
-			body: 'What we store is scrambled. The part that unscrambles it is handed over separately, and only to a viewer who already passed the link check. Lift the file off storage and you have noise.'
+			title: 'Nobody reaches a file without a link from you',
+			body: 'There is no public address for a video. Storage is not browsable, nothing is guessable, and the only way to a single second of footage is a link your product handed out.'
 		},
 		{
 			icon: Timer02Icon,
@@ -90,6 +90,11 @@
 			icon: FingerPrintIcon,
 			title: 'We cannot hand over what we never kept',
 			body: 'Your keys are shown once and stored only as a fingerprint. We cannot show them to you a second time, and we cannot lose what we do not hold.'
+		},
+		{
+			icon: DatabaseLockedIcon,
+			title: 'Turning it off is one call',
+			body: 'Take a video down and it stops playing everywhere, including the copies sitting near your viewers. A takedown is a request you make, not a ticket you file with us.'
 		}
 	];
 
@@ -179,7 +184,7 @@
 		},
 		{
 			q: 'What if someone just downloads the video file itself?',
-			a: 'They end up with something that will not play. What we store is scrambled, and the piece that unscrambles it only goes to a viewer holding a live link from you. Pulling the file down gets them a file, not a video.'
+			a: 'They need a live link from you before they can reach any of it, and that link dies on your clock. Anyone determined enough to record what they are allowed to watch can do that on any platform, ours included — what we can do is make sure they never get a copy they were not given access to in the first place, and that the access you gave stops when you say so.'
 		},
 		{
 			q: 'Could another customer ever see my videos?',
@@ -213,7 +218,7 @@
 
 <Seo
 	title="Alchemist — video infrastructure for your product"
-	description="An API for upload, encoding and delivery. Your users send video, we make every size their viewers need, and you hand out links that expire. Encrypted at rest, isolated accounts, usage pricing, no seats."
+	description="An API for upload, encoding and delivery. Your users send video, we make every size their viewers need, and you hand out links that expire. Isolated accounts, usage pricing, no seats."
 />
 
 <!-- overflow-x: clip, because the hero glow is a blurred pseudo-element that bleeds
