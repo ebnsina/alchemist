@@ -22,6 +22,10 @@
 	let error = $state('');
 	let name = $state('');
 	let protocol = $state<'srt' | 'rtmp'>('srt');
+	// One decision per screen, even here: two fields is still two decisions, and a
+	// customer who has never set up an encoder should meet them one at a time.
+	let step = $state(1);
+	const STEPS = 3;
 	let fresh = $state<{ name: string; stream_key: string } | null>(null);
 	let armed = $state<{ id: string; ingest_url: string } | null>(null);
 	let watching = $state<{ id: string; name: string; asset: AssetDetail } | null>(null);
@@ -73,6 +77,8 @@
 			const s = await createLiveStream(name.trim(), protocol);
 			fresh = { name: s.name, stream_key: s.stream_key };
 			name = '';
+			protocol = 'srt';
+			step = 1;
 			await load();
 		} catch (err) {
 			error = said(err);
@@ -211,26 +217,78 @@
 		<a href="/contact/" class="btn mt-5">Talk to us about live</a>
 	</div>
 {:else}
-<form class="mt-6 flex flex-col gap-3 sm:flex-row" onsubmit={make}>
-	<label class="flex-1">
-		<span class="vh">Name this stream</span>
+<form class="card mt-6" onsubmit={make}>
+	<div class="flex items-baseline justify-between gap-3">
+		<p class="label">Step {step} of {STEPS}</p>
+		{#if step > 1}
+			<button type="button" class="label hover:text-ink" onclick={() => (step -= 1)}>Back</button>
+		{/if}
+	</div>
+
+	{#if step === 1}
+		<h3 class="mt-4">What is this stream for?</h3>
+		<p class="sub mt-1">A name only you see, so you can tell your streams apart later.</p>
+		<!-- svelte-ignore a11y_autofocus -->
 		<input
 			bind:value={name}
-			class="field"
+			class="field mt-4"
 			type="text"
-			placeholder="What is it for? e.g. Friday class"
+			placeholder="e.g. Friday physics class"
 			maxlength="60"
+			autofocus
 			required
 		/>
-	</label>
-	<label class="flex-none">
-		<span class="vh">How your encoder sends it</span>
-		<select bind:value={protocol} class="select">
-			<option value="srt">SRT</option>
-			<option value="rtmp">RTMP</option>
-		</select>
-	</label>
-	<button type="submit" class="btn-solid flex-none">Make a stream</button>
+		<button
+			type="button"
+			class="btn-solid mt-5"
+			disabled={!name.trim()}
+			onclick={() => (step = 2)}
+		>
+			Next
+		</button>
+	{:else if step === 2}
+		<h3 class="mt-4">How will your encoder send it?</h3>
+		<p class="sub mt-1">
+			If you are not sure, keep SRT. It holds a picture together on a weak uplink, which
+			is most uplinks.
+		</p>
+		<div class="mt-4 grid gap-2.5">
+			{#each [{ id: 'srt', title: 'SRT', why: 'Survives a lossy connection. The right answer almost always.' }, { id: 'rtmp', title: 'RTMP', why: 'For older hardware encoders that speak nothing else.' }] as o (o.id)}
+				<label class="card flex cursor-pointer items-start gap-3 p-4" class:tier--lead={protocol === o.id}>
+					<input
+						type="radio"
+						name="protocol"
+						value={o.id}
+						checked={protocol === o.id}
+						onchange={() => (protocol = o.id as 'srt' | 'rtmp')}
+						class="mt-1"
+					/>
+					<span>
+						<span class="block text-sm font-semibold">{o.title}</span>
+						<span class="sub">{o.why}</span>
+					</span>
+				</label>
+			{/each}
+		</div>
+		<button type="button" class="btn-solid mt-5" onclick={() => (step = 3)}>Next</button>
+	{:else}
+		<h3 class="mt-4">Ready to make it?</h3>
+		<p class="sub mt-1">
+			The stream key is shown once, on the next screen. Nothing goes on air until you
+			press Start and your encoder connects.
+		</p>
+		<dl class="mt-4 grid gap-2.5">
+			<div class="flex items-baseline justify-between gap-3">
+				<dt class="sub">Name</dt>
+				<dd class="text-sm font-semibold">{name}</dd>
+			</div>
+			<div class="flex items-baseline justify-between gap-3">
+				<dt class="sub">Encoder sends over</dt>
+				<dd class="text-sm font-semibold">{protocol.toUpperCase()}</dd>
+			</div>
+		</dl>
+		<button type="submit" class="btn-solid mt-5">Make a stream</button>
+	{/if}
 </form>
 
 {#if error}
