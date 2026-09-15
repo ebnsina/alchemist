@@ -38,7 +38,7 @@ const MESSAGES: Record<string, string> = {
 		'We cannot move a library from that service. Some hosts never hand back the original file.',
 	invalid_state: 'That has already moved on. Reload the page to see where it is now.',
 	live_not_enabled: 'Live is not on this plan. Talk to us and we will switch it on.',
-	invalid_protocol: 'Pick SRT or RTMP.',
+	invalid_protocol: 'Pick your camera, SRT or RTMP.',
 	stream_not_found: 'We could not find that stream.',
 	stream_busy: 'That stream is already waiting for an encoder.'
 };
@@ -428,10 +428,14 @@ export const createEdit = (assetId: string, ops: EditOps) =>
 	});
 export const deleteEdit = (id: string) => call<void>(`/v1/edits/${id}`, { method: 'DELETE' });
 
+// 'camera' is what the customer publishes from, not what goes over the wire: a
+// browser webcam rather than an encoder they would have to install.
+export type LiveSource = 'camera' | 'srt' | 'rtmp';
+
 export type LiveStream = {
 	id: string;
 	name: string;
-	protocol: 'srt' | 'rtmp';
+	protocol: LiveSource;
 	state: 'idle' | 'armed' | 'live' | 'ended';
 	asset_id?: string;
 	created_at: string;
@@ -442,17 +446,22 @@ export const getLiveStream = (id: string) => call<LiveStream>(`/v1/live-streams/
 
 // The key comes back on this one call and is never returned again, exactly like an
 // API key.
-export const createLiveStream = (name: string, protocol: string) =>
+export const createLiveStream = (name: string, protocol: LiveSource) =>
 	call<LiveStream & { stream_key: string }>('/v1/live-streams', {
 		method: 'POST',
 		body: JSON.stringify({ name, protocol })
 	});
 
+// publish_token comes back only for a camera stream, because the browser is the
+// encoder and has no key to paste. It is minted for this broadcast and no other.
 export const startLiveStream = (id: string) =>
-	call<{ stream_id: string; session_id: string; asset_id: string; ingest_url: string }>(
-		`/v1/live-streams/${id}/start`,
-		{ method: 'POST' }
-	);
+	call<{
+		stream_id: string;
+		session_id: string;
+		asset_id: string;
+		ingest_url: string;
+		publish_token?: string;
+	}>(`/v1/live-streams/${id}/start`, { method: 'POST' });
 
 export const deleteLiveStream = (id: string) =>
 	call<void>(`/v1/live-streams/${id}`, { method: 'DELETE' });
