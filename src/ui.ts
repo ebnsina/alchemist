@@ -3,6 +3,7 @@
 import { AlchemistPlayer, type AlchemistOptions } from './player.ts';
 import { injectStyles } from './styles.ts';
 import { icons, type IconName } from './icons.ts';
+import { VERSION } from './version.ts';
 import { formatNumber, formatTime, makeT, type T } from './i18n.ts';
 import { tileAt } from './thumbnails.ts';
 
@@ -504,6 +505,16 @@ export class AlchemistPlayerUI extends AlchemistPlayer {
     const hint = el('div', 'alc-hint', { id: 'alc-saver-hint' });
     hint.textContent = t('dataSaverHint');
     u.menu.appendChild(hint);
+
+    // Who made this and which build it is. A viewer reporting "the video broke"
+    // cannot read a bundle hash, and this is the only place they can find a version.
+    const brand = el('div', 'alc-brand');
+    const mark = el('span', 'alc-brand-name');
+    mark.textContent = 'Alchemist Player';
+    const ver = el('span', 'alc-brand-version');
+    ver.textContent = `v${VERSION}`;
+    brand.append(mark, ver);
+    u.menu.appendChild(brand);
 
     u.menu.hidden = false;
     this.menuOpen = true;

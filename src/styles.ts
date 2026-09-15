@@ -159,6 +159,11 @@ export const CSS = `
 .alc-item svg{width:17px;height:17px;flex:0 0 auto;opacity:0}
 .alc-item[aria-checked="true"] svg{opacity:1}
 .alc-item-note{margin-inline-start:auto;font-family:var(--alc-mono);font-size:11px;color:var(--alc-muted)}
+.alc-brand{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;
+  margin-top:.35rem;padding:.5rem .7rem 0;border-top:1px solid rgba(255,255,255,.1)}
+.alc-brand-name{font-size:11px;font-weight:600;letter-spacing:.02em;color:rgba(255,255,255,.62)}
+.alc-brand-version{font-family:var(--alc-mono,ui-monospace,monospace);font-size:10px;
+  font-variant-numeric:tabular-nums;color:rgba(255,255,255,.38)}
 .alc-hint{padding:2px 10px 8px;font-size:12px;color:var(--alc-muted)}
 
 /* ---- overlays ---- */

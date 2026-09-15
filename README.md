@@ -20,7 +20,7 @@ default here spends the viewer's data as if it were money, because it is.
 | **720p is the top rung** | The BD ladder tops out at 720p with 144p and 240p rungs underneath. The quality menu shows what the asset actually has and what each rung costs per hour. |
 | **Encrypted playback without a licence vendor** | EME Clear Key over `cenc`, with the content key served from the same signed prefix as the manifest. Encryption, not DRM — see [Protecting paid video](#protecting-paid-video) for what that does and does not buy. |
 | **A viewer label on the picture** | When the signed URL carries one, the viewer's own id drifts across the frame every few seconds. It attributes a leak; it does not prevent one. |
-| **Small bundle, old WebView** | Player chrome and core are ~16.5 KB gzipped. Shaka loads on demand and split by manifest type, so an HLS asset never downloads the DASH parser. Build target is ES2019 / Chrome 70 / Safari 12. |
+| **Small bundle, old WebView** | Player chrome and core are ~20 KB gzipped, icons included. Shaka loads on demand and split by manifest type, so an HLS asset never downloads the DASH parser. Build target is ES2019 / Chrome 70 / Safari 12. |
 | **No dead ends** | Loading, buffering, expired signature, network lost, not found, unsupported browser, DRM failure and *no Clear Key on this browser* each have plain-language copy in both languages and a route out. |
 
 ---
