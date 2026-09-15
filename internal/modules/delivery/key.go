@@ -124,6 +124,12 @@ func appleOnlyFairPlay(ua string) bool {
 	if strings.Contains(ua, "iPhone") || strings.Contains(ua, "iPad") || strings.Contains(ua, "iPod") {
 		return true
 	}
+	// Android first: an old WebView says "Mobile Safari" with no Chrome token, and
+	// that is the low-end BD handset this product exists for. Blocking it would be
+	// the worst possible false positive.
+	if strings.Contains(ua, "Android") {
+		return false
+	}
 	if !strings.Contains(ua, "Safari") {
 		return false
 	}

@@ -221,6 +221,10 @@ func TestAppleOnlyFairPlay(t *testing.T) {
 		"Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/122.0 Safari/537.36":    false,
 		"Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0":         false,
 		"Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/122.0 Safari/537.36 Edg/122":  false,
+		// An old Android WebView says "Mobile Safari" and carries no Chrome token.
+		// Blocking it would refuse exactly the low-end handset this product targets.
+		"Mozilla/5.0 (Linux; U; Android 4.4.2; SM-G7102) AppleWebKit/534.30 Version/4.0 Mobile Safari/534.30": false,
+		"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36":             false,
 		"": false,
 	}
 	for ua, want := range cases {
