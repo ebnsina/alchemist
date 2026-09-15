@@ -1,7 +1,7 @@
 // Test bench. Not shipped — it is how you drive the player against a local Alchemist.
 
 import { AlchemistPlayerUI } from './ui.ts';
-import { siblingURL, expiresAt } from './signed-url.ts';
+import { siblingURL, expiresAt, viewerLabel } from './signed-url.ts';
 import { buildPayload, beaconURL } from './beacon.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -36,6 +36,8 @@ async function load(): Promise<void> {
   log(`loading ${new URL(src, DEFAULT_ORIGIN).pathname}`);
   log(exp ? `signature expires ${new Date(exp).toISOString()}` : 'URL carries no exp — unsigned');
   log(`beacon would POST to ${new URL(beaconURL(src, DEFAULT_ORIGIN)).pathname}`);
+  log(`clear key licence would POST to ${new URL(siblingURL(src, 'key'), DEFAULT_ORIGIN).pathname}${new URL(src, DEFAULT_ORIGIN).search}`);
+  log(viewerLabel(src) ? `viewer label ${viewerLabel(src)} — watermark on` : 'no wm in the URL — no watermark');
 
   player = new AlchemistPlayerUI(host, {
     src,
@@ -68,6 +70,7 @@ function renderStats(): void {
     mbPerHour: Math.round(player.estimatedMbPerHour()),
     qualities: player.qualities().map((q) => `${q.height}p @ ${Math.round(q.bandwidth / 1000)}kbps`),
     captions: player.captionTracks().length,
+    viewerLabel: player.viewerLabel,
     thumbnails: player.thumbnailTiles.length,
     stats: s,
     beaconBody: buildPayload({ ...s, country: 'BD' }),
@@ -85,6 +88,13 @@ $('expire').addEventListener('click', () => {
   u.searchParams.set('exp', String(Math.floor(Date.now() / 1000) - 60));
   srcInput.value = u.toString();
   log('exp rewritten to the past — press Load to watch the expired-signature path');
+});
+
+$('label').addEventListener('click', () => {
+  const u = new URL(srcInput.value.trim() || 'http://x/a/master.m3u8', DEFAULT_ORIGIN);
+  u.searchParams.set('wm', 'STU-2291 · 017•••4456');
+  srcInput.value = u.toString();
+  log('vl added — press Load to watch the watermark drift (the real one is signed)');
 });
 
 $('loadEmbed').addEventListener('click', () => {

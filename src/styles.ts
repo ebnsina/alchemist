@@ -220,6 +220,18 @@ export const CSS = `
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
 }
 
+/* The viewer's own label, carried inside the signature. It names the account a leak
+   came from and discourages casual resharing; it does not stop a screen recorder. */
+.alc-wm{
+  position:absolute;left:0;top:0;z-index:1;max-width:58%;
+  padding:2px 6px;pointer-events:none;user-select:none;-webkit-user-select:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-family:var(--alc-mono);font-size:11px;font-variant-numeric:tabular-nums;
+  color:rgba(255,255,255,.32);text-shadow:0 1px 2px rgba(0,0,0,.6);
+  transition:transform 1.6s ease-in-out;
+}
+@media (prefers-reduced-motion:reduce){.alc-wm{transition:none}}
+
 /* Captions sit above the bar when the chrome is up, and stay legible on any frame. */
 .alc .shaka-text-container,.alc video::cue{font-family:var(--alc-font)}
 .alc video::cue{background:rgba(0,0,0,.72);color:#fff;font-size:.95em}

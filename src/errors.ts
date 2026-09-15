@@ -25,6 +25,9 @@ const MANIFEST = 4;
 const STREAMING = 5;
 const DRM = 6;
 
+// Safari and iOS ship only FairPlay, so Clear Key content finds no key system at all.
+const NO_KEY_SYSTEM = [6000, 6001, 6020];
+
 const BAD_HTTP_STATUS = 1001;
 const HTTP_ERROR = 1002;
 const TIMEOUT = 1003;
@@ -59,6 +62,9 @@ export function classifyShakaError(err: ShakaErrorLike | undefined, online = tru
   }
 
   if (category === DRM) {
+    if (NO_KEY_SYSTEM.includes(code)) {
+      return { kind: 'drm', code: 'key_system_unavailable', messageKey: 'errKeySystem', retryable: false };
+    }
     return { kind: 'drm', code: tag, messageKey: 'errDrm', retryable: false };
   }
 
