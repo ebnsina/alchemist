@@ -845,6 +845,7 @@ paths:
       responses:
         "202": { description: The worker will end it on its next poll }
         "403": { description: live_not_enabled }
+        "404": { description: stream_not_found }
         "409": { description: not_broadcasting }
 
   /v1/edits:

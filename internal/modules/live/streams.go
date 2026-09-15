@@ -339,8 +339,21 @@ func (m *Module) stopStream(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpx.Tenant(r)
 	streamID := chi.URLParam(r, "id")
 
+	// The stream is looked up first so a typo in the id is a 404 rather than "not
+	// broadcasting", which would send someone hunting for a broadcast that never
+	// existed. Both reads are in one transaction: a stream deleted between them
+	// would otherwise report nothing to stop instead of gone.
 	var sessionID string
+	var known bool
 	err := m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(r.Context(),
+			`select exists (select 1 from live_streams where id = $1)`,
+			streamID).Scan(&known); err != nil {
+			return err
+		}
+		if !known {
+			return pgx.ErrNoRows
+		}
 		return tx.QueryRow(r.Context(),
 			`update live_sessions set stop_requested_at = now()
 			  where id = (select id from live_sessions
@@ -348,9 +361,14 @@ func (m *Module) stopStream(w http.ResponseWriter, r *http.Request) {
 			               order by created_at desc limit 1)
 			 returning id::text`, streamID).Scan(&sessionID)
 	})
+	if errors.Is(err, pgx.ErrNoRows) && !known {
+		httpx.ErrorFor(w, r, http.StatusNotFound, "stream_not_found",
+			"We couldn't find that stream.")
+		return
+	}
 	if errors.Is(err, pgx.ErrNoRows) {
-		// Either the stream was never started, or the broadcast is already over and
-		// its recording is converting. Both are "there is nothing to stop".
+		// The stream exists but is not on air: never started, or already over with
+		// its recording converting. Both are "there is nothing to stop".
 		httpx.ErrorFor(w, r, http.StatusConflict, "not_broadcasting",
 			"That stream isn't on air, so there's nothing to stop.")
 		return
