@@ -26,7 +26,7 @@
 	} from '@hugeicons/core-free-icons';
 	import Logo from '$lib/components/Logo.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import { session, logout, getBranding, ApiError, type Session, type Branding } from '$lib/api';
+	import { session, logout, getBranding, whoami, ApiError, type Session, type Branding } from '$lib/api';
 	import { crumbs, setCrumbs } from '$lib/crumbs.svelte';
 	import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
 
@@ -37,6 +37,7 @@
 	let drawer = $state(false);
 	let brand = $state<Branding | null>(null);
 	let menu = $state(false);
+	let live = $state(false);
 
 	const initial = $derived((me?.org ?? '?').trim().charAt(0).toUpperCase());
 
@@ -61,7 +62,7 @@
 		},
 		{
 			label: 'Live',
-			soon: true,
+			live: true,
 			items: [
 				{ href: '/app/live/', label: 'Streams', icon: LiveStreaming01Icon },
 				{ href: '/app/live/recordings/', label: 'Recordings', icon: RecordIcon }
@@ -114,6 +115,12 @@
 				else trouble = e instanceof ApiError ? e.message : 'We could not reach Alchemist.';
 			})
 			.finally(() => (checked = true));
+	});
+
+	// Live is sold apart from the VOD engine, so the navigation asks rather than
+	// assumes. A tenant without it keeps the group, with a sentence saying why.
+	$effect(() => {
+		if (me) whoami().then((w) => (live = w.live_enabled)).catch(() => {});
 	});
 
 	// The logo is the account's own, not ours. It loads separately because a missing
@@ -187,17 +194,15 @@
 
 		<nav class="mt-5 flex-1 overflow-y-auto px-3" aria-label="Dashboard">
 			{#each groups as group (group.label)}
+				{@const locked = !!group.live && !live}
 				<p class="flex items-center gap-2 px-2 pt-4 pb-2">
 					<span class="label">{group.label}</span>
-					{#if group.soon}
-						<span class="chip">Soon</span>
-					{/if}
 				</p>
 				<ul class="grid gap-0.5">
 					{#each group.items as item (item.href)}
 						{@const on = isActive(item, page.url.pathname)}
 						<li>
-							{#if group.soon}
+							{#if locked}
 								<span class="side-link opacity-45" aria-disabled="true">
 									<HugeiconsIcon icon={item.icon} size={17} strokeWidth={1.7} />
 									{item.label}
@@ -216,6 +221,11 @@
 						</li>
 					{/each}
 				</ul>
+				{#if locked}
+					<p class="px-2 pt-1.5 text-xs text-dim">
+						Not on this plan. <a href="/contact/" class="link">Talk to us</a> about live.
+					</p>
+				{/if}
 			{/each}
 		</nav>
 

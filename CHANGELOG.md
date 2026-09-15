@@ -30,6 +30,13 @@
   brand lime, and the favicon matches. The emerald-to-gold gradient is gone.
 
 ### Added
+- **Live**: `/app/live/` makes a stream, shows its key once — the only time it is on
+  screen — and hands you the address to paste into OBS after you start it. The
+  broadcast plays back in the page as it happens, over whichever URL the API says to
+  use, and `/app/live/recordings/` lists what each finished broadcast left behind,
+  opening in the ordinary video page. The sidebar asks the account whether it has
+  Live at all: without it the group says plainly that it is not on this plan and
+  points at /contact/, rather than promising it soon.
 - **Move a library**: bring videos in from Vimeo, Bunny Stream, or a pasted list of
   links. Nothing is imported until you have seen the list and said yes — a migration
   starts by listing only, and waits. Stop, carry on and cancel are available

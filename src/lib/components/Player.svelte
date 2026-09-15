@@ -53,6 +53,15 @@
 		let instance: import('hls.js').default | null = null;
 
 		(async () => {
+			// hls.js cannot read DASH, and an encrypted asset is packaged cenc, which
+			// only DASH carries. The key itself is served -- what is missing here is a
+			// DASH player, which the embed has and this preview does not.
+			if (src.includes('.mpd')) {
+				blocked = true;
+				note = 'Encrypted videos play in the embed, not in this preview. Use the playback link.';
+				return;
+			}
+
 			// Only "probably" counts as native HLS. Chrome answers "maybe" for the HLS
 			// media type and then cannot play it, so trusting anything weaker means
 			// handing the stream to a player that will never start.

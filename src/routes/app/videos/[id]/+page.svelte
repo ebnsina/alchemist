@@ -38,7 +38,7 @@
 	const working = $derived(
 		!!asset &&
 			(asset.renditions.some((r) => r.state !== 'ready' && !r.lazy) ||
-				!['ready', 'partially_ready', 'failed'].includes(asset.state))
+				!['ready', 'partially_ready', 'failed', 'live_ended'].includes(asset.state))
 	);
 	$effect(() => {
 		if (!working) return;
@@ -58,6 +58,8 @@
 		encoding: { label: 'Making the sizes', means: 'Building each size in parallel chunks. Small ones finish first.' },
 		packaging: { label: 'Almost there', means: 'Wrapping the sizes up so any player can read them.' },
 		partially_ready: { label: 'Watchable now', means: 'Enough sizes are done to play it. The rest are still coming.' },
+		live: { label: 'On air', means: 'This is a broadcast going out right now. It plays below as it happens.' },
+		live_ended: { label: 'Broadcast finished', means: 'The live broadcast has ended. What went out is kept here to watch back.' },
 		ready: { label: 'Ready to watch', means: 'Every size is made. Nothing left to wait for.' },
 		failed: { label: 'Did not work', means: 'Something about the file stopped us. Sending it again rarely helps — the detail below says what happened.' }
 	};
@@ -230,7 +232,10 @@
 
 	{#if asset.playback}
 		<section class="mt-6">
-			<Player hls={asset.playback.hls} poster={asset.playback.poster} />
+			<Player
+				hls={asset.playback.preferred === 'dash' ? asset.playback.dash : asset.playback.hls}
+				poster={asset.playback.poster}
+			/>
 		</section>
 	{/if}
 
@@ -297,7 +302,7 @@
 				than building them yourself.
 			</p>
 			<div class="card mt-4 divide-y divide-sunk">
-				{#each Object.entries(asset.playback) as [kind, url] (kind)}
+				{#each Object.entries(asset.playback).filter((e): e is [string, string] => e[0] in LINKS) as [kind, url] (kind)}
 					<div class="flex flex-wrap items-center gap-x-3 gap-y-2 p-4">
 						<div class="w-40 flex-none">
 							<p class="text-sm font-medium">{LINKS[kind]?.label ?? kind}</p>
