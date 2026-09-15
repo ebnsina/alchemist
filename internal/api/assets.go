@@ -191,3 +191,75 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
+
+// deleteAsset removes the video and queues its objects for reclamation.
+//
+// The media is reclaimed only when nothing else plays it. A deduplicated asset shares
+// the canonical asset's files, so deleting those would leave every duplicate reporting
+// ready while every byte range 404s -- the failure this platform has already had once.
+func (s *Server) deleteAsset(w http.ResponseWriter, r *http.Request) {
+	tenantID, _ := r.Context().Value(tenantKey).(string)
+	assetID := chi.URLParam(r, "id")
+
+	var mediaPrefix string
+	var sourceKey, mezzKey *string
+	var owns, shared bool
+	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(r.Context(),
+			`select coalesce(media_prefix, 'cmaf/' || tenant_id::text || '/' ||
+			          coalesce(deduplicated_from, id)::text),
+			        deduplicated_from is null, source_key, mezzanine_key
+			   from assets where id = $1`, assetID).
+			Scan(&mediaPrefix, &owns, &sourceKey, &mezzKey); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(r.Context(),
+			`select exists (select 1 from assets
+			   where id <> $1 and (deduplicated_from = $1 or media_prefix = $2))`,
+			assetID, mediaPrefix).Scan(&shared); err != nil {
+			return err
+		}
+		// Hand the media to the assets that still play it. The prefix is written out
+		// because it is named after an id that is about to stop existing.
+		if shared {
+			if _, err := tx.Exec(r.Context(),
+				`update assets set media_prefix = $2, deduplicated_from = null
+				  where deduplicated_from = $1`, assetID, mediaPrefix); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.Exec(r.Context(), `delete from assets where id = $1`, assetID); err != nil {
+			return err
+		}
+		// Queued in the same transaction as the delete: a row that is gone with no
+		// job behind it is an object nobody will ever reclaim.
+		_, err := s.river.InsertTx(r.Context(), tx, reclaimFor(mediaPrefix, sourceKey, mezzKey, owns && !shared), nil)
+		return err
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeErrFor(w, r, http.StatusNotFound, "asset_not_found", "We couldn't find that video.")
+		return
+	}
+	if err != nil {
+		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
+			"Something went wrong on our side.")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// reclaimFor lists what this asset alone was keeping alive. The source is always its
+// own; the media and the mezzanine belong to it only when it is nobody else's source.
+func reclaimFor(mediaPrefix string, sourceKey, mezzKey *string, ownsMedia bool) pipeline.ReclaimArgs {
+	var args pipeline.ReclaimArgs
+	if sourceKey != nil && *sourceKey != "" {
+		args.Keys = append(args.Keys, *sourceKey)
+	}
+	if ownsMedia {
+		if mezzKey != nil && *mezzKey != "" {
+			args.Keys = append(args.Keys, *mezzKey)
+		}
+		args.Prefixes = append(args.Prefixes, mediaPrefix+"/")
+	}
+	return args
+}

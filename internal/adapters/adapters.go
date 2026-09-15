@@ -136,15 +136,19 @@ type DedupResolver struct{ DB *db.DB }
 // StoragePrefix follows deduplicated_from so several assets can reference one copy of
 // the media. Resolving at read time rather than copying objects is the entire saving:
 // duplicating the files would make dedup pointless.
+//
+// media_prefix overrides it, and is set only when the asset the prefix was named
+// after has been deleted while others still play its bytes.
 func (d DedupResolver) StoragePrefix(ctx context.Context, tenantID, assetID string) (string, error) {
-	var canonical string
+	var prefix string
 	err := d.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx,
-			`select coalesce(deduplicated_from, id)::text from assets where id = $1`,
-			assetID).Scan(&canonical)
+			`select coalesce(media_prefix, 'cmaf/' || tenant_id::text || '/' ||
+			          coalesce(deduplicated_from, id)::text)
+			   from assets where id = $1`, assetID).Scan(&prefix)
 	})
 	if err != nil {
 		return "", err
 	}
-	return "cmaf/" + tenantID + "/" + canonical, nil
+	return prefix, nil
 }

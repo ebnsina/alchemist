@@ -88,6 +88,7 @@ func main() {
 	river.AddWorker(workers, reconciler)
 	river.AddWorker(workers, &pipeline.JITWorker{TranscodeWorker: transcoder})
 	river.AddWorker(workers, &pipeline.SweepWorker{DB: database, Store: store})
+	river.AddWorker(workers, &pipeline.ReclaimWorker{Store: store})
 
 	riverClient, err := river.NewClient(riverpgxv5.New(database.Pool()), &river.Config{
 		Queues: map[string]river.QueueConfig{

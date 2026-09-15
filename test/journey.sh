@@ -62,6 +62,10 @@ HLS=$(echo "$P"|python3 -c 'import sys,json;print(json.load(sys.stdin)["playback
 check "master playlist" "$(curl -s -o /dev/null -w '%{http_code}' "$B$HLS")" "200"
 check "unsigned refused" "$(curl -s -o /dev/null -w '%{http_code}' "${B}${HLS%%\?*}")" "403"
 
+echo "9. delete the video"
+check "deleted" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "204"
+check "gone afterwards" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "404"
+
 echo
 echo "passed=$pass failed=$fail"
 [ "$fail" -eq 0 ]

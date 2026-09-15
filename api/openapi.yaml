@@ -204,6 +204,17 @@ paths:
       responses:
         "200": { description: Asset state and playback URLs }
         "404": { description: asset_not_found }
+    delete:
+      summary: Delete a video
+      description: |
+        Removes the asset and reclaims its objects in the background. Media that
+        another asset shares — the same file uploaded twice is stored once — is left
+        in place until the last asset that plays it is gone.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: asset_not_found }
 
   /v1/assets/{id}/complete:
     post:
