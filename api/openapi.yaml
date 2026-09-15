@@ -178,8 +178,12 @@ paths:
   /v1/whoami:
     get:
       summary: Identify the authenticated tenant
+      description: |
+        `live_enabled` is true only when this tenant has bought Live **and** the
+        deployment has an ingest host — a dashboard branching on it will not offer
+        endpoints that are not mounted.
       responses:
-        "200": { description: Tenant identity and ladder profile }
+        "200": { description: Tenant identity, ladder profile and live entitlement }
         "401": { description: Missing or invalid API key }
 
   /v1/uploads:

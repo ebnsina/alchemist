@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -261,17 +262,30 @@ func (s *Server) whoami(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 
 	var name, profile string
+	var live bool
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
-		return tx.QueryRow(r.Context(),
-			`select name, ladder_profile from tenants`).Scan(&name, &profile)
+		if err := tx.QueryRow(r.Context(),
+			`select name, ladder_profile from tenants`).Scan(&name, &profile); err != nil {
+			return err
+		}
+		// Both have to be true to mean anything: a tenant who bought Live still cannot
+		// use it on a deployment with no ingest host, and a dashboard that offered it
+		// would be sending them at endpoints that are not mounted.
+		err := tx.QueryRow(r.Context(),
+			`select live_enabled from tenant_limits`).Scan(&live)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		return err
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
 			"Something went wrong on our side.")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"tenant_id": tenantID, "name": name, "ladder_profile": profile,
+		"live_enabled": live && s.liveEnabled(),
 	})
 }
 
