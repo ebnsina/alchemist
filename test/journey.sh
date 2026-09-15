@@ -62,6 +62,14 @@ HLS=$(echo "$P"|python3 -c 'import sys,json;print(json.load(sys.stdin)["playback
 check "master playlist" "$(curl -s -o /dev/null -w '%{http_code}' "$B$HLS")" "200"
 check "unsigned refused" "$(curl -s -o /dev/null -w '%{http_code}' "${B}${HLS%%\?*}")" "403"
 
+# The scrubbing index points at the sprite sheet by relative path, so the signature
+# has to survive into the cue for a viewer to see any thumbnails at all.
+TH=$(echo "$P"|python3 -c 'import sys,json;print(json.load(sys.stdin)["playback"]["thumbnails"])')
+VTT=$(curl -s "$B$TH")
+CUE=$(echo "$VTT" | grep -m1 'sprite.jpg')
+DIR=${TH%%\?*}; DIR=${DIR%/*}
+check "thumbnail tile authorized" "$(curl -s -o /dev/null -w '%{http_code}' "$B$DIR/$CUE")" "200"
+
 echo "9. delete the video"
 check "deleted" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "204"
 check "gone afterwards" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "404"

@@ -53,8 +53,9 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 	defer obj.Body.Close()
 
 	// Media is content-addressed and never mutates, so it is cacheable forever.
-	// Manifests get a short TTL rather than none, so an edge still absorbs a burst.
-	if strings.HasSuffix(file, ".m3u8") || strings.HasSuffix(file, ".mpd") {
+	// Rewritten files get a short TTL rather than none, so an edge still absorbs a
+	// burst -- caching them for a year would serve one viewer's signature to everyone.
+	if isRewritten(file) {
 		w.Header().Set("Cache-Control", "public, max-age=2")
 	} else {
 		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
@@ -72,7 +73,7 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// A conditional request that still matches costs no bytes at all.
-	if match := r.Header.Get("If-None-Match"); match != "" && match == obj.ETag && !isManifest(file) {
+	if match := r.Header.Get("If-None-Match"); match != "" && match == obj.ETag && !isRewritten(file) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
@@ -84,9 +85,9 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 		m.observer.OnPlaybackStarted(r.Context(), tenantID, assetID)
 	}
 
-	// Manifests are small and must be rewritten so their relative URIs stay
-	// authorized; media is streamed through untouched.
-	if isManifest(file) {
+	// Manifests and the scrubbing index are small and must be rewritten so their
+	// relative URIs stay authorized; media is streamed through untouched.
+	if isRewritten(file) {
 		body, err := io.ReadAll(obj.Body)
 		if err != nil {
 			httpx.ErrorFor(w, r, http.StatusServiceUnavailable, "storage_unavailable",
@@ -112,8 +113,11 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func isManifest(name string) bool {
-	return strings.HasSuffix(name, ".m3u8") || strings.HasSuffix(name, ".mpd")
+// isRewritten lists the files whose contents reference other files by relative path,
+// and so have to carry the signature forward.
+func isRewritten(name string) bool {
+	return strings.HasSuffix(name, ".m3u8") || strings.HasSuffix(name, ".mpd") ||
+		strings.HasSuffix(name, ".vtt")
 }
 
 func setCORS(w http.ResponseWriter) {
