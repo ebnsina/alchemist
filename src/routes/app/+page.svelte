@@ -3,6 +3,7 @@
 	import { RefreshIcon, Upload01Icon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import AssetList from '$lib/components/AssetList.svelte';
+	import Ring from '$lib/components/Ring.svelte';
 	import { listAssets, usage, ApiError, type Asset, type UsageLine } from '$lib/api';
 
 	let assets: Asset[] = $state([]);
@@ -40,6 +41,10 @@
 		return () => clearInterval(id);
 	});
 
+	const ready = $derived(
+		assets.filter((a) => a.state === 'ready' || a.state === 'partially_ready').length
+	);
+
 	const month = $derived(
 		period.from
 			? new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
@@ -50,7 +55,7 @@
 
 	const UNITS: Record<string, { label: string; format: (q: number) => string }> = {
 		minutes: {
-			label: 'Video sent in',
+			label: 'Sent in',
 			format: (q) =>
 				new Intl.NumberFormat('en', {
 					style: 'unit',
@@ -60,7 +65,7 @@
 				}).format(q)
 		},
 		gb_month: {
-			label: 'Held for you',
+			label: 'Held',
 			format: (q) =>
 				new Intl.NumberFormat('en', {
 					style: 'unit',
@@ -84,40 +89,52 @@
 
 <header class="flex flex-wrap items-center justify-between gap-4">
 	<div>
-		<h1 class="text-2xl font-semibold tracking-tight">Overview</h1>
+		<h1>Your videos</h1>
 		{#if month}
-			<p class="mt-1 text-sm text-secondary">Usage so far in {month}</p>
+			<p class="sub mt-1">Usage so far in {month}</p>
 		{/if}
 	</div>
 	<div class="flex items-center gap-2">
-		<button type="button" class="btn-secondary" onclick={load} disabled={loading}>
-			<HugeiconsIcon icon={RefreshIcon} size={15} strokeWidth={1.8} />
+		<button type="button" class="btn btn-sm" onclick={load} disabled={loading}>
+			<HugeiconsIcon icon={RefreshIcon} size={14} strokeWidth={2} />
 			Refresh
 		</button>
-		<a href="/app/upload/" class="btn-primary">
-			<HugeiconsIcon icon={Upload01Icon} size={15} strokeWidth={1.8} />
+		<a href="/app/upload/" class="btn-solid btn-sm">
+			<HugeiconsIcon icon={Upload01Icon} size={14} strokeWidth={2} />
 			Upload
 		</a>
 	</div>
 </header>
 
 {#if error}
-	<p class="mt-6 text-sm text-danger" role="alert">{error}</p>
+	<p class="mt-6 text-sm font-extrabold text-red" role="alert">{error}</p>
 {/if}
 
-<section class="mt-6 grid gap-4 sm:grid-cols-3">
-	{#each Object.entries(UNITS) as [unit, spec] (unit)}
-		{@const line = lines.find((l) => l.unit === unit)}
-		<div class="card p-5">
-			<p class="text-xs text-secondary">{spec.label}</p>
-			<p class="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
-				{line ? spec.format(line.quantity) : '—'}
-			</p>
-		</div>
-	{/each}
-</section>
+<!-- The list on the left, the numbers on the right: the rail is everything that is
+     a figure rather than an action. -->
+<div class="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px]">
+	<section class="min-w-0">
+		<AssetList {assets} {loading} />
+	</section>
 
-<section class="mt-8">
-	<h2 class="text-lg font-semibold tracking-tight">Your videos</h2>
-	<AssetList {assets} {loading} />
-</section>
+	<aside class="lg:pt-1">
+		<div class="mx-auto w-[108px]">
+			<Ring value={ready} total={assets.length} caption="Ready" />
+		</div>
+
+		<div class="mt-6 grid gap-3">
+			{#each Object.entries(UNITS) as [unit, spec] (unit)}
+				{@const line = lines.find((l) => l.unit === unit)}
+				<div class="flex items-baseline justify-between gap-3">
+					<span class="label">{spec.label}</span>
+					<b class="num text-[17px]">{line ? spec.format(line.quantity) : '—'}</b>
+				</div>
+			{/each}
+			<div class="rule my-1"></div>
+			<div class="flex items-baseline justify-between gap-3">
+				<span class="label">Videos</span>
+				<b class="num text-[17px]">{assets.length}</b>
+			</div>
+		</div>
+	</aside>
+</div>

@@ -99,36 +99,36 @@
 		<div in:fly={{ y: 12, duration: 400, easing: cubicOut }}>
 			<div class="flex items-center gap-3">
 				<span
-					class="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-tertiary text-on-primary"
+					class="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-solid text-on-solid"
 					in:scale={{ start: 0.5, duration: 420, easing: cubicOut }}
 				>
 					<HugeiconsIcon icon={Tick02Icon} size={18} strokeWidth={2.6} />
 				</span>
 				<div>
 					<p class="font-semibold">{done.org}</p>
-					<p class="text-xs text-secondary">{done.email}</p>
+					<p class="text-xs text-dim">{done.email}</p>
 				</div>
 			</div>
 
-			<p class="mt-6 text-sm text-secondary">
+			<p class="mt-6 text-sm text-dim">
 				Here is your key. It is how your own code talks to Alchemist. We keep only a
 				scrambled copy, so this is the one time we can show it to you.
 			</p>
 
-			<div class="mt-3 flex items-center gap-2 rounded-xl border border-outline bg-neutral px-3 py-2">
+			<div class="mt-3 flex items-center gap-2 rounded-xl border border-sunk bg-bg px-3 py-2">
 				<code class="truncate font-mono text-xs">{done.api_key}</code>
 				<button
 					type="button"
 					onclick={copyKey}
-					class="ml-auto flex flex-none items-center gap-1.5 text-xs text-tertiary"
+					class="ml-auto flex flex-none items-center gap-1.5 text-xs text-ink"
 				>
 					<HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={14} strokeWidth={2} />
 					{copied ? 'Copied' : 'Copy'}
 				</button>
 			</div>
 
-			<a href="/app/" class="btn-primary mt-6 w-full">Take me to my dashboard</a>
-			<p class="mt-3 text-center text-xs text-secondary">
+			<a href="/app/" class="btn-solid mt-6 w-full">Take me to my dashboard</a>
+			<p class="mt-3 text-center text-xs text-dim">
 				The reference lives in there too, under API reference.
 			</p>
 		</div>
@@ -150,13 +150,13 @@
 				<div class="flex items-start justify-between gap-4">
 					<div>
 						<h2 class="text-lg font-semibold tracking-tight">{steps[step].title}</h2>
-						<p class="mt-1.5 text-sm text-secondary">{steps[step].hint}</p>
+						<p class="mt-1.5 text-sm text-dim">{steps[step].hint}</p>
 					</div>
 					<HugeiconsIcon
 						icon={steps[step].icon}
 						size={30}
 						strokeWidth={1.6}
-						class="flex-none text-tertiary"
+						class="flex-none text-ink"
 					/>
 				</div>
 
@@ -217,27 +217,27 @@
 								{#each [0, 1, 2] as bar (bar)}
 									<span
 										class="h-1 flex-1 rounded-full transition-colors duration-300 {bar < strength
-											? 'bg-tertiary'
-											: 'bg-outline'}"
+											? 'bg-solid'
+											: 'bg-sunk'}"
 									></span>
 								{/each}
 							</div>
-							<span class="text-xs text-secondary">{strengthWord}</span>
+							<span class="text-xs text-dim">{strengthWord}</span>
 						</div>
 					{/if}
 
 					{#if error}
-						<p class="mt-3 text-sm text-danger" role="alert">{error}</p>
+						<p class="mt-3 text-sm text-red" role="alert">{error}</p>
 					{/if}
 
 					<div class="mt-6 flex items-center gap-3">
 						{#if step > 0}
-							<button type="button" class="btn-secondary flex-none" onclick={back}>
+							<button type="button" class="btn flex-none" onclick={back}>
 								<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2} />
 								<span class="vh">Back</span>
 							</button>
 						{/if}
-						<button type="submit" class="btn-primary flex-1" disabled={!valid || busy}>
+						<button type="submit" class="btn-solid flex-1" disabled={!valid || busy}>
 							{#if busy}
 								Setting things up…
 							{:else if step < steps.length - 1}
@@ -252,8 +252,8 @@
 			</div>
 		{/key}
 
-		<p class="mt-6 text-center text-xs text-secondary">
-			Already have an account? <a href="/login/" class="text-tertiary">Sign in</a>
+		<p class="mt-6 text-center text-xs text-dim">
+			Already have an account? <a href="/login/" class="text-ink">Sign in</a>
 		</p>
 	{/if}
 </AuthShell>

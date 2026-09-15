@@ -43,17 +43,17 @@
 	{#if done}
 		<div class="text-center" in:fly={{ y: 12, duration: 360, easing: cubicOut }}>
 			<span
-				class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-tertiary text-on-primary"
+				class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-solid text-on-solid"
 			>
 				<HugeiconsIcon icon={Tick02Icon} size={20} strokeWidth={2.6} />
 			</span>
-			<p class="mt-4 text-sm text-secondary">You are signed in as {email}.</p>
-			<a href="/app/" class="btn-primary mt-6 w-full">Go to your dashboard</a>
+			<p class="mt-4 text-sm text-dim">You are signed in as {email}.</p>
+			<a href="/app/" class="btn-solid mt-6 w-full">Go to your dashboard</a>
 		</div>
 	{:else}
 		<form onsubmit={submit}>
 			<label class="block">
-				<span class="mb-1.5 block text-xs text-secondary">Email</span>
+				<span class="mb-1.5 block text-xs text-dim">Email</span>
 				<input
 					bind:this={field}
 					bind:value={email}
@@ -68,7 +68,7 @@
 			</label>
 
 			<label class="mt-4 block">
-				<span class="mb-1.5 block text-xs text-secondary">Password</span>
+				<span class="mb-1.5 block text-xs text-dim">Password</span>
 				<input
 					bind:value={password}
 					class="field"
@@ -81,16 +81,16 @@
 			</label>
 
 			{#if error}
-				<p class="mt-3 text-sm text-danger" role="alert">{error}</p>
+				<p class="mt-3 text-sm text-red" role="alert">{error}</p>
 			{/if}
 
-			<button type="submit" class="btn-primary mt-6 w-full" disabled={busy}>
+			<button type="submit" class="btn-solid mt-6 w-full" disabled={busy}>
 				{busy ? 'Signing you in…' : 'Sign in'}
 			</button>
 		</form>
 
-		<p class="mt-6 text-center text-xs text-secondary">
-			New here? <a href="/signup/" class="text-tertiary">Start free</a>
+		<p class="mt-6 text-center text-xs text-dim">
+			New here? <a href="/signup/" class="text-ink">Start free</a>
 		</p>
 	{/if}
 </AuthShell>

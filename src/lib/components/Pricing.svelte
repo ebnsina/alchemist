@@ -43,12 +43,12 @@
 
 <section id="pricing" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
-		<p class="label-caps text-tertiary">Pricing</p>
+		<p class="label text-ink">Pricing</p>
 		<h2 class="mt-3 text-3xl leading-[1.32] font-semibold tracking-tight sm:text-4xl">
 			You pay for three things.
-			<span class="text-tertiary">Nothing else.</span>
+			<span class="text-ink">Nothing else.</span>
 		</h2>
-		<p class="mt-4 text-sm text-secondary">
+		<p class="mt-4 text-sm text-dim">
 			Per unit, with no plans to choose between and nobody to negotiate with. Rates are not final
 			until launch.
 		</p>
@@ -57,20 +57,20 @@
 	<div class="mt-12 grid gap-4 md:grid-cols-3">
 		{#each meters as m, i (m.title)}
 			<article class="card flex flex-col px-6 py-8" use:scrollReveal={{ delay: i * 80 }}>
-				<h3 class="label-caps text-secondary">{m.title}</h3>
+				<h3 class="label text-dim">{m.title}</h3>
 				<p class="mt-4 font-mono text-4xl font-medium tracking-tight tabular-nums">
 					<Money amount={m.amount} />
 				</p>
-				<p class="mt-1 text-sm text-secondary">{m.unit} · about {m.usd}</p>
+				<p class="mt-1 text-sm text-dim">{m.unit} · about {m.usd}</p>
 
 				{#if m.second}
 					<p class="mt-4 font-mono text-2xl font-medium tracking-tight tabular-nums">
 						<Money amount={m.second.amount} />
 					</p>
-					<p class="mt-1 text-sm text-secondary">{m.second.unit} · about {m.second.usd}</p>
+					<p class="mt-1 text-sm text-dim">{m.second.unit} · about {m.second.usd}</p>
 				{/if}
 
-				<p class="mt-5 flex-1 text-sm leading-[1.75] text-secondary">{m.body}</p>
+				<p class="mt-5 flex-1 text-sm leading-[1.75] text-dim">{m.body}</p>
 			</article>
 		{/each}
 	</div>
@@ -84,15 +84,15 @@
 						icon={Tick02Icon}
 						size={15}
 						strokeWidth={2.4}
-						class="mt-1 flex-none text-tertiary"
+						class="mt-1 flex-none text-ink"
 					/>
 					<span>{row}</span>
 				</li>
 			{/each}
 		</ul>
 		<div class="mt-7 flex flex-wrap items-center gap-3">
-			<a href="/signup/" class="btn-primary">Start free</a>
-			<a href="/contact/" class="btn-secondary">Ask about volume</a>
+			<a href="/signup/" class="btn-solid">Start free</a>
+			<a href="/contact/" class="btn">Ask about volume</a>
 		</div>
 	</div>
 </section>

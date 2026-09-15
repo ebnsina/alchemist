@@ -59,28 +59,28 @@
 <Seo title="Upload — Alchemist" description="Send a video to Alchemist." />
 
 <h1 class="text-2xl font-semibold tracking-tight">Upload</h1>
-<p class="mt-1 text-sm text-secondary">
+<p class="mt-1 text-sm text-dim">
 	Drop a file, or point us at one that already lives somewhere else.
 </p>
 
 {#if stage === 'queued'}
 	<div class="card mt-6 p-8 text-center" in:fly={{ y: 12, duration: 360, easing: cubicOut }}>
 		<span
-			class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-tertiary text-on-primary"
+			class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-solid text-on-solid"
 		>
 			<HugeiconsIcon icon={Tick02Icon} size={20} strokeWidth={2.6} />
 		</span>
 		<p class="mt-4 font-semibold">We have it</p>
-		<p class="mx-auto mt-2 max-w-sm text-sm text-secondary">
+		<p class="mx-auto mt-2 max-w-sm text-sm text-dim">
 			It is in the queue now. A ten-minute video is usually watchable in about a minute — you
 			can leave this page.
 		</p>
-		<code class="mt-4 block font-mono text-xs text-secondary">{assetId}</code>
+		<code class="mt-4 block font-mono text-xs text-dim">{assetId}</code>
 		<div class="mt-5 flex justify-center gap-3">
-			<a href="/app/" class="btn-primary">See it in the list</a>
+			<a href="/app/" class="btn-solid">See it in the list</a>
 			<button
 				type="button"
-				class="btn-secondary"
+				class="btn"
 				onclick={() => {
 					stage = 'idle';
 					url = '';
@@ -107,21 +107,21 @@
 			icon={Upload01Icon}
 			size={34}
 			strokeWidth={1.6}
-			class="mx-auto text-tertiary"
+			class="mx-auto text-ink"
 		/>
 
 		{#if stage === 'sending'}
 			<p class="mt-4 text-sm">Sending… {pct}%</p>
-			<div class="mx-auto mt-3 h-1.5 max-w-sm overflow-hidden rounded-full bg-outline">
+			<div class="mx-auto mt-3 h-1.5 max-w-sm overflow-hidden rounded-full bg-sunk">
 				<div
-					class="h-full rounded-full bg-tertiary transition-[width] duration-200 ease-out"
+					class="h-full rounded-full bg-solid transition-[width] duration-200 ease-out"
 					style="width: {pct}%"
 				></div>
 			</div>
 		{:else}
 			<p class="mt-4 font-semibold">Drop a video here</p>
-			<p class="mt-1 text-sm text-secondary">Any format your camera, phone or editor made.</p>
-			<label class="btn-primary mt-5 cursor-pointer">
+			<p class="mt-1 text-sm text-dim">Any format your camera, phone or editor made.</p>
+			<label class="btn-solid mt-5 cursor-pointer">
 				Choose a file
 				<input
 					type="file"
@@ -138,10 +138,10 @@
 
 	<div class="card mt-4 p-6">
 		<h2 class="flex items-center gap-2 text-sm font-semibold">
-			<HugeiconsIcon icon={Link01Icon} size={16} strokeWidth={1.7} class="text-tertiary" />
+			<HugeiconsIcon icon={Link01Icon} size={16} strokeWidth={1.7} class="text-ink" />
 			Already online somewhere?
 		</h2>
-		<p class="mt-1.5 text-sm text-secondary">
+		<p class="mt-1.5 text-sm text-dim">
 			Give us the address and we will fetch it ourselves. Nothing to upload from here.
 		</p>
 		<form class="mt-4 flex flex-col gap-3 sm:flex-row" onsubmit={fromUrl}>
@@ -154,7 +154,7 @@
 					placeholder="https://example.com/lecture.mp4"
 				/>
 			</label>
-			<button type="submit" class="btn-secondary flex-none" disabled={!url.trim() || stage === 'sending'}>
+			<button type="submit" class="btn flex-none" disabled={!url.trim() || stage === 'sending'}>
 				Fetch it
 			</button>
 		</form>
@@ -162,5 +162,5 @@
 {/if}
 
 {#if error}
-	<p class="mt-4 text-sm text-danger" role="alert">{error}</p>
+	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
 {/if}

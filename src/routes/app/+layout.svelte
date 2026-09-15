@@ -108,15 +108,15 @@
 		</div>
 
 		{#if me}
-			<div class="mx-4 mt-4 rounded-md border border-outline bg-surface px-3 py-2.5">
+			<div class="mx-4 mt-4 rounded-md border border-sunk bg-card px-3 py-2.5">
 				<p class="truncate text-sm font-medium">{me.org}</p>
-				<p class="mt-0.5 truncate text-xs text-secondary">{me.email}</p>
+				<p class="mt-0.5 truncate text-xs text-dim">{me.email}</p>
 			</div>
 		{/if}
 
 		<nav class="mt-4 flex-1 overflow-y-auto px-3" aria-label="Dashboard">
 			{#each groups as group (group.label)}
-				<p class="label-caps px-2 pt-4 pb-2 text-secondary">
+				<p class="label px-2 pt-4 pb-2 text-dim">
 					{group.label}
 				</p>
 				<ul class="grid gap-0.5">
@@ -138,12 +138,12 @@
 			{/each}
 		</nav>
 
-		<div class="border-t border-outline p-3">
-			<a href="/" class="side-link text-secondary">
+		<div class="border-t border-sunk p-3">
+			<a href="/" class="side-link text-dim">
 				<HugeiconsIcon icon={ArrowUpRight01Icon} size={17} strokeWidth={1.7} />
 				Back to the site
 			</a>
-			<button type="button" class="side-link w-full text-secondary" onclick={signOut}>
+			<button type="button" class="side-link w-full text-dim" onclick={signOut}>
 				<HugeiconsIcon icon={Logout01Icon} size={17} strokeWidth={1.7} />
 				Sign out
 			</button>
@@ -172,8 +172,8 @@
 					<HugeiconsIcon icon={Menu01Icon} size={18} strokeWidth={1.8} />
 				</button>
 				<nav class="flex items-center gap-2 text-sm" aria-label="Breadcrumb">
-					<span class="text-secondary">Dashboard</span>
-					<span class="text-secondary" aria-hidden="true">/</span>
+					<span class="text-dim">Dashboard</span>
+					<span class="text-dim" aria-hidden="true">/</span>
 					<span class="font-medium">{current}</span>
 				</nav>
 				<div class="ml-auto">
@@ -183,7 +183,7 @@
 
 			<div class="panel__body">
 				{#if !checked}
-					<p class="text-sm text-secondary">Checking your session…</p>
+					<p class="text-sm text-dim">Checking your session…</p>
 				{:else if me}
 					<div in:fly={{ y: 8, duration: 220, easing: cubicOut }}>
 						{@render children()}
@@ -191,8 +191,8 @@
 				{:else if trouble}
 					<div class="card text-center">
 						<p class="font-semibold">We could not load your account</p>
-						<p class="mx-auto mt-2 max-w-sm text-sm text-secondary">{trouble}</p>
-						<button type="button" class="btn-secondary mt-5" onclick={() => location.reload()}>
+						<p class="mx-auto mt-2 max-w-sm text-sm text-dim">{trouble}</p>
+						<button type="button" class="btn mt-5" onclick={() => location.reload()}>
 							Try again
 						</button>
 					</div>

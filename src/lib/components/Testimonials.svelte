@@ -27,7 +27,7 @@
 
 <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
-		<p class="label-caps text-tertiary">
+		<p class="label text-ink">
 			Who it's for
 		</p>
 		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
@@ -44,10 +44,10 @@
 						icon={u.icon}
 						size={42}
 						strokeWidth={1.6}
-						class="flex-none text-tertiary"
+						class="flex-none text-ink"
 					/>
 				</div>
-				<p class="mt-3.5 text-sm leading-[1.75] text-secondary">{u.ben}</p>
+				<p class="mt-3.5 text-sm leading-[1.75] text-dim">{u.ben}</p>
 			</article>
 		{/each}
 	</div>

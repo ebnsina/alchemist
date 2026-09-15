@@ -16,10 +16,10 @@
 		{#each stats as s, i (s.value)}
 			<div use:scrollReveal={{ delay: i * 70 }}>
 				<dt class="vh">{s.en}</dt>
-				<dd class="text-tertiary text-3xl font-semibold tracking-tight sm:text-4xl">
+				<dd class="text-ink text-3xl font-semibold tracking-tight sm:text-4xl">
 					{s.value}
 				</dd>
-				<p class="mt-2 text-sm text-secondary">{s.en}</p>
+				<p class="mt-2 text-sm text-dim">{s.en}</p>
 			</div>
 		{/each}
 	</dl>

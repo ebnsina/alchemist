@@ -1,149 +1,125 @@
 # Alchemist design system
 
-House style for Fajr Labs products. Ink on warm paper, one deep teal for action,
-alta red only for loss. This file is the reference; `src/app.css` is the
-implementation, and the two are meant to agree.
+Monochrome console. State is carried by weight and contrast, not by hue. Taken from
+the stream-migrate migration console and applied to both surfaces — the public site
+and the customer dashboard.
+
+This file is the reference; `src/app.css` is the implementation, and the two are
+meant to agree.
 
 ## Principles
 
-It reads like a well-set printed page rather than a dashboard. The surfaces are
-data-heavy — lists, usage tables, billing lines — so numbers are set in mono and
-aligned, prose is set in Mona Sans and ragged-right. No gradients, no glass, no
-shadow theatre. If an element is not carrying meaning it is removed rather than
-styled down.
+There is no accent colour. A row is important because it is heavier and darker, not
+because it is blue. The only hue in the system is red, and it means loss.
+
+Everything is dense: 8px row padding, 15px base text, and a base weight of 600 —
+this is a working surface, not a brochure. Numbers live in mono with tabular figures
+so columns line up without anybody padding them.
+
+Dark is the default because the console is a tool that sits open all day.
 
 ## Colours
 
-| Token | Value | Use |
-|---|---|---|
-| `--color-primary` | `#15181B` | Near-black ink: headings, body, icons |
-| `--color-on-primary` | `#FBF9F5` | Paper, for text on inked surfaces |
-| `--color-secondary` | `#666E74` | Slate: captions, metadata, timestamps, placeholders. Never body copy |
-| `--color-tertiary` | `#1F5F5B` | Neel Teal — the only interactive colour |
-| `--color-tertiary-container` | `#174744` | Hover and pressed state of the same teal |
-| `--color-neutral` | `#FBF9F5` | Warm paper: the page ground |
-| `--color-surface` | `#FFFFFF` | Cards, inputs, table rows — lifted by colour, not shadow |
-| `--color-outline` | `#E3DFD8` | Hairlines, dividers, borders. One weight, 1px |
-| `--color-danger` | `#A8342A` | Alta red. Destructive actions and failure only |
-| `--color-success` | `#2F6B3A` | Terminal healthy states: playable, paid, verified |
+| Token | Dark | Light | Use |
+|---|---|---|---|
+| `--color-bg` | `#0D0D0F` | `#FAFAFA` | The page |
+| `--color-card` | `#161618` | `#FFFFFF` | Panels, rails, dialogs |
+| `--color-sunk` | `#1E1E21` | `#F1F1F2` | Hover, rules, inactive fills, skeletons |
+| `--color-ink` | `#F2F2F3` | `#0F0F10` | Titles, values, body |
+| `--color-dim` | `#9A9AA0` | `#6E6E73` | Secondary prose, captions |
+| `--color-faint` | `#82828A` | `#6E6E73` | Labels, units, timestamps |
+| `--color-solid` | `#F2F2F3` | `#0F0F10` | Filled surfaces: primary button, active chip |
+| `--color-on-solid` | `#0D0D0F` | `#FFFFFF` | Text on a filled surface |
+| `--color-muted` | `#33333A` | `#D8D8DC` | Finished, inactive fills |
+| `--color-done` | `#1B1B1E` | `#F4F4F5` | The wash on a finished row |
+| `--color-red` | `#E08A8A` | `#8A1F1F` | Failure, destructive. Nothing else |
 
-Measured, not eyeballed. On the paper ground `#FBF9F5`: ink 16.95:1, secondary
-4.93:1, teal 7.02:1, danger 6.26:1, success 6.08:1. Paper on teal is 7.02:1, paper
-on ink 16.95:1. Secondary is the tightest of them, which is why it is barred from
-body copy — it passes AA for text but has no headroom to spare.
+Measured. Dark on `#0D0D0F`: ink 17.35:1, dim 6.94:1, faint 5.09:1, red 7.56:1.
+Light on `#FAFAFA`: ink 18.36:1, dim 4.86:1, faint 4.86:1, red 8.76:1.
 
-### Dark
+Faint is the one departure from the console this is copied from. There it is
+`#6A6A71` and `#A0A0A6`, which measure 3.62:1 and 2.49:1 — under AA. Same role,
+lifted until it passes. It is still only for 11px uppercase labels that repeat down
+a column, where the word is scaffolding for the number beside it; anything read once
+uses ink or dim.
 
-Dark inverts primary and neutral and lifts the teal and the red a step. It
-introduces no new hues, and it follows the reading of the stream-migrate console:
-near-black ground, two lifted surfaces, state carried by weight and contrast.
-
-| Token | Light | Dark |
-|---|---|---|
-| `--color-neutral` | `#FBF9F5` | `#0D0D0F` |
-| `--color-surface` | `#FFFFFF` | `#161618` |
-| `--color-outline` | `#E3DFD8` | `#2A2A2E` |
-| `--color-primary` | `#15181B` | `#F2F2F3` |
-| `--color-on-primary` | `#FBF9F5` | `#0D0D0F` |
-| `--color-secondary` | `#666E74` | `#9A9AA0` |
-| `--color-tertiary` | `#1F5F5B` | `#4BB3AA` |
-| `--color-tertiary-container` | `#174744` | `#6EC9C1` |
-| `--color-danger` | `#A8342A` | `#E08A8A` |
-| `--color-success` | `#2F6B3A` | `#7FBF8A` |
-
-Measured on the dark ground `#0D0D0F`: ink 17.35:1, secondary 6.94:1, teal 7.70:1,
-danger 7.56:1, success 8.99:1. The ground on the teal button is 7.70:1 — the button
-text is `on-primary` in both themes, which is the same rule written once: whatever
-the page is, the button is not.
-
-The system preference decides until somebody uses the toggle, which is remembered
-per browser and applied before first paint so the page never flashes the wrong one.
+The filled button inverts: `solid` background, `on-solid` text, 17:1 either way.
 
 ## Typography
 
-Two families. Mona Sans for everything human, Geist Mono for everything counted.
+Mona Sans for everything human, Geist Mono for everything counted. The base weight
+is 600; headings and values are 800. The console this is copied from uses Plus
+Jakarta and JetBrains; the families are ours and the weights are its.
 
-| Token | Size / weight | Use |
-|---|---|---|
-| `display` | 3.5rem / 600 / 1.05 / −0.03em | One per page, at most |
-| `h1` | 2.25rem / 600 / 1.15 / −0.02em | Page title |
-| `h2` | 1.5rem / 600 / 1.25 / −0.01em | Section |
-| `body-md` | 1rem / 400 / 1.6 | Default prose, max measure 68ch |
-| `body-sm` | 0.875rem / 400 / 1.55 | Secondary prose, help text, table cells |
-| `label-caps` | 0.75rem / 600 / 0.08em, uppercase | Buttons, table headers, eyebrows. Never a sentence |
-| `numeric` | Geist Mono 0.875rem / 500, `tnum` | Every byte count, duration, price, ID, timestamp |
+| Role | Size / weight |
+|---|---|
+| `big` | 44px / 800 / 1.0 |
+| `h1` | 28px / 800 / −0.02em |
+| `h2` | 20px / 800 / −0.02em |
+| body | 15px / 600 |
+| `.title` | 14px / 700 / −0.01em |
+| `.sub` | 12px / 600, faint |
+| `.label` | 11px / 700, uppercase, 0.07em, faint |
+| `.metric b` | mono 17px / 800, tabular |
+| `.mono` | mono 11px / 500, faint |
 
-Headings stop at three levels. A fourth means the page needs splitting.
+Every number, date, duration, price, id and timestamp goes through `Intl` and is set
+in mono.
 
-Every number, date, duration and currency goes through `Intl`. No hand-rolled
-formatters, and no localisation logic inside components.
+## Shapes and spacing
 
-## Layout
+Radii: `6px` skeletons and inline chips, `9px` rows, `10px` small buttons and bulk
+bars, `12px` buttons, `20px` dialogs, `99px` chips, dots and progress bars.
 
-An 8px scale, used strictly: `xs` 4, `sm` 8, `md` 16, `lg` 24, `xl` 40, `xxl` 64.
-
-- `xs`/`sm` inside a control — icon to label, badge padding
-- `md` between related elements in a group
-- `lg` between groups inside a card
-- `xl`/`xxl` between page sections
-
-Content column caps at 1200px; reading prose caps at 68ch at any viewport. Tables
-run 40px rows with 12px cell padding. Whitespace separates sections, not rows.
+Rows are 8px/12px padded with a 12px gap. Rails are 22px/20px. Sections separate
+with a 1px `sunk` rule, never with a shadow.
 
 ## Elevation
 
-There is no elevation scale. Depth is surface colour against warm paper plus a 1px
-outline. Exactly one shadow exists, for things that float above the page — menus,
-dialogs, toasts:
-
-```
-0 8px 24px rgba(21, 24, 27, 0.10)
-```
-
-Anything else reaching for a shadow is probably a card, and should use the outline.
-
-## Shapes
-
-Four radii: `sm` 4px for inline chips and code, `md` 8px for buttons, inputs and
-menus, `lg` 14px for cards and dialogs, `full` 999px for avatars, pills and status
-dots. Radii do not scale with size — a large card and a small card share `lg`.
+Two shadows, both for things that float: the bulk bar
+(`0 -1px 0 sunk, 0 8px 24px rgba(0,0,0,.12)`) and the dialog
+(`0 18px 50px rgba(20,30,50,.2)`). Static content uses `card` against `bg`, or a
+`sunk` rule.
 
 ## Components
 
-- **button-primary** — teal, paper text, label-caps, 40px tall, `md` radius. One per
-  view. Hover darkens to tertiary-container; focus is a 2px teal ring offset 2px.
-- **button-secondary** — white on paper, 1px outline, ink text. The default for
-  anything that is not the single primary action.
-- **button-danger** — alta red, and only behind a confirmation for anything
-  irreversible.
-- **card** — white, `lg` radius, 24px padding, 1px outline, no shadow.
-- **input** — white, `md` radius, 40px tall, 1px outline turning teal on focus.
-  Errors add red helper text below, never a red placeholder.
-- **badge-inverse** — ink pill, paper text, for counts and primary status.
-- **status** — a `full` dot plus a label-caps word. Never a coloured background block.
-- **stat-value** — mono, tabular, right-aligned in tables.
-- **divider** — 1px outline, full bleed inside cards.
+- **button** — uppercase, 800, 14px, radius 12, `sunk` background and ink text;
+  `.solid` inverts to `solid`/`on-solid` for the one primary action. Hover drops
+  opacity to .85. `.sm` is 12px at radius 10.
+- **node (row)** — radius 9, hover `sunk`, a 24px round badge, a title, a faint
+  sub, an optional 120×4 progress rail, and a chip at the end. A finished row goes
+  to 55% opacity and stops responding to hover.
+- **chip** — 10px, 800, uppercase, radius 99, min-width 54, centred. `sunk`+faint
+  for inactive, `ink`+`card` for active.
+- **badge** — 24px circle, 800. Filled `solid` for next, outlined for stale, `muted`
+  for done.
+- **metric** — a faint uppercase label and a mono 800 value on one baseline.
+- **ring** — a 108px donut with the percentage inside and a faint caption under it,
+  drawn with one `stroke-dasharray` rather than two arcs.
+- **skeleton** — `sunk` block with a shimmer, in the shape of the thing that is
+  loading, because a cold query takes long enough that a spinner says nothing.
 
-Every surface that can load, be empty, or fail ships all three: a skeleton matching
-the final layout's dimensions, an empty state with one sentence and one action, and
-an error state in plain language with a retry.
+Every surface that can load, be empty, or fail ships all three states.
 
 ## Do and don't
 
-- **Do** use teal for exactly one thing: something the user can act on.
-- **Do** set every number, ID and timestamp in Geist Mono with tabular figures.
-- **Do** write error copy as a plain sentence — what happened, what to do next, with
-  stable API error codes mapped to that copy on the client.
-- **Do** keep one primary action per view. Everything else is secondary or a link.
-- **Don't** introduce a new colour, radius or shadow. If the system cannot express
-  it, the layout is wrong.
-- **Don't** use red for emphasis, warnings or counts. Red means loss.
-- **Don't** use shadows to separate static content. Use the outline.
-- **Don't** ship framework default styling, an icon set other than Hugeicons, or any
-  dark-pattern flow — hidden pricing, pre-checked upsells, a disguised cancel.
+- **Do** carry state with weight, fill and contrast.
+- **Do** put every number in mono with tabular figures.
+- **Do** keep one filled button per view; everything else is a `sunk` button.
+- **Don't** introduce a hue. If something needs to stand out, make it heavier or
+  fill it.
+- **Don't** use red for anything but failure and destruction.
+- **Don't** add a shadow to static content.
+- **Don't** ship framework default styling, an icon set other than Hugeicons, or a
+  dark-pattern flow.
+
+## Where it is used
+
+The dashboard overview is the reference layout: the node list on the left, and a
+rail on the right holding the ring and the metrics — everything that is a figure
+rather than an action. The public site uses the same parts at a larger scale.
 
 ## Checks
 
 `npm run check:contrast` samples the real pixel under every text node on the public
-pages, in both themes, at every viewport step, and fails under 4.5:1. It exists because the usual
-walk-up-the-DOM check reads an ancestor's background rather than what is painted.
+pages, in both themes, at every viewport step, and fails under 4.5:1.

@@ -21,8 +21,8 @@
 
 <div class="code">
 	<div class="code__bar">
-		<span class="text-xs text-secondary">{label || 'JSON'}</span>
-		<button type="button" onclick={copy} class="flex items-center gap-1.5 text-xs text-secondary transition-colors hover:text-primary">
+		<span class="text-xs text-dim">{label || 'JSON'}</span>
+		<button type="button" onclick={copy} class="flex items-center gap-1.5 text-xs text-dim transition-colors hover:text-ink">
 			<HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={13} strokeWidth={2} />
 			{copied ? 'Copied' : 'Copy'}
 		</button>

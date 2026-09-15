@@ -44,12 +44,12 @@
 		</a>
 
 		<nav aria-label="Sections" class="order-3 w-full sm:order-none sm:w-auto sm:justify-self-center">
-			<ul class="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-outline pt-2 sm:border-0 sm:pt-0">
+			<ul class="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-sunk pt-2 sm:border-0 sm:pt-0">
 				{#each links as l (l.href)}
 					<li>
 						<a
 							href={l.href}
-							class="block py-1 text-sm text-secondary transition-colors hover:text-primary"
+							class="block py-1 text-sm text-dim transition-colors hover:text-ink"
 							>{l.en}</a
 						>
 					</li>
@@ -59,8 +59,8 @@
 
 		<div class="ml-auto flex flex-none items-center gap-2 sm:ml-0 sm:justify-self-end">
 			<ThemeToggle />
-			<a href="/login/" class="hidden text-sm text-secondary transition-colors hover:text-primary sm:inline-block">Sign in</a>
-			<a href="/signup/" class="btn-primary hidden text-sm sm:inline-flex">
+			<a href="/login/" class="hidden text-sm text-dim transition-colors hover:text-ink sm:inline-block">Sign in</a>
+			<a href="/signup/" class="btn-solid hidden text-sm sm:inline-flex">
 				Start free
 			</a>
 		</div>

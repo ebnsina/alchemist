@@ -86,37 +86,37 @@
 <section class="mt-8">
 	<button
 		type="button"
-		class="flex w-full items-center justify-between gap-4 rounded-xl border border-outline px-4 py-3 text-left transition-colors hover:border-outline"
+		class="flex w-full items-center justify-between gap-4 rounded-xl border border-sunk px-4 py-3 text-left transition-colors hover:border-sunk"
 		onclick={() => (open = !open)}
 		aria-expanded={open}
 	>
 		<span>
 			<span class="text-sm font-semibold">Advanced</span>
-			<span class="ml-2 text-xs text-secondary">Chunks, pipeline steps, and the raw response</span>
+			<span class="ml-2 text-xs text-dim">Chunks, pipeline steps, and the raw response</span>
 		</span>
 		<HugeiconsIcon
 			icon={ArrowDown01Icon}
 			size={17}
 			strokeWidth={2}
-			class="chevron flex-none text-secondary {open ? 'rotate-180' : ''}"
+			class="chevron flex-none text-dim {open ? 'rotate-180' : ''}"
 		/>
 	</button>
 
 	{#if open}
 		<div class="mt-4 grid gap-6">
 			{#if error}
-				<p class="text-sm text-danger" role="alert">{error}</p>
+				<p class="text-sm text-red" role="alert">{error}</p>
 			{:else if !loaded}
-				<p class="text-sm text-secondary">Loading…</p>
+				<p class="text-sm text-dim">Loading…</p>
 			{:else}
 				<div>
 					<h3 class="text-sm font-semibold">Chunk map</h3>
-					<p class="mt-1 text-xs text-secondary">
+					<p class="mt-1 text-xs text-dim">
 						Each square is a slice of the video, encoded on its own. Filled means the slice
 						exists in storage.
 					</p>
 					{#if byRendition.length === 0}
-						<p class="mt-3 text-sm text-secondary">No chunks yet.</p>
+						<p class="mt-3 text-sm text-dim">No chunks yet.</p>
 					{:else}
 						<div class="mt-3 grid gap-4">
 							{#each byRendition as group (group.name)}
@@ -124,12 +124,12 @@
 								<div class="card p-4">
 									<div class="flex items-baseline justify-between text-xs">
 										<span class="font-medium">{group.name}</span>
-										<span class="text-secondary tabular-nums">{done} of {group.items.length}</span>
+										<span class="text-dim tabular-nums">{done} of {group.items.length}</span>
 									</div>
 									<div class="mt-2.5 flex flex-wrap gap-1">
 										{#each group.items as c (c.index)}
 											<span
-												class="h-3.5 w-3.5 rounded-[3px] {c.done ? 'bg-tertiary' : 'bg-outline'}"
+												class="h-3.5 w-3.5 rounded-[3px] {c.done ? 'bg-solid' : 'bg-sunk'}"
 												title="#{c.index} · {c.start_sec.toFixed(1)}s to {c.end_sec.toFixed(1)}s{c.done
 													? ''
 													: ' · not yet'}"
@@ -144,17 +144,17 @@
 
 				<div>
 					<h3 class="text-sm font-semibold">What happened</h3>
-					<p class="mt-1 text-xs text-secondary">
+					<p class="mt-1 text-xs text-dim">
 						Every step the queue ran for this video. Error text stays in our logs — what you
 						can act on is the code on the video itself.
 					</p>
 					{#if activity.length === 0}
-						<p class="mt-3 text-sm text-secondary">Nothing recorded yet.</p>
+						<p class="mt-3 text-sm text-dim">Nothing recorded yet.</p>
 					{:else}
 						<div class="card mt-3 overflow-x-auto">
 							<table class="w-full text-sm">
 								<thead>
-									<tr class="text-xs text-secondary">
+									<tr class="text-xs text-dim">
 										<th class="px-4 py-2.5 text-left font-normal">Step</th>
 										<th class="px-4 py-2.5 text-left font-normal">State</th>
 										<th class="px-4 py-2.5 text-right font-normal">Tries</th>
@@ -164,23 +164,23 @@
 								</thead>
 								<tbody>
 									{#each activity as a, i (a.step + a.queued_at + i)}
-										<tr class="border-t border-outline">
+										<tr class="border-t border-sunk">
 											<td class="px-4 py-2.5">{STEP[a.step] ?? a.step}</td>
 											<td class="px-4 py-2.5">
 												<span
 													class={a.state === 'completed'
-														? 'text-tertiary'
+														? 'text-ink'
 														: a.state === 'discarded'
-															? 'text-danger'
-															: 'text-secondary'}
+															? 'text-red'
+															: 'text-dim'}
 												>
 													{STATE[a.state] ?? a.state}
 												</span>
 											</td>
 											<td class="px-4 py-2.5 text-right tabular-nums">
-												{a.attempt}{#if a.failures > 0}<span class="text-danger"> · {a.failures} failed</span>{/if}
+												{a.attempt}{#if a.failures > 0}<span class="text-red"> · {a.failures} failed</span>{/if}
 											</td>
-											<td class="px-4 py-2.5 text-right text-secondary tabular-nums">{clock(a.started_at)}</td>
+											<td class="px-4 py-2.5 text-right text-dim tabular-nums">{clock(a.started_at)}</td>
 											<td class="px-4 py-2.5 text-right tabular-nums">{took(a)}</td>
 										</tr>
 									{/each}
@@ -192,7 +192,7 @@
 
 				<div>
 					<h3 class="text-sm font-semibold">Raw response</h3>
-					<p class="mt-1 text-xs text-secondary">The same call your own code would make.</p>
+					<p class="mt-1 text-xs text-dim">The same call your own code would make.</p>
 					<div class="mt-3">
 						<Json source={JSON.stringify(asset, null, 2)} label="GET /v1/assets/{asset.id}" />
 					</div>

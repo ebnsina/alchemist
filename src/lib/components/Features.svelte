@@ -46,12 +46,12 @@
 
 <section id="features" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
-		<p class="label-caps text-tertiary">
+		<p class="label text-ink">
 			What you get
 		</p>
 		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
 			The video parts you would rather not build.
-			<span class="text-tertiary">All of them.</span>
+			<span class="text-ink">All of them.</span>
 		</h2>
 	</div>
 
@@ -64,10 +64,10 @@
 						icon={f.icon}
 						size={42}
 						strokeWidth={1.6}
-						class="flex-none text-tertiary"
+						class="flex-none text-ink"
 					/>
 				</div>
-				<p class="mt-3.5 text-sm leading-[1.75] text-secondary">{f.ben}</p>
+				<p class="mt-3.5 text-sm leading-[1.75] text-dim">{f.ben}</p>
 			</article>
 		{/each}
 	</div>
