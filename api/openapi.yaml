@@ -762,6 +762,24 @@ paths:
         "204": { description: Deleted }
         "404": { description: stream_not_found }
 
+  /v1/live-streams/{id}/key:
+    post:
+      summary: Replace the stream key
+      description: |
+        Mints a new key and forgets the old one. There is no way to see an existing
+        key again — only its hash is stored, exactly like an API key — so this is both
+        the answer to "I did not write it down" and the fix for a leaked one.
+
+        The new key is returned **once**. An encoder already publishing keeps going:
+        the ingest server checks the key at handshake and does not re-check mid
+        connection, so it is the next connection that needs the new one.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: The new key, shown once }
+        "403": { description: live_not_enabled }
+        "404": { description: stream_not_found }
+
   /v1/live-streams/{id}/start:
     post:
       summary: Go on air

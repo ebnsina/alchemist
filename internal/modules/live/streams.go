@@ -183,6 +183,50 @@ func (m *Module) getStream(w http.ResponseWriter, r *http.Request) {
 // The asset is created between the two steps rather than inside one transaction,
 // because live does not own assets: the busy check comes first so a refused start
 // never leaves one behind.
+// replaceKey mints a new stream key and forgets the old one.
+//
+// There is no "show me the key again": only its hash is stored, exactly like an API
+// key, so a key nobody wrote down is gone. Replacing it is the honest answer, and it
+// doubles as the fix for a leaked one.
+func (m *Module) replaceKey(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpx.Tenant(r)
+	streamID := chi.URLParam(r, "id")
+
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		httpx.ErrorFor(w, r, http.StatusInternalServerError, "internal_error",
+			"Something went wrong on our side.")
+		return
+	}
+	key := hex.EncodeToString(raw)
+	sum := sha256.Sum256([]byte(key))
+
+	var state string
+	err := m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(r.Context(),
+			`update live_streams set key_hash = $2, updated_at = now()
+			  where id = $1 returning state`, streamID, sum[:]).Scan(&state)
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		httpx.ErrorFor(w, r, http.StatusNotFound, "stream_not_found", "We couldn't find that stream.")
+		return
+	}
+	if err != nil {
+		httpx.ErrorFor(w, r, http.StatusInternalServerError, "internal_error",
+			"We couldn't replace that key.")
+		return
+	}
+
+	// An encoder already publishing keeps going: the ingest server checked the key at
+	// handshake and does not re-check mid-connection. It is the next connection that
+	// needs the new one, which is what the copy says.
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"stream_id":  streamID,
+		"stream_key": key,
+		"state":      state,
+	})
+}
+
 func (m *Module) startStream(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpx.Tenant(r)
 	streamID := chi.URLParam(r, "id")

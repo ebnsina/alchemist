@@ -101,6 +101,7 @@ POST   /v1/live-streams           -> create; the stream key is shown once
 GET    /v1/live-streams           -> your streams
 GET    /v1/live-streams/{id}      -> state and the asset the broadcast plays at
 POST   /v1/live-streams/{id}/start -> go on air; returns the ingest_url for OBS
+POST   /v1/live-streams/{id}/key  -> replace the stream key; the old one stops working
 DELETE /v1/live-streams/{id}      -> delete
 
 Session only (an API key gets 403 session_required):
