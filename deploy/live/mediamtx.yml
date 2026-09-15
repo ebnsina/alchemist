@@ -1,0 +1,45 @@
+# Ingest server. It terminates SRT and RTMP and does nothing else.
+#
+# Everything that serves viewers is off. Playback is the origin's job -- signed URLs,
+# byte-range CMAF, the BDIX edge -- and a second delivery path would mean a second set
+# of cache headers, a second auth model, and two answers to "why did that not play".
+#
+# What this buys, and why ffmpeg's own listener could not: it reads SRT's streamid and
+# RTMP's query at handshake and asks the API whether the publisher may proceed. The
+# ffmpeg listener exposes neither, which left the port itself as the credential.
+
+# Publishers only. Viewers never touch this server.
+rtmp: yes
+srt: yes
+hls: no
+webrtc: no
+
+# RTSP is the encoder's private pickup path, not a public one: the transcoder pulls
+# rtsp://127.0.0.1:8554/<stream-id> from here. Bound to loopback so it is not a
+# second, unsigned way to watch a customer's stream.
+rtsp: yes
+rtspAddress: 127.0.0.1:8554
+rtspTransports: [tcp]
+
+# One port for every stream. The port-per-stream allocator this replaces had a ceiling
+# of the configured range and a failure mode where a crashed session leaked its port.
+rtmpAddress: :1935
+srtAddress: :8890
+
+# Every publish is asked about. The stream key travels in the credentials, the stream
+# id is the path, and the API requires both to agree -- see internal/api/live_auth.go.
+authMethod: http
+authHTTPAddress: http://127.0.0.1:8099/internal/live/authorize
+authHTTPExclude:
+  - action: api
+  - action: metrics
+  - action: pprof
+
+pathDefaults:
+  # Nothing is recorded here. The recording is the transcoder's output, written to
+  # object storage as CMAF, because that is what becomes the VOD asset afterwards.
+  record: no
+
+# Any path is accepted at this layer; the API decides whether the key matches it.
+paths:
+  all_others:

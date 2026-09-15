@@ -73,11 +73,29 @@ size is the number of concurrent broadcasts this box accepts. ffmpeg in listener
 takes one connection and cannot dispatch on SRT's streamid, which is why streams
 cannot share a port.
 
-**Open the range to your customers' encoders and to nobody else.** Ingest is currently
-authorised by the port rather than by the stream key, because ffmpeg never exposes the
-streamid it was handed. Both TCP (RTMP) and UDP (SRT) need the range open, and SRT
-needs an ffmpeg built with `--enable-libsrt` -- the distribution and Homebrew builds
-generally are not, and without it only RTMP works.
+**Open the range to your customers' encoders and to nobody else.** With the direct
+ffmpeg listener, ingest is authorised by the port rather than by the stream key,
+because ffmpeg never exposes the streamid it was handed. Both TCP (RTMP) and UDP (SRT)
+need the range open, and SRT needs an ffmpeg built with `--enable-libsrt` -- the
+distribution and Homebrew builds generally are not, and without it only RTMP works.
+
+### Authorising publishers properly
+
+`deploy/live/mediamtx.yml` puts an ingest server in front, which is what makes the
+stream key the credential instead of the port. It reads SRT's streamid and RTMP's
+query at handshake and asks the API about every publish:
+
+    POST /internal/live/authorize   ->  204 allowed, 401 refused
+
+**That endpoint carries no API key and must never be publicly reachable.** The caller
+is the ingest server on the same host, so bind it to loopback or a private interface
+and firewall it like a database port. The stream key in the request body is the
+credential, and a publish is allowed only when the key resolves to a live stream *and*
+that stream is the path being published to -- checking the key alone would let one
+customer's valid key publish over everyone else's broadcast.
+
+With the ingest server in front, one RTMP port and one SRT port serve every stream, so
+`ALCHEMIST_LIVE_PORT_RANGE` stops being the concurrency ceiling. Cores still are.
 
 One live rung is roughly one CPU core held for the length of the broadcast. Size
 `ALCHEMIST_LIVE_PORT_RANGE` against cores, not against ambition: a box with 16 cores

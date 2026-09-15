@@ -581,6 +581,37 @@ paths:
       responses:
         "200": { description: Up to 500 items, newest first }
 
+  /internal/live/authorize:
+    post:
+      summary: Authorize a publisher (ingest server only)
+      description: |
+        Not part of the customer API. The ingest server calls this before accepting a
+        publisher, and it is the only thing standing between a stream key and someone
+        else's broadcast — so it must be bound to a private interface and never
+        exposed publicly. See `deploy/README.md`.
+
+        It carries no API key, because the caller has none: the stream key inside the
+        request body is the credential. A publish is allowed only when the key
+        resolves to a live stream **and** that stream is the path being published to.
+        Checking the key alone would let one valid key publish over every other
+        stream on the server.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, description: Only "publish" is ever allowed }
+                path: { type: string, description: The live stream's id }
+                password: { type: string, description: The stream key }
+                token: { type: string, description: The stream key, if sent as a token }
+                protocol: { type: string }
+                ip: { type: string }
+      responses:
+        "204": { description: The publisher may proceed }
+        "401": { description: Refused. No detail is returned, deliberately }
+
   /v1/live-streams:
     get:
       summary: Your live streams

@@ -86,6 +86,13 @@ func (s *Server) Routes() http.Handler {
 	r.Post("/playback/{tenant}/{asset}/beacon", s.postBeacon)
 	r.Options("/playback/{tenant}/{asset}/beacon", s.postBeacon)
 
+	// The ingest server asks whether a publisher may write to a stream. It holds no
+	// API key, so this is unauthenticated and must be bound to a private interface --
+	// the stream key inside the request is the credential. See deploy/README.md.
+	if s.liveEnabled() {
+		r.Post("/internal/live/authorize", s.authorizeIngest)
+	}
+
 	// Operator surface, behind a separate credential so a leaked customer key cannot
 	// mint tenants or more keys.
 	r.Route("/admin", func(r chi.Router) {
