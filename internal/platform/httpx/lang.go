@@ -66,6 +66,9 @@ var bangla = map[string]string{
 	"ingest_failed":           "এনকোডার থেকে ভিডিও নেওয়া যায়নি।",
 	"no_encoder":              "কোনো এনকোডার যুক্ত হয়নি, তাই স্ট্রিমটি বন্ধ করা হয়েছে।",
 	"recording_unreadable":    "লাইভের রেকর্ডিংটি পড়া যায়নি, তাই ভিডিও বানানো যায়নি।",
+	"not_broadcasting":        "এই স্ট্রিমটি এখন সম্প্রচারে নেই, তাই বন্ধ করার কিছু নেই।",
+	"stopped":                 "কিছু পাঠানোর আগেই স্ট্রিমটি বন্ধ করা হয়েছে।",
+	"start_failed":            "স্ট্রিমটি চালু করা শেষ হয়নি, তাই সম্প্রচার হয়নি।",
 }
 
 // ErrorCodes lists every code with Bangla copy, so a test can assert that the set

@@ -90,6 +90,7 @@ func (m *Module) Routes(r chi.Router) {
 		r.Get("/live-streams", m.listStreams)
 		r.Get("/live-streams/{id}", m.getStream)
 		r.Post("/live-streams/{id}/start", m.startStream)
+		r.Post("/live-streams/{id}/stop", m.stopStream)
 		r.Post("/live-streams/{id}/key", m.replaceKey)
 		r.Delete("/live-streams/{id}", m.deleteStream)
 	})

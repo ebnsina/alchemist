@@ -108,6 +108,7 @@ GET    /v1/live-streams           -> your streams
 GET    /v1/live-streams/{id}      -> state and the asset the broadcast plays at
 POST   /v1/live-streams/{id}/start -> go on air; returns the ingest_url for OBS,
                                      or a WHIP endpoint plus publish_token for camera
+POST   /v1/live-streams/{id}/stop -> end a broadcast that is on air; the recording still converts
 POST   /v1/live-streams/{id}/key  -> replace the stream key; the old one stops working
 DELETE /v1/live-streams/{id}      -> delete
 

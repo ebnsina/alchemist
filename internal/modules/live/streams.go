@@ -327,6 +327,46 @@ func (m *Module) startStream(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusAccepted, out)
 }
 
+// stopStream ends a broadcast that is on air.
+//
+// It writes the intent rather than doing the work: the thing holding ffmpeg is the
+// worker, in another process, and the API has no handle on it. The worker reads this
+// on its next poll -- within a second -- and goes down its ordinary ending path, so a
+// stopped broadcast converts into its recording exactly like one whose encoder hung
+// up. Nothing here touches a session that has already ended, which is what keeps a
+// recording mid-conversion from being stranded.
+func (m *Module) stopStream(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpx.Tenant(r)
+	streamID := chi.URLParam(r, "id")
+
+	var sessionID string
+	err := m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(r.Context(),
+			`update live_sessions set stop_requested_at = now()
+			  where id = (select id from live_sessions
+			               where stream_id = $1 and state in ('waiting', 'live')
+			               order by created_at desc limit 1)
+			 returning id::text`, streamID).Scan(&sessionID)
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		// Either the stream was never started, or the broadcast is already over and
+		// its recording is converting. Both are "there is nothing to stop".
+		httpx.ErrorFor(w, r, http.StatusConflict, "not_broadcasting",
+			"That stream isn't on air, so there's nothing to stop.")
+		return
+	}
+	if err != nil {
+		httpx.ErrorFor(w, r, http.StatusInternalServerError, "internal_error",
+			"We couldn't stop that broadcast.")
+		return
+	}
+
+	httpx.JSON(w, http.StatusAccepted, map[string]any{
+		"stream_id":  streamID,
+		"session_id": sessionID,
+	})
+}
+
 func (m *Module) deleteStream(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpx.Tenant(r)
 

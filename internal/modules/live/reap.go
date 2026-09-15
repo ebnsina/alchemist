@@ -37,6 +37,15 @@ const RetryWindow = 24 * time.Hour
 // ReapInterval is how often Reap runs for each tenant that has live.
 const ReapInterval = time.Minute
 
+// StopGrace is how long a stop may go unanswered before the reaper does it.
+//
+// The worker reads the flag on its next poll, within a second, so half a minute means
+// no worker is reading it -- the job is still queued behind a full box, or the worker
+// died. Without this backstop a stop on a queued broadcast does nothing at all until
+// the session times out half an hour later, which is exactly the stuck stream the
+// customer pressed the button about.
+const StopGrace = 30 * time.Second
+
 // OrphanGrace is how long an asset may sit in a live state with no session before it
 // counts as one whose arming never finished. Generous, because the session lands a
 // moment after the asset and a race here would fail a broadcast that is about to
@@ -47,29 +56,37 @@ const OrphanGrace = 5 * time.Minute
 // every broadcast that no longer needs them. Scoped to one tenant so live_sessions is
 // read under ordinary RLS; finding the tenants is the caller's problem.
 func (w *Worker) Reap(ctx context.Context, tenantID string) error {
-	type row struct{ sessionID, assetID, streamID, state string }
+	type row struct {
+		sessionID, assetID, streamID, state string
+		stopped                             bool
+	}
 	var rows []row
 
 	if err := w.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		r, err := tx.Query(ctx,
-			`select id::text, asset_id::text, stream_id::text, state
+			`select id::text, asset_id::text, stream_id::text, state,
+			        stop_requested_at is not null
 			   from live_sessions
 			  where (state = 'live'
 			         and coalesce(last_seen_at, started_at, created_at)
 			             < now() - make_interval(secs => $1))
 			     or (state = 'waiting' and created_at < now() - make_interval(secs => $2))
+			     or (state in ('waiting', 'live')
+			         and stop_requested_at < now() - make_interval(secs => $4))
 			     or (state = 'failed' and swept_at is null)
 			     or (state = 'ended' and swept_at is null
 			         and ended_at > now() - make_interval(secs => $3))
 			  limit 100`,
-			LiveGrace.Seconds(), WaitGrace.Seconds(), RetryWindow.Seconds())
+			LiveGrace.Seconds(), WaitGrace.Seconds(), RetryWindow.Seconds(),
+			StopGrace.Seconds())
 		if err != nil {
 			return err
 		}
 		defer r.Close()
 		for r.Next() {
 			var s row
-			if err := r.Scan(&s.sessionID, &s.assetID, &s.streamID, &s.state); err != nil {
+			if err := r.Scan(&s.sessionID, &s.assetID, &s.streamID, &s.state,
+				&s.stopped); err != nil {
 				return err
 			}
 			rows = append(rows, s)
@@ -82,7 +99,7 @@ func (w *Worker) Reap(ctx context.Context, tenantID string) error {
 	a := session{TenantID: tenantID}
 	for _, s := range rows {
 		a.ID = s.sessionID
-		if err := w.reapOne(ctx, a, s.assetID, s.streamID, s.state); err != nil {
+		if err := w.reapOne(ctx, a, s.assetID, s.streamID, s.state, s.stopped); err != nil {
 			return err
 		}
 	}
@@ -135,15 +152,21 @@ func (w *Worker) reapOrphans(ctx context.Context, tenantID string) error {
 	return nil
 }
 
-func (w *Worker) reapOne(ctx context.Context, a session, assetID, streamID, state string) error {
+func (w *Worker) reapOne(ctx context.Context, a session, assetID, streamID, state string,
+	stopped bool) error {
 	switch state {
 	case "live":
 		// Segments exist, so the broadcast happened: it is converted like any other
 		// rather than discarded because the encoder failed to say goodbye.
 		return w.endLive(ctx, a, assetID, streamID)
 	case "waiting":
-		// Nobody ever published, and the worker that should have said so is gone.
-		_ = w.failLive(ctx, a, assetID, streamID, "no_encoder")
+		// Nobody ever published. Why says which code: a customer who pressed stop is
+		// told that, not that their encoder never turned up.
+		code := "no_encoder"
+		if stopped {
+			code = "stopped"
+		}
+		_ = w.failLive(ctx, a, assetID, streamID, code)
 		return w.sweep(ctx, a, assetID)
 	case "failed":
 		return w.sweep(ctx, a, assetID)

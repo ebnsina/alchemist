@@ -3,9 +3,11 @@ package live
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/ebnsina/alchemist/internal/platform/media"
 )
@@ -77,7 +79,12 @@ func segmentCommand(ctx context.Context, input string, r media.Rung, outDir stri
 		"-hls_segment_filename", filepath.Join(outDir, "%d.m4s"),
 		filepath.Join(outDir, PlaylistName),
 	)
-	return exec.CommandContext(ctx, "ffmpeg", args...)
+	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
+	// SIGINT rather than the default kill, so a stopped broadcast finalises its
+	// playlist the way one whose encoder hung up does. WaitDelay is the backstop.
+	cmd.Cancel = func() error { return cmd.Process.Signal(os.Interrupt) }
+	cmd.WaitDelay = 10 * time.Second
+	return cmd
 }
 
 // pullURL is the private address the transcoder reads a published stream from.
