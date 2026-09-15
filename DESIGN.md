@@ -117,10 +117,11 @@ Every surface that can load, be empty, or fail ships all three states.
 
 ## Motion
 
-There is almost none. The landing page is one screen — no scroll paging, no pinned
-stack, no veil — because nine sections turned out to be nine ways of saying the same
-thing, and once there is one thing to say the page does not need a mechanism to
-reveal it.
+There is almost none. The landing page opens on one screen and the rest scrolls
+normally beneath it — no paging, no pinned stack, no veil. Nine full-height sections
+were nine ways of saying the same thing; four short ones under the fold say it once,
+and a buyer can still read what it does, how it is integrated, what it costs and
+what happens when they leave.
 
 What is left is the hero card cycling through upload, encode, link, which is a
 diagram rather than decoration, and it stops under reduced motion.

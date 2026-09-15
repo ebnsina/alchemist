@@ -5,8 +5,10 @@
 		{
 			hen: 'Product',
 			links: [
-				{ href: '/contact/', en: 'Talk to us' },
-				{ href: '/app/docs/', en: 'API reference' }
+				{ href: '/#how', en: 'How it works' },
+				{ href: '/#features', en: 'What you get' },
+				{ href: '/#pricing', en: 'Pricing' },
+				{ href: '/#faq', en: 'Questions' }
 			]
 		},
 		{
@@ -14,7 +16,8 @@
 			links: [
 				{ href: '/signup/', en: 'Get started' },
 				{ href: '/login/', en: 'Sign in' },
-				{ href: '/app/', en: 'Dashboard' }
+				{ href: '/app/docs/', en: 'API reference' },
+				{ href: '/contact/', en: 'Talk to us' }
 			]
 		}
 	];
