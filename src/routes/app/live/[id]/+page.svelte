@@ -9,6 +9,7 @@
 	import {
 		getLiveStream,
 		startLiveStream,
+		stopLiveStream,
 		replaceLiveKey,
 		ApiError,
 		type LiveStream
@@ -24,6 +25,8 @@
 	let freshKey = $state('');
 	let replacing = $state(false);
 	let confirming = $state(false);
+	let confirmingStop = $state(false);
+	let stopping = $state(false);
 	let copied = $state('');
 
 	// Browser publishing. Nothing here runs until the customer presses a button: a page
@@ -208,6 +211,24 @@
 		load();
 	}
 
+	// Both halves, always. Closing the connection alone leaves an encoder somewhere
+	// else still sending, and telling the server alone leaves this browser publishing
+	// with the camera light on.
+	async function endBroadcast() {
+		stopping = true;
+		error = '';
+		try {
+			await stopLiveStream(id);
+		} catch (e) {
+			// Already over is not a fault: the broadcast is in the state they asked for.
+			if (!(e instanceof ApiError && e.code === 'not_broadcasting')) error = said(e);
+		} finally {
+			confirmingStop = false;
+			stopping = false;
+			stopBroadcast();
+		}
+	}
+
 	function releaseCamera() {
 		media?.getTracks().forEach((t) => t.stop());
 		media = null;
@@ -345,8 +366,19 @@
 					{:else if phase === 'connecting'}
 						<button type="button" class="btn-solid" disabled>Going live…</button>
 						<p class="sub">Handing your picture over. This takes a second or two.</p>
+					{:else if confirmingStop}
+						<button type="button" class="btn-solid" onclick={endBroadcast} disabled={stopping}>
+							{stopping ? 'Stopping…' : 'Yes, stop it'}
+						</button>
+						<button type="button" class="btn" onclick={() => (confirmingStop = false)}>
+							Keep going
+						</button>
+						<p class="sub">
+							Viewers watching now will see it end. What has gone out so far is kept as a
+							recording.
+						</p>
 					{:else}
-						<button type="button" class="btn" onclick={stopBroadcast}>
+						<button type="button" class="btn" onclick={() => (confirmingStop = true)}>
 							<HugeiconsIcon icon={StopIcon} size={14} strokeWidth={2} />
 							Stop the broadcast
 						</button>
@@ -404,6 +436,35 @@
 			<button type="button" class="btn-solid mt-4" onclick={start}>Start this stream</button>
 		{/if}
 	</section>
+
+	{#if stream.state === 'armed' || stream.state === 'live'}
+		<section class="card mt-4 p-6">
+			<h2 class="text-lg font-semibold tracking-tight">End this broadcast</h2>
+			<p class="sub mt-2 max-w-lg">
+				Use this to finish a class early, or when your encoder was closed badly and the stream
+				is still holding a slot. Whatever has gone out so far is kept as a recording.
+			</p>
+			{#if confirmingStop}
+				<p class="mt-4 text-sm">
+					Anyone watching will see it end. Your encoder will stop being accepted, and the
+					recording starts being turned into an ordinary video.
+				</p>
+				<div class="mt-4 flex flex-wrap gap-2">
+					<button type="button" class="btn-solid" onclick={endBroadcast} disabled={stopping}>
+						{stopping ? 'Stopping…' : 'Yes, end it'}
+					</button>
+					<button type="button" class="btn" onclick={() => (confirmingStop = false)}>
+						Keep it going
+					</button>
+				</div>
+			{:else}
+				<button type="button" class="btn mt-4" onclick={() => (confirmingStop = true)}>
+					<HugeiconsIcon icon={StopIcon} size={14} strokeWidth={2} />
+					Stop the broadcast
+				</button>
+			{/if}
+		</section>
+	{/if}
 
 	<section class="card mt-4 p-6">
 		<h2 class="text-lg font-semibold tracking-tight">Stream key</h2>

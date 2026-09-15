@@ -79,7 +79,10 @@
 		source_unreachable: 'We could not download it from that link.',
 		encode_failed: 'The encode failed on our side. Nothing wrong with your file — worth trying again.',
 		processing_failed: 'The work failed on our side. Worth trying again.',
-		start_failed: 'Starting this broadcast did not finish, so nothing went out. Start the stream again.'
+		start_failed: 'Starting this broadcast did not finish, so nothing went out. Start the stream again.',
+		stopped: 'You stopped this broadcast before anything was sent, so there is no recording.',
+		no_encoder: 'Nothing ever connected to this stream, so there is no recording.',
+		recording_unreadable: 'We could not read the broadcast back, so there is no recording to watch.'
 	};
 
 	// What each playback link is actually for. The description is a tooltip now: four

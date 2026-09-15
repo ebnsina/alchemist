@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+- **Stop a broadcast.** Until now a stream ended only when the encoder disconnected or
+  the engine timed it out after thirty minutes. The stream page now has a Stop control
+  behind a confirm step, for both an encoder stream and a camera one; stopping a camera
+  broadcast tells the engine and closes the connection and the camera together.
+
 ### Fixed
 - **An armed stream no longer reads as On air.** A stream waiting for its encoder sat
   in the video list saying On air, over a broadcast nothing had been sent to yet. The

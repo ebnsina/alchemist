@@ -40,7 +40,8 @@ const MESSAGES: Record<string, string> = {
 	live_not_enabled: 'Live is not on this plan. Talk to us and we will switch it on.',
 	invalid_protocol: 'Pick your camera, SRT or RTMP.',
 	stream_not_found: 'We could not find that stream.',
-	stream_busy: 'That stream is already waiting for an encoder.'
+	stream_busy: 'That stream is already waiting for an encoder.',
+	not_broadcasting: 'That stream is not on air, so there is nothing to stop.'
 };
 
 export class ApiError extends Error {
@@ -462,6 +463,13 @@ export const startLiveStream = (id: string) =>
 		ingest_url: string;
 		publish_token?: string;
 	}>(`/v1/live-streams/${id}/start`, { method: 'POST' });
+
+// Ending a broadcast on demand. The worker holds the encoder in another process, so
+// this records the intent and returns; the broadcast is over within a second or two.
+export const stopLiveStream = (id: string) =>
+	call<{ stream_id: string; session_id: string }>(`/v1/live-streams/${id}/stop`, {
+		method: 'POST'
+	});
 
 export const deleteLiveStream = (id: string) =>
 	call<void>(`/v1/live-streams/${id}`, { method: 'DELETE' });
