@@ -81,7 +81,7 @@ check "thumbnail tile authorized" "$(curl -s -o /dev/null -w '%{http_code}' "$B$
 
 check "source size billed" "$(echo "$P"|python3 -c 'import sys,json;print("yes" if json.load(sys.stdin).get("source_bytes") else "no")')" "yes"
 
-echo "8b. a link bound to one student cannot be unbound"
+echo "9b. a link bound to one student cannot be unbound"
 # The signature covers the viewer id and the watermark, so editing either out of the
 # URL has to fail -- otherwise the device cap and the on-screen watermark are both
 # opt-out and the whole feature is decoration.
@@ -94,14 +94,14 @@ check "viewer stripped is refused" "$(curl -s -o /dev/null -w '%{http_code}' "${
 check "watermark swapped is refused" "$(curl -s -o /dev/null -w '%{http_code}' "${B}$(echo "$BHLS" | sed 's/&wm=01712345678/\&wm=someone-else/')")" "403"
 check "unsignable viewer id refused" "$(curl -s "$B/v1/assets/$A?viewer=a+b%20c" | python3 -c 'import sys,json;print(json.load(sys.stdin)["error"]["code"])' )" "invalid_viewer"
 
-echo "8c. delivery settings say how this account is protected"
+echo "9c. delivery settings say how this account is protected"
 SET=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/playback-settings)
 check "device cap reported" "$(echo "$SET"|python3 -c 'import sys,json;print("max_viewer_devices" in json.load(sys.stdin))')" "True"
 # Changing it is session-only, like every other account setting, so this script can
 # only read it. A cap of 0 means no cap, which is what a new account has.
 ENC=$(echo "$SET"|python3 -c 'import sys,json;print(json.load(sys.stdin)["encrypt_playback"])')
 
-echo "8d. an encrypted asset answers an EME Clear Key licence"
+echo "9d. an encrypted asset answers an EME Clear Key licence"
 HDIR=${HLS%%\?*}; HDIR=${HDIR%/*}; HQ=${HLS#*\?}
 LIC=$(curl -s "$B$HDIR/key?$HQ")
 if [ "$ENC" = "True" ]; then
@@ -114,7 +114,7 @@ else
   echo "  skip encryption checks (this account has encrypt_playback off)"
 fi
 
-echo "9. the same file again is deduplicated, not re-encoded"
+echo "10. the same file again is deduplicated, not re-encoded"
 D=$(curl -s -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
   -d '{"url":"http://127.0.0.1:8071/lecture.mp4"}' $B/v1/assets | python3 -c 'import sys,json;print(json.load(sys.stdin).get("asset_id",""))')
 for i in $(seq 1 30); do
@@ -131,7 +131,7 @@ check "duplicate reports renditions" "$(echo "$DP"|python3 -c 'import sys,json;p
 # it does not. The invariant is that the answer does not change.
 KBEFORE=$(curl -s -o /dev/null -w '%{http_code}' "$B$DDIR/key?$DQ")
 
-echo "10. deleting the first video leaves the duplicate whole"
+echo "11. deleting the first video leaves the duplicate whole"
 check "deleted" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "204"
 check "gone afterwards" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "404"
 DP=$(curl -s -H "Authorization: Bearer $KEY" $B/v1/assets/$D)
