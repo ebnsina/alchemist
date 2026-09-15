@@ -78,7 +78,8 @@
 		source_url_not_allowed: 'That link pointed somewhere we will not fetch from.',
 		source_unreachable: 'We could not download it from that link.',
 		encode_failed: 'The encode failed on our side. Nothing wrong with your file — worth trying again.',
-		processing_failed: 'The work failed on our side. Worth trying again.'
+		processing_failed: 'The work failed on our side. Worth trying again.',
+		start_failed: 'Starting this broadcast did not finish, so nothing went out. Start the stream again.'
 	};
 
 	// What each playback link is actually for. The description is a tooltip now: four
