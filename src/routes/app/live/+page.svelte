@@ -311,12 +311,12 @@
 	<ul class="mt-6 grid gap-3">
 		{#each streams as s (s.id)}
 			<li class="card flex flex-wrap items-center gap-3 p-4">
-				<div class="min-w-0 flex-1">
+				<a href="/app/live/{s.id}/" class="min-w-0 flex-1 hover:opacity-80">
 					<p class="truncate text-sm font-semibold">{s.name}</p>
 					<p class="mt-0.5 text-xs text-dim">
 						{s.protocol.toUpperCase()} · made {when(s.created_at)} · {STATE[s.state].means}
 					</p>
-				</div>
+				</a>
 				<span class="chip {s.state === 'live' ? 'chip-on' : ''}">{STATE[s.state].chip}</span>
 				{#if s.state === 'idle' || s.state === 'ended'}
 					<button type="button" class="btn btn-sm" onclick={() => start(s)}>Start</button>

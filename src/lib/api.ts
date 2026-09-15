@@ -456,3 +456,11 @@ export const startLiveStream = (id: string) =>
 
 export const deleteLiveStream = (id: string) =>
 	call<void>(`/v1/live-streams/${id}`, { method: 'DELETE' });
+
+// Also shown once. There is no reading an existing key back, so this is what a
+// customer who did not write theirs down actually needs.
+export const replaceLiveKey = (id: string) =>
+	call<{ stream_id: string; stream_key: string; state: string }>(
+		`/v1/live-streams/${id}/key`,
+		{ method: 'POST' }
+	);
