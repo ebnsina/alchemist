@@ -136,24 +136,37 @@
 	<section class="card mt-6 p-6">
 		<h2 class="text-lg font-semibold tracking-tight">Where your encoder connects</h2>
 		{#if ingest}
-			<div class="mt-3 flex items-center gap-2 rounded-xl border border-sunk bg-bg px-3 py-2">
+			<!-- OBS joins Server and Stream Key with a slash, so one pasted URL gets the
+			     key appended twice and lands on a path nothing authorised. -->
+			<p class="label mt-4">Server</p>
+			<div class="mt-2 flex items-center gap-2 rounded-xl border border-sunk bg-bg px-3 py-2">
 				<code class="truncate font-mono text-xs">{ingest}</code>
 				<button
 					type="button"
 					class="ml-auto flex flex-none items-center gap-1.5 text-xs text-ink"
+					title="Copy the server address"
 					onclick={() => copy(ingest, 'url')}
 				>
 					<HugeiconsIcon
 						icon={copied === 'url' ? Tick02Icon : Copy01Icon}
-						size={13}
+						size={14}
 						strokeWidth={2}
 					/>
-					{copied === 'url' ? 'Copied' : 'Copy'}
+					<span class="vh">{copied === 'url' ? 'Copied' : 'Copy'}</span>
 				</button>
 			</div>
 			<p class="sub mt-2">
-				Replace YOUR_STREAM_KEY with your key. We cannot put it in for you — we only keep a
-				fingerprint of it.
+				Swap <code class="font-mono">YOUR_STREAM_KEY</code> for your key. We only keep a
+				fingerprint of it, so we cannot fill it in for you.
+			</p>
+
+			<p class="label mt-5">Stream Key</p>
+			<div class="mt-2 rounded-xl border border-sunk bg-bg px-3 py-2">
+				<code class="font-mono text-xs text-dim">Leave this empty</code>
+			</div>
+			<p class="sub mt-2">
+				Your key is already in the server address above. Putting it here as well sends it
+				twice and nothing will connect.
 			</p>
 		{:else}
 			<p class="sub mt-2">

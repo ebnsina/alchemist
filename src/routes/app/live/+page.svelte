@@ -191,7 +191,9 @@
 	<div class="card mt-6 p-6">
 		<p class="text-sm font-semibold">Point your encoder here</p>
 		<p class="mt-1 text-xs text-dim">
-			Paste this into OBS as a custom server, with the stream key from when you made it.
+			In OBS pick Custom, paste this as the <b>Server</b> with YOUR_STREAM_KEY swapped for
+			your key, and leave <b>Stream Key</b> empty — OBS joins the two with a slash, so a key
+			in both fields is sent twice and nothing connects.
 		</p>
 		<div class="mt-3 flex items-center gap-2 rounded-xl border border-sunk bg-bg px-3 py-2">
 			<code class="truncate font-mono text-xs">{armed.ingest_url}</code>
