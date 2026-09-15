@@ -3,16 +3,16 @@
 
 	const steps = [
 		{
-			ten: 'Drop your video in',
-			ben: 'Drag it onto the page, or pick it from your phone. Any format you have ever been handed is one we accept.',
+			ten: 'Your user sends a file',
+			ben: 'Ask us for an upload target and let the browser put the bytes straight into storage. The file never passes through your servers or ours.'
 		},
 		{
 			ten: 'We do the work',
-			ben: 'Pick how you will use it — phone, web, or keep it big — and we handle the rest. There is nothing else to set.',
+			ben: 'Probe, ladder, encode in parallel chunks, package. You get a webhook when it is playable, so nothing in your code has to sit and poll.'
 		},
 		{
-			ten: 'Share the link',
-			ben: 'Put the link in your course, your site or an email. You decide how long it works for, and it only works for the person you gave it to.',
+			ten: 'You hand out a link',
+			ben: 'Ask for the asset and play the links it returns. They are signed, they expire when you say, and they work on anything.'
 		}
 	];
 </script>

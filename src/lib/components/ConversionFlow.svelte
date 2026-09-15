@@ -5,9 +5,9 @@
 	import { cubicOut } from 'svelte/easing';
 
 	const steps = [
-		{ label: 'Drop it in', hold: 2600 },
-		{ label: 'We work on it', hold: 4200 },
-		{ label: 'Take the link', hold: 3400 }
+		{ label: 'They upload', hold: 2600 },
+		{ label: 'We encode', hold: 4200 },
+		{ label: 'You get a link', hold: 3400 }
 	];
 
 	const outputs = [
@@ -88,13 +88,13 @@
 							<span class="text-xs text-muted">1.2 GB</span>
 						</div>
 						<p class="text-xs text-muted" in:fade={{ duration: 400, delay: 620 }}>
-							Drag it in, or pick it from your phone
+							Straight to storage, never through your servers
 						</p>
 					</div>
 				{:else if stage === 1}
 					<div class="flex h-full flex-col justify-center gap-4">
 						<div class="flex items-baseline justify-between">
-							<p class="text-sm">Making the sizes your viewers need</p>
+							<p class="text-sm">Making every size their viewers need</p>
 							<p class="tabular-nums text-xs text-muted">{progress}%</p>
 						</div>
 						<div class="h-1.5 overflow-hidden rounded-full bg-black/10">
@@ -127,8 +127,8 @@
 								<HugeiconsIcon icon={Tick02Icon} size={16} strokeWidth={2.6} />
 							</span>
 							<div>
-								<p class="text-sm">Ready to share</p>
-								<p class="text-xs text-muted">84 MB · plays on any phone, laptop or TV</p>
+								<p class="text-sm">Ready to play</p>
+								<p class="text-xs text-muted">84 MB · signed, expiring, plays anywhere</p>
 							</div>
 						</div>
 						<div

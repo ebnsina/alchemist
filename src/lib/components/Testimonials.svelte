@@ -9,24 +9,18 @@
 	const uses = [
 		{
 			icon: Mortarboard01Icon,
-			ten: 'You teach, and you record every class',
-			tbn: 'আপনি পড়ান, আর প্রতিটি ক্লাস রেকর্ড করেন',
-			ben: 'An hour of screen recording is enormous and nobody wants to wait for it. Send the week’s lessons through in one batch and hand out links your students can open on any phone.',
-			bbn: 'এক ঘণ্টার স্ক্রিন রেকর্ডিং আকারে বিশাল, আর কেউ সেটার জন্য অপেক্ষা করতে চান না। সপ্তাহের ক্লাসগুলো একবারে পাঠিয়ে দিন, আর এমন লিংক দিন যা শিক্ষার্থীরা যেকোনো ফোনে খুলতে পারেন।'
+			ten: 'Course platforms',
+			ben: 'Your teachers upload an hour of screen recording and your students open it on a phone, on mobile data, without waiting. Each school is its own account.'
 		},
 		{
 			icon: PlaySquareIcon,
-			ten: 'You run a shop, and you post videos',
-			tbn: 'আপনার দোকান আছে, আর আপনি ভিডিও দেন',
-			ben: 'Recipe clips, product demos, the thing you filmed on the counter this morning. Shrink it before it goes out so the page loads before the customer loses interest.',
-			bbn: 'রেসিপির ক্লিপ, পণ্যের ডেমো, আজ সকালে কাউন্টারে দাঁড়িয়ে যেটা তুলেছেন। ছাড়ার আগে ছোট করে নিন, যাতে খদ্দেরের আগ্রহ ফুরোনোর আগেই পাতাটা লোড হয়।'
+			ten: 'Marketplaces and social products',
+			ben: 'Anybody can upload, so nothing can be assumed about the file. We take what your users hand you and return something that plays.'
 		},
 		{
 			icon: StarIcon,
-			ten: 'You shoot for clients, in 4K',
-			tbn: 'আপনি ক্লায়েন্টের জন্য শুট করেন, ৪কে-তে',
-			ben: 'The final cut is beautiful and completely unsendable. Get it down to something that fits in an email, without the client noticing anything has been taken away.',
-			bbn: 'ফাইনাল কাটটা দারুণ, কিন্তু কোনোভাবেই পাঠানো যায় না। এমন আকারে নামিয়ে আনুন যা ইমেইলেই আঁটে — আর ক্লায়েন্ট টেরও পাবেন না কিছু কমেছে।'
+			ten: 'Agencies and internal tools',
+			ben: 'Client work in 4K, delivered as a link that stops working when the engagement does, without anybody downloading a 40 GB master.'
 		}
 	];
 </script>
@@ -37,7 +31,7 @@
 			Who it's for
 		</p>
 		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
-			Made for the way you work.
+			Whatever your users upload.
 		</h2>
 	</div>
 

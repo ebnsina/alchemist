@@ -2,101 +2,97 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Tick02Icon } from '@hugeicons/core-free-icons';
 	import { scrollReveal } from '$lib/utils/scroll-reveal.js';
+	import Money from '$lib/Money.svelte';
 
-	const tiers = [
+	// Three meters, not three tiers. A platform that charges per seat punishes its
+	// customer for growing their own product, and the costs here are per unit
+	// anyway: minutes encoded, gigabytes held, gigabytes delivered.
+	const meters = [
 		{
-			ten: 'Free',
-			price: '$0',
-			pen: 'forever',
-			den: 'For trying it out and for the occasional video.',
-			cta_en: 'Start free',
-			cta_bn: 'ফ্রি শুরু করুন',
-			rows: [
-				'100 videos a month',
-				'Up to 1080p',
-				'Files up to 2 GB',
-				'Links you can switch off'
-			]
+			title: 'Preparing it',
+			amount: 2,
+			unit: 'for each minute of video sent in',
+			usd: '$0.016',
+			body: 'Charged once, on the length of the source. We make several sizes of it and you are not charged per size — an hour of lecture is an hour.'
 		},
 		{
-			ten: 'Creator',
-			price: '$12',
-			pen: 'a month',
-			featured: true,
-			den: 'For anyone posting video as part of the job.',
-			cta_en: 'Choose Creator',
-			cta_bn: 'ক্রিয়েটর নিন',
-			rows: [
-				'Unlimited videos',
-				'Up to 4K',
-				'Files up to 20 GB',
-				'Batch up to 10 at once',
-				'Locked to your viewers'
-			]
+			title: 'Keeping it',
+			amount: 1.2,
+			unit: 'per GB, per month',
+			usd: '$0.010',
+			body: 'Counted on what we actually hold. The larger sizes only exist for videos somebody has watched, so the bill follows real use.'
 		},
 		{
-			ten: 'Studio',
-			price: '$39',
-			pen: 'a month',
-			den: 'For client work, long files and big finals.',
-			cta_en: 'Choose Studio',
-			cta_bn: 'স্টুডিও নিন',
-			rows: [
-				'Everything in Creator',
-				'Up to 8K',
-				'Files up to 100 GB',
-				'Batch up to 50 at once',
-				'Priority queue'
-			]
+			title: 'Delivering it',
+			amount: 0.35,
+			unit: 'per GB watched inside Bangladesh',
+			usd: '$0.003',
+			body: 'Reaching a viewer in Bangladesh costs us a fraction of reaching one abroad. One flat rate would mean your Bangladeshi users quietly paying the difference.',
+			second: { amount: 1.2, unit: 'per GB watched anywhere else', usd: '$0.010' }
 		}
+	];
+
+	const included = [
+		'Every size we make, from the one source',
+		'HLS and DASH, signed links, expiring on your terms',
+		'Webhooks, so you are told rather than polling',
+		'As many API keys and accounts as you need',
+		'No seat charge, no minimum, nothing to pay to leave'
 	];
 </script>
 
 <section id="pricing" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24">
 	<div class="mx-auto max-w-2xl text-center" use:scrollReveal>
 		<p class="text-xs tracking-widest text-brand-light uppercase">Pricing</p>
-		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
-			Simple pricing.
-			<span class="gradient-text">No surprises.</span>
+		<h2 class="mt-3 text-3xl leading-[1.32] font-semibold tracking-tight sm:text-4xl">
+			You pay for three things.
+			<span class="gradient-text">Nothing else.</span>
 		</h2>
 		<p class="mt-4 text-sm text-muted">
-			Cancel any time, from your account page, in two clicks. No notice period and no asterisk.
+			Per unit, with no plans to choose between and nobody to negotiate with. Rates are not final
+			until launch.
 		</p>
 	</div>
 
-	<div class="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-		{#each tiers as t, i (t.ten)}
-			<article
-				class="card relative flex flex-col px-6 py-8 {t.featured ? 'card-featured' : ''}"
-				use:scrollReveal={{ delay: i * 80 }}
-			>
-				{#if t.featured}
-					<p
-						class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-mid px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-on-brand"
-					>
-						Most popular
-					</p>
-				{/if}
-				<h3 class="text-sm font-semibold tracking-wide text-muted uppercase">
-					{t.ten}
-				</h3>
-				<p class="mt-4 flex items-baseline gap-1.5">
-					<span class="text-4xl font-semibold tracking-tight">{t.price}</span>
-					<span class="text-sm text-muted">{t.pen}</span>
+	<div class="mt-12 grid gap-4 md:grid-cols-3">
+		{#each meters as m, i (m.title)}
+			<article class="card flex flex-col px-6 py-8" use:scrollReveal={{ delay: i * 80 }}>
+				<h3 class="text-sm font-semibold tracking-wide text-muted uppercase">{m.title}</h3>
+				<p class="mt-4 text-4xl font-semibold tracking-tight">
+					<Money amount={m.amount} />
 				</p>
-				<p class="mt-2 text-sm text-muted">{t.den}</p>
-				<ul class="mt-7 flex-1 space-y-3">
-					{#each t.rows as row (row)}
-						<li class="flex items-start gap-2.5 text-sm">
-							<HugeiconsIcon icon={Tick02Icon} size={15} strokeWidth={2.4} class="mt-1 flex-none text-brand-light" />
-							<span>{row}</span>
-						</li>
-					{/each}
-				</ul>
-				<a href="/signup/" class="mt-8 {t.featured ? 'btn-primary' : 'btn-ghost'}">
-					{t.cta_en}
-				</a>
+				<p class="mt-1 text-sm text-muted">{m.unit} · about {m.usd}</p>
+
+				{#if m.second}
+					<p class="mt-4 text-2xl font-semibold tracking-tight">
+						<Money amount={m.second.amount} />
+					</p>
+					<p class="mt-1 text-sm text-muted">{m.second.unit} · about {m.second.usd}</p>
+				{/if}
+
+				<p class="mt-5 flex-1 text-sm leading-[1.75] text-muted">{m.body}</p>
 			</article>
 		{/each}
+	</div>
+
+	<div class="card mt-4 p-8" use:scrollReveal>
+		<h3 class="text-sm font-semibold">In every account, at no extra charge</h3>
+		<ul class="mt-4 grid gap-3 sm:grid-cols-2">
+			{#each included as row (row)}
+				<li class="flex items-start gap-2.5 text-sm">
+					<HugeiconsIcon
+						icon={Tick02Icon}
+						size={15}
+						strokeWidth={2.4}
+						class="mt-1 flex-none text-brand-light"
+					/>
+					<span>{row}</span>
+				</li>
+			{/each}
+		</ul>
+		<div class="mt-7 flex flex-wrap items-center gap-3">
+			<a href="/signup/" class="btn-primary">Start free</a>
+			<a href="/contact/" class="btn-ghost">Ask about volume</a>
+		</div>
 	</div>
 </section>

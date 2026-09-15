@@ -4,10 +4,10 @@
 	// The reference used customer counts, video counts and a star rating here. These
 	// are facts about the product instead, which is both true and more persuasive.
 	const stats = [
-		{ value: '93%', en: 'Smaller files on average', bn: 'গড়ে এত ছোট ফাইল' },
-		{ value: 'Under 60s', vbn: '৬০ সেকেন্ডের কম', en: 'For a 10-minute video', bn: '১০ মিনিটের ভিডিওর জন্য' },
-		{ value: '8K', en: 'Highest resolution supported', bn: 'সর্বোচ্চ যত রেজোলিউশন চলে' },
-		{ value: 'Any device', vbn: 'যেকোনো ডিভাইস', en: 'Phones, laptops, TVs', bn: 'ফোন, ল্যাপটপ, টিভি' }
+		{ value: '93%', en: 'Smaller, on average' },
+		{ value: 'Under 60s', en: 'To first playable size' },
+		{ value: '8K', en: 'Highest resolution in' },
+		{ value: 'Per tenant', en: 'Isolated by the database' }
 	];
 </script>
 
@@ -17,7 +17,7 @@
 			<div use:scrollReveal={{ delay: i * 70 }}>
 				<dt class="vh">{s.en}</dt>
 				<dd class="gradient-text font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-					{#if s.vbn}{s.value}{:else}{s.value}{/if}
+					{s.value}
 				</dd>
 				<p class="mt-2 text-sm text-muted">{s.en}</p>
 			</div>

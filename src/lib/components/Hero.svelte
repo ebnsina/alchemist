@@ -14,18 +14,16 @@
 			class="inline-flex items-center gap-2 rounded-full border border-brand-mid/35 bg-brand-mid/10 px-4 py-1.5 text-xs text-ink"
 		>
 			<HugeiconsIcon icon={Shield01Icon} size={15} strokeWidth={1.8} class="shrink-0 text-brand-light" />
-			Links only your buyers can use
+			One API for upload, encode and delivery
 		</p>
 
 		<h1 class="mt-7 text-4xl font-semibold tracking-tight sm:text-5xl leading-[1.32]">
-			Convert any video,
-			<span class="gradient-text block"
-				>into something magical.</span
-			>
+			Video infrastructure
+			<span class="gradient-text block">for your product.</span>
 		</h1>
 
 		<p class="mx-auto mt-5 max-w-xl text-base text-muted sm:text-lg lg:mx-0">
-			Drop in a video and get back one that plays anywhere, loads fast, and is a fraction of the size. No settings to learn, nothing to install.
+			Your users upload video. We encode it, hold it, and stream it to their viewers behind links only they can hand out. You get an API and a key, not a project to run.
 		</p>
 
 		<div class="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
@@ -34,9 +32,9 @@
 		</div>
 
 		<ul class="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted lg:justify-start">
-			<li>Cancel any time</li>
-			<li>100 free videos a month, no card</li>
-			<li>Works on any phone</li>
+			<li>Free while you build</li>
+			<li>Usage pricing, no seats</li>
+			<li>Every account is isolated</li>
 		</ul>
 
 		</div>

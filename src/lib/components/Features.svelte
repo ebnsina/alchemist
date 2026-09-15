@@ -13,33 +13,33 @@
 	const features = [
 		{
 			icon: Video01Icon,
-			ten: 'Up to 8K, kept sharp',
-			ben: 'Send us anything up to 8K and it comes back looking like the original. We keep the detail and throw away the weight.',
+			ten: 'Up to 8K in, ladder out',
+			ben: 'Send whatever your users hand you. We work out the sizes their viewers need and make them, so you are not maintaining an encoding profile.'
 		},
 		{
 			icon: Clock01Icon,
-			ten: 'Done in under a minute',
-			ben: 'A ten-minute video is usually ready before you have finished writing the caption. Longer files take a little more, but not much.',
+			ten: 'Playable in under a minute',
+			ben: 'The low sizes are made on ingest and the rest on first play, so a video is watchable long before every size exists.'
 		},
 		{
 			icon: Package01Icon,
 			ten: 'Up to 95% smaller',
-			ben: 'A gigabyte becomes a few dozen megabytes. Your viewers stop waiting, and the ones paying for their own data stop paying so much.',
+			ben: 'A gigabyte becomes a few dozen megabytes. Your delivery bill drops, and so does the one your users on mobile data are paying.'
 		},
 		{
 			icon: SquareLock01Icon,
-			ten: 'Only the people you sold it to',
-			ben: 'Each viewer gets a link that stops working when you decide. Pass it around and it does nothing, and a downloaded copy will not play for anyone else.',
+			ten: 'Links only their viewers can use',
+			ben: 'Every play runs through a signed link that expires when you say. Pass it around and it stops working, and a saved copy will not play.'
 		},
 		{
 			icon: Delete02Icon,
-			ten: 'We keep it, not your big file',
-			ben: 'Once your video is ready to watch, the huge file you sent can go. Your course keeps playing exactly as before, and nothing sits around that nobody needs.',
+			ten: 'One tenant cannot see another',
+			ben: 'Isolation is a database rule, not a WHERE clause somebody has to remember. A query with no filter still returns only that account.'
 		},
 		{
 			icon: GlobalIcon,
-			ten: 'Plays on anything',
-			ben: 'One file that works on an old Android, a new iPhone, a laptop and a smart TV. No more sending three versions to three people.',
+			ten: 'One file, every device',
+			ben: 'HLS and DASH out of the same source, so an old Android, a new iPhone, a laptop and a TV all get something they can play.'
 		}
 	];
 </script>
@@ -50,8 +50,8 @@
 			What you get
 		</p>
 		<h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl leading-[1.32]">
-			Video made simple.
-			<span class="gradient-text">Really simple.</span>
+			The video parts you would rather not build.
+			<span class="gradient-text">All of them.</span>
 		</h2>
 	</div>
 

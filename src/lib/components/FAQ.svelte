@@ -5,28 +5,28 @@
 
 	const qs = [
 		{
-			qen: 'Where does my video live, and who can watch it?',
-			aen: 'It stays with us and plays from a link you hand out, and you decide how long that link keeps working. The big file you first sent us is a separate thing — once your video is ready to watch, we can get rid of that for you. Nothing of yours is ever used for anything else.',
+			qen: 'Where does the video live, and who can watch it?',
+			aen: 'With us, playing from a signed link your product hands out, and you decide how long that link keeps working. The original upload is a separate thing — once the playable sizes exist, we can delete it for you.'
+		},
+		{
+			qen: 'How isolated is one account from another?',
+			aen: 'The database enforces it. Every tenant-scoped table has row-level security forced on, so a query with no filter still returns only that account’s rows. It is not a WHERE clause somebody has to remember to write.'
 		},
 		{
 			qen: 'Will it look worse?',
-			aen: 'Not in any way you would notice. We take out the parts of a video file that your eyes were never going to use, which is where nearly all the weight is hiding.',
+			aen: 'Not in any way a viewer would notice. We take out the parts of a video file that eyes were never going to use, which is where nearly all the weight is hiding.'
 		},
 		{
-			qen: 'Which formats can I send?',
-			aen: 'Whatever your camera, phone or editor produced. If somebody has handed you the file, we will take it, and you will get back something that plays everywhere.',
+			qen: 'Which formats can we send?',
+			aen: 'Whatever your users hand you. If a camera, phone or editor produced it, we will take it, and what comes back plays everywhere.'
 		},
 		{
-			qen: 'Do I need to install anything?',
-			aen: 'No. It runs in the browser you already have, on a laptop or on a phone. There is nothing to download and nothing to keep updated.',
+			qen: 'Do we have to poll?',
+			aen: 'No. Register a webhook and we tell you when an asset is playable or has failed. Deliveries are signed, so you can check a payload really came from us before trusting it.'
 		},
 		{
-			qen: 'Can I stop paying whenever I want?',
-			aen: 'Yes. Two clicks on your account page, no notice period, no exit fee and nobody on the phone trying to talk you out of it. The free tier is still there afterwards.',
-		},
-		{
-			qen: 'Is 100 free videos a month really free?',
-			aen: 'Yes, with no card and no trial clock. If you never go past a hundred, you never pay, and we will not email you to ask why.',
+			qen: 'What happens when we stop?',
+			aen: 'You export and leave. No notice period, no exit fee, and nothing charged for taking your own files out.'
 		}
 	];
 </script>
