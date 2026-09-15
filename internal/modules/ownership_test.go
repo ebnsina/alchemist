@@ -35,6 +35,13 @@ var (
 	tableRef     = regexp.MustCompile(`(?i)\b(from|into|update|join)\s+([a-z_][a-z0-9_]*)`)
 )
 
+// Words that follow one of those clauses without naming a table. "do update set" is
+// the one that matters: every upsert in the tree ends that way, and reading "set" as
+// a table would fail the build on correct code.
+var notATable = map[string]bool{
+	"set": true, "values": true, "select": true, "only": true, "lateral": true,
+}
+
 func TestModulesOnlyNameTablesTheyOwn(t *testing.T) {
 	entries, err := filepath.Glob("*")
 	if err != nil {
@@ -79,7 +86,10 @@ func TestModulesOnlyNameTablesTheyOwn(t *testing.T) {
 				}
 				for _, m := range tableRef.FindAllStringSubmatch(sql, -1) {
 					table := strings.ToLower(m[2])
-					if !allowed[table] {
+					if notATable[table] || allowed[table] {
+						continue
+					}
+					{
 						t.Errorf("%s names table %q, which module %q does not own.\n"+
 							"Declare an interface for what it needs and wire an "+
 							"adapter in internal/adapters, or add the table to "+
