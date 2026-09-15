@@ -37,7 +37,13 @@
 	});
 
 	$effect(() => {
-		setCrumbs([{ label: 'Videos', href: '/app/videos/' }, { label: id.slice(0, 8) }]);
+		// A broadcast lives under Streams until it is a recording, so the trail leads
+		// back to where the customer actually came from.
+		setCrumbs(
+			broadcast
+				? [{ label: 'Streams', href: '/app/live/' }, { label: id.slice(0, 8) }]
+				: [{ label: 'Videos', href: '/app/videos/' }, { label: id.slice(0, 8) }]
+		);
 	});
 
 	// Keep asking while work is outstanding, and stop the moment it is not.
@@ -109,6 +115,22 @@
 			icon: TimelineEventIcon
 		}
 	};
+
+	// It is a stream while it is going out and a video once it is not. Calling a
+	// broadcast a "Video" on screen is what made a finished 8-second recording look
+	// like a live stream that had stopped working.
+	const broadcast = $derived(
+		asset?.state === 'live' || asset?.state === 'live_armed' || asset?.state === 'live_ended'
+	);
+	const page_ = $derived(
+		asset?.state === 'live'
+			? { title: 'On air — Alchemist', description: 'A broadcast going out now.' }
+			: asset?.state === 'live_armed'
+				? { title: 'Waiting — Alchemist', description: 'A broadcast waiting for its encoder.' }
+				: asset?.state === 'live_ended'
+					? { title: 'Recording — Alchemist', description: 'A broadcast that has finished.' }
+					: { title: 'Video — Alchemist', description: 'What we made from this video.' }
+	);
 
 	const mbps = (bps: number) =>
 		new Intl.NumberFormat('en', { maximumFractionDigits: 2 }).format(bps / 1_000_000) + ' Mbps';
@@ -196,7 +218,7 @@
 	}
 </script>
 
-<Seo title="Video — Alchemist" description="What we made from this video." />
+<Seo title={page_.title} description={page_.description} />
 
 {#if loading}
 	<div class="mt-6 grid gap-3">
