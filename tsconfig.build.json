@@ -4,10 +4,12 @@
     "noEmit": false,
     "emitDeclarationOnly": true,
     "declaration": true,
-    "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
+    "declarationDir": "dist/sdk",
     "rootDir": "src",
-    "outDir": "dist/sdk"
+    // The source imports with .ts extensions, which tsc will not emit for. Rewriting
+    // them is the supported way to keep that style and still ship types.
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["src"]
 }
