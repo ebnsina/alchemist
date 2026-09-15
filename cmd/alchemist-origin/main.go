@@ -81,12 +81,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	// This binary serves bytes, so it has to bill for them too. Without it, egress
+	// stops being counted in exactly the deployment that carries all of it.
+	egress := &adapters.Egress{DB: database}
+	go egress.Flush(ctx, time.Minute)
+
 	module := delivery.New(
 		adapters.ObjectStore{Store: store},
 		adapters.ContentKeys{DB: database, Wrapper: keyWrapper},
 		signer,
 	).WithObserver(adapters.LazyRenditions{DB: database, River: riverClient}).
-		WithResolver(adapters.DedupResolver{DB: database})
+		WithResolver(adapters.DedupResolver{DB: database}).
+		WithMeter(egress)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.RealIP, middleware.Recoverer)

@@ -43,6 +43,15 @@ type PlaybackObserver interface {
 	OnPlaybackStarted(ctx context.Context, tenantID, assetID string)
 }
 
+// EgressMeter is told how many bytes left the origin, so egress can be billed.
+//
+// An interface for the same reason PlaybackObserver is one: delivery must not know a
+// database exists, or it stops being separable. A deployment that passes nil simply
+// does not meter.
+type EgressMeter interface {
+	RecordEgress(tenantID string, bytes int64)
+}
+
 // AssetResolver maps a requested asset to the storage prefix that actually holds its
 // media.
 //
@@ -61,6 +70,7 @@ type Module struct {
 	signer   *signing.Keyring
 	observer PlaybackObserver
 	resolver AssetResolver
+	meter    EgressMeter
 }
 
 func New(store ObjectStore, keys ContentKeys, signer *signing.Keyring) *Module {
@@ -82,6 +92,20 @@ func (m *Module) prefix(ctx context.Context, tenantID, assetID string) string {
 		}
 	}
 	return fmt.Sprintf("cmaf/%s/%s", tenantID, assetID)
+}
+
+// WithMeter attaches egress billing. Optional by design.
+func (m *Module) WithMeter(e EgressMeter) *Module {
+	m.meter = e
+	return m
+}
+
+// meterEgress records what was actually written, not what was asked for: a viewer who
+// abandons a seek costs the bytes that left, and nothing more.
+func (m *Module) meterEgress(tenantID string, n int64) {
+	if m.meter != nil && n > 0 {
+		m.meter.RecordEgress(tenantID, n)
+	}
 }
 
 // WithObserver attaches on-demand rendition generation. Optional by design.

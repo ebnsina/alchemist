@@ -86,5 +86,11 @@ func PeriodicJobs() []*river.PeriodicJob {
 			func() (river.JobArgs, *river.InsertOpts) { return SweepArgs{}, nil },
 			&river.PeriodicJobOpts{RunOnStart: true},
 		),
+		// Safe to run on start because the day's row is replaced, not added to.
+		river.NewPeriodicJob(
+			river.PeriodicInterval(StorageInterval),
+			func() (river.JobArgs, *river.InsertOpts) { return StorageArgs{}, nil },
+			&river.PeriodicJobOpts{RunOnStart: true},
+		),
 	}
 }

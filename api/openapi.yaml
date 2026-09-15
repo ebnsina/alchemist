@@ -793,6 +793,9 @@ paths:
   /v1/usage:
     get:
       summary: Billable usage for a period
+      description: |
+        One line per kind and unit: `ingest` in seconds, per asset; `egress` in bytes
+        and `storage` in gb_hours, aggregated per day rather than per request.
       parameters:
         - { name: from, in: query, schema: { type: string, format: date-time } }
         - { name: to, in: query, schema: { type: string, format: date-time } }

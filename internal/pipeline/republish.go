@@ -67,6 +67,7 @@ func (w *TranscodeWorker) buildRendition(ctx context.Context, a JITArgs, mezz, d
 	}
 
 	prefix := fmt.Sprintf("cmaf/%s/%s", a.TenantID, a.AssetID)
+	bytes := fileBytes(filepath.Join(outDir, name+".cmfv"))
 	for _, f := range []string{name + ".cmfv", name + ".m3u8"} {
 		src := filepath.Join(outDir, f)
 		fh, err := os.Open(src)
@@ -89,11 +90,11 @@ func (w *TranscodeWorker) buildRendition(ctx context.Context, a JITArgs, mezz, d
 			`update renditions
 			    set state = 'ready', object_key = $4, width = $5,
 			        codec_string = $6, avg_bandwidth_bps = $7, lazy = false,
-			        dash_representation = $8
+			        dash_representation = $8, bytes = nullif($9,0)::bigint
 			  where asset_id = $1 and height = $2 and codec = $3`,
 			a.AssetID, rung.Height, rung.Codec,
 			fmt.Sprintf("%s/%dp.cmfv", prefix, rung.Height),
-			width, codecString(rung), rung.MaxrateBPS, reps[rung.Height])
+			width, codecString(rung), rung.MaxrateBPS, reps[rung.Height], bytes)
 		return err
 	})
 }

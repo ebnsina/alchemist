@@ -69,7 +69,8 @@ DELETE /v1/assets/{id}         -> delete a video; media shared with a deduplicat
                                   copy survives until the last of them is gone
 DELETE /v1/keys/{id}           -> revoke
 POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready
-GET  /v1/usage                 -> billable aggregates
+GET  /v1/usage                 -> billable aggregates: ingest seconds, egress bytes,
+                                  storage gb_hours
 GET  /v1/branding              -> account name and logo URL
 GET  /v1/playback-settings     -> whether playback encryption is on
 

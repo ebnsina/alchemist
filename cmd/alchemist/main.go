@@ -89,6 +89,7 @@ func main() {
 	river.AddWorker(workers, &pipeline.JITWorker{TranscodeWorker: transcoder})
 	river.AddWorker(workers, &pipeline.SweepWorker{DB: database, Store: store})
 	river.AddWorker(workers, &pipeline.ReclaimWorker{Store: store})
+	river.AddWorker(workers, &pipeline.StorageWorker{DB: database})
 
 	riverClient, err := river.NewClient(riverpgxv5.New(database.Pool()), &river.Config{
 		Queues: map[string]river.QueueConfig{
@@ -114,12 +115,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Egress is the largest line on a video bill and the origin is the only place
+	// that sees the bytes, so it is metered here and folded into a daily row.
+	egress := &adapters.Egress{DB: database}
+	go egress.Flush(ctx, time.Minute)
+
 	deliveryModule := delivery.New(
 		adapters.ObjectStore{Store: store},
 		adapters.ContentKeys{DB: database, Wrapper: keyWrapper},
 		signer,
 	).WithObserver(adapters.LazyRenditions{DB: database, River: riverClient}).
-		WithResolver(adapters.DedupResolver{DB: database})
+		WithResolver(adapters.DedupResolver{DB: database}).
+		WithMeter(egress)
 
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,

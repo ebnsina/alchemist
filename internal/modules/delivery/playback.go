@@ -99,6 +99,7 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if r.Method != http.MethodHead {
 			_, _ = w.Write(signed)
+			m.meterEgress(tenantID, int64(len(signed)))
 		}
 		return
 	}
@@ -109,7 +110,8 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(status)
 	if r.Method != http.MethodHead {
-		_, _ = io.Copy(w, obj.Body)
+		n, _ := io.Copy(w, obj.Body)
+		m.meterEgress(tenantID, n)
 	}
 }
 

@@ -132,10 +132,11 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 	if err != nil {
 		return fmt.Errorf("hash source: %w", err)
 	}
+	srcBytes := fileBytes(src)
 	if existing, err := w.findDuplicate(ctx, a, sum); err != nil {
 		return err
 	} else if existing != "" {
-		return w.linkToDuplicate(ctx, a, existing, sum)
+		return w.linkToDuplicate(ctx, a, existing, sum, srcBytes)
 	}
 
 	w.setState(ctx, a, "encoding")
@@ -212,6 +213,7 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 	// Stored only when a rung is deferred, and then kept for the life of the asset:
 	// studio edits render from it too, and the original is usually already deleted.
 	mezzKey := ""
+	mezzBytes := int64(0)
 	if len(lazy) > 0 {
 		mezzKey = fmt.Sprintf("mez/%s/%s/mezzanine.mp4", a.TenantID, a.AssetID)
 		fh, err := os.Open(filepath.Join(dir, "mezzanine.mp4"))
@@ -223,6 +225,7 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		if err != nil {
 			return fmt.Errorf("retain mezzanine: %w", err)
 		}
+		mezzBytes = fileBytes(filepath.Join(dir, "mezzanine.mp4"))
 	}
 	if err := w.uploadDir(ctx, res.OutDir, prefix); err != nil {
 		return fmt.Errorf("publish: %w", err)
@@ -247,11 +250,12 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 			`update assets set state = $6::asset_state, duration_sec = $2, width = $3,
 			        height = $4, frame_rate = $5, mezzanine_key = $7,
 			        complexity = $8, source_sha256 = $9, dash_skeleton = $10,
-			        updated_at = now()
+			        source_bytes = nullif($11,0)::bigint,
+			        mezzanine_bytes = nullif($12,0)::bigint, updated_at = now()
 			  where id = $1`,
 			a.AssetID, res.Probe.DurationSec, res.Probe.Width,
 			res.Probe.Height, res.Probe.FrameRate, state, mezzKey,
-			res.Complexity, sum, skeleton); err != nil {
+			res.Complexity, sum, skeleton, srcBytes, mezzBytes); err != nil {
 			return err
 		}
 		for _, r := range res.Rungs {
@@ -262,13 +266,16 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 			if _, err := tx.Exec(ctx,
 				`insert into renditions (asset_id, tenant_id, height, codec, bitrate_bps,
 				        encoder_version, params_hash, state, object_key, lazy,
-				        width, codec_string, avg_bandwidth_bps, dash_representation)
-				 values ($1,$2,$3,$4,$5,$6,$7,'ready',$8,false,$9,$10,$5,$11)
-				 on conflict (asset_id, height, codec) do update set state = 'ready'`,
+				        width, codec_string, avg_bandwidth_bps, dash_representation, bytes)
+				 values ($1,$2,$3,$4,$5,$6,$7,'ready',$8,false,$9,$10,$5,$11,
+				         nullif($12,0)::bigint)
+				 on conflict (asset_id, height, codec) do update set
+				   state = 'ready', bytes = excluded.bytes`,
 				a.AssetID, a.TenantID, r.Height, r.Codec, r.MaxrateBPS,
 				media.EncoderVersion, media.ParamsHash(r),
 				fmt.Sprintf("%s/%dp.cmfv", prefix, r.Height),
-				width, codecString(r), reps[r.Height]); err != nil {
+				width, codecString(r), reps[r.Height],
+				fileBytes(filepath.Join(res.OutDir, fmt.Sprintf("%dp.cmfv", r.Height)))); err != nil {
 				return err
 			}
 		}
@@ -546,6 +553,17 @@ func (w *TranscodeWorker) pullFromBucket(ctx context.Context, a TranscodeArgs, s
 	return nil
 }
 
+// fileBytes is what an object costs to store, taken where the file is already on
+// disk. Zero on failure, which the callers store as null: billing wrong is worse than
+// billing nothing.
+func fileBytes(path string) int64 {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+	return fi.Size()
+}
+
 // hashFile streams the file rather than reading it whole: sources run to gigabytes.
 func hashFile(path string) ([]byte, error) {
 	f, err := os.Open(path)
@@ -581,17 +599,20 @@ func (w *TranscodeWorker) findDuplicate(ctx context.Context, a TranscodeArgs, su
 //
 // The asset stays its own row with its own id, because the customer asked for it and
 // may delete it independently; only the encoding work is skipped.
-func (w *TranscodeWorker) linkToDuplicate(ctx context.Context, a TranscodeArgs, existingID string, sum []byte) error {
+func (w *TranscodeWorker) linkToDuplicate(ctx context.Context, a TranscodeArgs, existingID string, sum []byte, srcBytes int64) error {
 	err := w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		// mezzanine_bytes is deliberately not copied: the file is the canonical
+		// asset's and billing it twice would charge for one copy of the bytes twice.
 		if _, err := tx.Exec(ctx,
 			`update assets dst set
 			     state = src.state, duration_sec = src.duration_sec,
 			     width = src.width, height = src.height, frame_rate = src.frame_rate,
 			     mezzanine_key = src.mezzanine_key, complexity = src.complexity,
-			     dash_skeleton = src.dash_skeleton,
+			     dash_skeleton = src.dash_skeleton, source_bytes = nullif($4,0)::bigint,
 			     source_sha256 = $3, deduplicated_from = src.id, updated_at = now()
 			   from assets src
-			  where dst.id = $1 and src.id = $2`, a.AssetID, existingID, sum); err != nil {
+			  where dst.id = $1 and src.id = $2`,
+			a.AssetID, existingID, sum, srcBytes); err != nil {
 			return err
 		}
 		// No rendition rows of its own. They describe media this asset does not own,

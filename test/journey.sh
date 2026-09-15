@@ -70,6 +70,8 @@ CUE=$(echo "$VTT" | grep -m1 'sprite.jpg')
 DIR=${TH%%\?*}; DIR=${DIR%/*}
 check "thumbnail tile authorized" "$(curl -s -o /dev/null -w '%{http_code}' "$B$DIR/$CUE")" "200"
 
+check "source size billed" "$(echo "$P"|python3 -c 'import sys,json;print("yes" if json.load(sys.stdin).get("source_bytes") else "no")')" "yes"
+
 echo "9. delete the video"
 check "deleted" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "204"
 check "gone afterwards" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $KEY" $B/v1/assets/$A)" "404"
