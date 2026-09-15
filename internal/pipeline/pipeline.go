@@ -59,8 +59,6 @@ type TranscodeWorker struct {
 	River   *river.Client[pgx.Tx]
 	Metrics *metrics.Registry
 	WorkDir string
-	// MaxSourceBytes caps a pull-from-URL download.
-	MaxSourceBytes int64
 }
 
 // Work runs the full chain for one asset.
@@ -476,9 +474,9 @@ func deref(s *string) string {
 // pull downloads a customer-supplied URL. Every failure here maps to a stable code,
 // because "your link didn't work" needs to say why.
 func (w *TranscodeWorker) pull(ctx context.Context, a TranscodeArgs, url, dst string) error {
-	max := w.MaxSourceBytes
-	if max <= 0 {
-		max = DefaultMaxSourceBytes
+	max, err := w.maxSourceBytes(ctx, a.TenantID)
+	if err != nil {
+		return fmt.Errorf("read source limit: %w", err)
 	}
 	if _, err := fetch.ToFile(ctx, url, dst, max, 2*time.Hour); err != nil {
 		switch {
@@ -500,6 +498,23 @@ func (w *TranscodeWorker) pull(ctx context.Context, a TranscodeArgs, url, dst st
 
 // DefaultMaxSourceBytes bounds a pull-from-URL download when no tenant limit applies.
 const DefaultMaxSourceBytes = 32 << 30
+
+// maxSourceBytes reads the tenant's cap. It used to be a worker field that no binary
+// ever set, so tenant_limits.max_source_bytes was stored, shown, and never applied.
+func (w *TranscodeWorker) maxSourceBytes(ctx context.Context, tenantID string) (int64, error) {
+	max := int64(DefaultMaxSourceBytes)
+	err := w.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		err := tx.QueryRow(ctx, `select max_source_bytes from tenant_limits`).Scan(&max)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil // no limits row: plan default applies
+		}
+		return err
+	})
+	if max <= 0 {
+		max = DefaultMaxSourceBytes
+	}
+	return max, err
+}
 
 func (w *TranscodeWorker) emit(ctx context.Context, a TranscodeArgs, event string, data any) {
 	if w.River == nil {
