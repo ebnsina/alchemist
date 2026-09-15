@@ -154,16 +154,24 @@ type DedupResolver struct{ DB *db.DB }
 //
 // media_prefix overrides it, and is set only when the asset the prefix was named
 // after has been deleted while others still play its bytes.
+//
+// A broadcast resolves to live/ instead, which is the only thing about live that the
+// origin has to know: those segments are transient and swept once the recording is
+// converted, so they must not share a prefix with the VOD library.
 func (d DedupResolver) StoragePrefix(ctx context.Context, tenantID, assetID string) (string, error) {
-	var prefix string
+	var prefix, canonical, state string
 	err := d.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx,
 			`select coalesce(media_prefix, 'cmaf/' || tenant_id::text || '/' ||
-			          coalesce(deduplicated_from, id)::text)
-			   from assets where id = $1`, assetID).Scan(&prefix)
+			          coalesce(deduplicated_from, id)::text),
+			        coalesce(deduplicated_from, id)::text, state::text
+			   from assets where id = $1`, assetID).Scan(&prefix, &canonical, &state)
 	})
 	if err != nil {
 		return "", err
+	}
+	if state == "live" || state == "live_ended" {
+		return "live/" + tenantID + "/" + canonical, nil
 	}
 	return prefix, nil
 }

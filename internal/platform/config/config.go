@@ -35,6 +35,13 @@ type Config struct {
 	SessionDomain string
 	// SessionSecure marks the cookie Secure. Off only for a local http harness.
 	SessionSecure bool
+	// LiveIngestHost is the address encoders publish to. Empty leaves the live
+	// surface unmounted, the same way no web origin leaves the account surface off.
+	LiveIngestHost string
+	// LivePortLow/High bound the ingest port range. One port per armed stream,
+	// because ffmpeg in listener mode accepts one connection and cannot dispatch.
+	LivePortLow  int
+	LivePortHigh int
 }
 
 func Load() (*Config, error) {
@@ -84,6 +91,24 @@ func Load() (*Config, error) {
 	c.SessionDomain = strings.TrimSpace(os.Getenv("ALCHEMIST_SESSION_DOMAIN"))
 	// Defaults to on. Turning the Secure flag off has to be a deliberate act.
 	c.SessionSecure = strings.TrimSpace(os.Getenv("ALCHEMIST_SESSION_INSECURE")) == ""
+
+	// Optional as a pair. Live is off unless both are set; one without the other is a
+	// boot failure rather than a surface that half exists.
+	c.LiveIngestHost = strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_INGEST_HOST"))
+	portRange := strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_PORT_RANGE"))
+	if (c.LiveIngestHost == "") != (portRange == "") {
+		return nil, fmt.Errorf(
+			"ALCHEMIST_LIVE_INGEST_HOST and ALCHEMIST_LIVE_PORT_RANGE must be set together")
+	}
+	if portRange != "" {
+		lo, hi, ok := strings.Cut(portRange, "-")
+		c.LivePortLow, _ = strconv.Atoi(lo)
+		c.LivePortHigh, _ = strconv.Atoi(hi)
+		if !ok || c.LivePortLow < 1 || c.LivePortHigh > 65535 || c.LivePortLow > c.LivePortHigh {
+			return nil, fmt.Errorf(
+				"ALCHEMIST_LIVE_PORT_RANGE must be low-high within 1-65535, got %q", portRange)
+		}
+	}
 
 	// Optional, and only for local harnesses: exact "ip:port" pairs that bypass the
 	// SSRF address rules. Never set this in production.
