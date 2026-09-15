@@ -23,6 +23,22 @@ default here spends the viewer's data as if it were money, because it is.
 | **Small bundle, old WebView** | Player chrome and core are ~20 KB gzipped, icons included. Shaka loads on demand and split by manifest type, so an HLS asset never downloads the DASH parser. Build target is ES2019 / Chrome 70 / Safari 12. |
 | **No dead ends** | Loading, buffering, expired signature, network lost, not found, unsupported browser, DRM failure and *no Clear Key on this browser* each have plain-language copy in both languages and a route out. |
 
+
+## Verified
+
+Chrome, against a local Alchemist origin, 2026-09-15:
+
+- **cenc + EME Clear Key plays.** `readyState=4`, 640x360, `mediaKeys` attached,
+  frames decoding. Manifest 17 ms, licence 50 ms, all eighteen media requests done
+  inside 100 ms.
+- **The viewer watermark renders** the `wm` label the origin signs into the link.
+- **First load pays a one-off ~28 s** for the browser to bring up its Clear Key CDM.
+  The second load of the same asset in the same page is **204 ms**, so it is cold
+  start-up in the browser, not the player or the origin. Worth knowing before anyone
+  reports it as a bug.
+
+Not verified: Safari and iOS, which have no Clear Key at all and need FairPlay.
+
 ---
 
 ## Embed
