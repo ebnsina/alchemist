@@ -1,16 +1,27 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { RefreshIcon, Upload01Icon } from '@hugeicons/core-free-icons';
+	import {
+		RefreshIcon,
+		Upload01Icon,
+		VideoReplayIcon,
+		Timer02Icon,
+		DatabaseIcon,
+		EyeIcon,
+		ArrowRight01Icon
+	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import AssetList from '$lib/components/AssetList.svelte';
-	import Ring from '$lib/components/Ring.svelte';
-	import { listAssets, usage, ApiError, type Asset, type UsageLine } from '$lib/api';
+	import StatCard from '$lib/components/StatCard.svelte';
+	import Sparkline from '$lib/components/Sparkline.svelte';
+	import { listAssets, usage, session, ApiError, type Asset, type UsageLine } from '$lib/api';
 
-	let assets: Asset[] = $state([]);
-	let lines: UsageLine[] = $state([]);
+	let assets = $state<Asset[]>([]);
+	let lines = $state<UsageLine[]>([]);
 	let period = $state({ from: '', to: '' });
+	let email = $state('');
 	let loading = $state(true);
 	let error = $state('');
+	let now = $state(new Date());
 
 	// Anything still moving is worth another look without the customer asking.
 	const busy = $derived(
@@ -33,6 +44,14 @@
 
 	$effect(() => {
 		load();
+		session()
+			.then((s) => (email = s.email))
+			.catch(() => {});
+	});
+
+	$effect(() => {
+		const id = setInterval(() => (now = new Date()), 30000);
+		return () => clearInterval(id);
 	});
 
 	$effect(() => {
@@ -41,60 +60,84 @@
 		return () => clearInterval(id);
 	});
 
-	const ready = $derived(
-		assets.filter((a) => a.state === 'ready' || a.state === 'partially_ready').length
+	// Local time, not ours: the greeting is about the person reading it.
+	const hour = $derived(now.getHours());
+	const greeting = $derived(
+		hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 	);
+	const firstName = $derived(email ? email.split('@')[0].replace(/[._-]+/g, ' ') : '');
+	const stamp = $derived(
+		new Intl.DateTimeFormat('en', {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long',
+			hour: 'numeric',
+			minute: '2-digit'
+		}).format(now)
+	);
+
+	// The engine writes one usage line: ingest, in seconds. Looking up gb/gb_month
+	// returned undefined and printed 0 GB, which read as measured-and-empty.
+	const line = (unit: string) => lines.find((l) => l.unit === unit)?.quantity ?? 0;
+	const num = (n: number, opts: Intl.NumberFormatOptions = {}) =>
+		new Intl.NumberFormat('en', { maximumFractionDigits: 1, ...opts }).format(n);
+
+	const ready = $derived(assets.filter((a) => a.state === 'ready').length);
+	const working = $derived(
+		assets.filter((a) => !['ready', 'failed', 'partially_ready'].includes(a.state)).length
+	);
+	const failed = $derived(assets.filter((a) => a.state === 'failed').length);
 
 	const month = $derived(
 		period.from
-			? new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
-					new Date(period.from)
-				)
-			: ''
+			? new Intl.DateTimeFormat('en', { month: 'long', timeZone: 'UTC' }).format(new Date(period.from))
+			: 'this month'
 	);
 
-	const UNITS: Record<string, { label: string; format: (q: number) => string }> = {
-		minutes: {
-			label: 'Sent in',
-			format: (q) =>
-				new Intl.NumberFormat('en', {
-					style: 'unit',
-					unit: 'minute',
-					unitDisplay: 'long',
-					maximumFractionDigits: 0
-				}).format(q)
-		},
-		gb_month: {
-			label: 'Held',
-			format: (q) =>
-				new Intl.NumberFormat('en', {
-					style: 'unit',
-					unit: 'gigabyte',
-					maximumFractionDigits: 1
-				}).format(q)
-		},
-		gb: {
-			label: 'Watched',
-			format: (q) =>
-				new Intl.NumberFormat('en', {
-					style: 'unit',
-					unit: 'gigabyte',
-					maximumFractionDigits: 1
-				}).format(q)
+	// Uploads per day across the period, which is the only series the API gives us
+	// enough to draw honestly.
+	const days = $derived(
+		period.from
+			? Math.max(
+					1,
+					Math.round(
+						(Math.min(Date.now(), new Date(period.to).getTime()) -
+							new Date(period.from).getTime()) /
+							86400000
+					)
+				)
+			: 1
+	);
+	const series = $derived.by(() => {
+		const start = period.from ? new Date(period.from).getTime() : Date.now();
+		const buckets = new Array(days).fill(0);
+		for (const a of assets) {
+			const i = Math.floor((new Date(a.created_at).getTime() - start) / 86400000);
+			if (i >= 0 && i < buckets.length) buckets[i] += 1;
 		}
-	};
+		return buckets;
+	});
+	const seriesLabels = $derived(
+		series.map((_, i) => {
+			const d = new Date(period.from || Date.now());
+			d.setUTCDate(d.getUTCDate() + i);
+			return new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(d);
+		})
+	);
+
+	const recent = $derived(assets.slice(0, 5));
 </script>
 
 <Seo title="Overview — Alchemist" description="Your videos and this month's usage." />
 
-<header class="flex flex-wrap items-center justify-between gap-4">
-	<div>
-		<h1>Your videos</h1>
-		{#if month}
-			<p class="sub mt-1">Usage so far in {month}</p>
-		{/if}
+<header class="flex flex-wrap items-end justify-between gap-4">
+	<div class="min-w-0">
+		<h1 class="text-2xl font-semibold tracking-tight">
+			{greeting}{firstName ? ', ' + firstName : ''}
+		</h1>
+		<p class="mono mt-1.5">{stamp}</p>
 	</div>
-	<div class="flex items-center gap-2">
+	<div class="flex flex-none items-center gap-2">
 		<button type="button" class="btn btn-sm" onclick={load} disabled={loading}>
 			<HugeiconsIcon icon={RefreshIcon} size={14} strokeWidth={2} />
 			Refresh
@@ -107,34 +150,96 @@
 </header>
 
 {#if error}
-	<p class="mt-6 text-sm font-extrabold text-red" role="alert">{error}</p>
+	<p class="mt-6 text-sm text-red" role="alert">{error}</p>
 {/if}
 
-<!-- The list on the left, the numbers on the right: the rail is everything that is
-     a figure rather than an action. -->
-<div class="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px]">
-	<section class="min-w-0">
-		<AssetList {assets} {loading} />
+<div class="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+	<StatCard
+		label="Videos"
+		icon={VideoReplayIcon}
+		{loading}
+		value={num(assets.length)}
+		hint={assets.length === 0
+			? 'Nothing sent yet'
+			: working > 0
+				? `${working} still being made${failed ? `, ${failed} failed` : ''}`
+				: failed > 0
+					? `${ready} ready, ${failed} failed`
+					: `All ${ready} ready to play`}
+	/>
+	<StatCard
+		label="Sent in"
+		icon={Timer02Icon}
+		{loading}
+		accent
+		value={num(line('seconds') / 60, { maximumFractionDigits: 1 }) + ' min'}
+		hint="Video you gave us to process in {month}"
+	/>
+	<StatCard
+		label="Ready to play"
+		icon={EyeIcon}
+		{loading}
+		accent
+		value={num(ready, { maximumFractionDigits: 0 })}
+		hint={assets.length ? `of ${assets.length} sent` : 'Nothing sent yet'}
+	/>
+	<StatCard
+		label="Still working"
+		icon={DatabaseIcon}
+		{loading}
+		value={num(working, { maximumFractionDigits: 0 })}
+		hint={working ? 'Small sizes finish first' : 'Nothing in the queue'}
+	/>
+</div>
+
+<div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+	<section class="card min-w-0">
+		<div class="flex flex-wrap items-baseline justify-between gap-3">
+			<div>
+				<p class="title">Uploads through {month}</p>
+				<p class="sub mt-1">One bar a day. Hover a bar for the date.</p>
+			</div>
+			<p class="mono">{days} days</p>
+		</div>
+		<div class="mt-6">
+			{#if loading}
+				<div class="sk h-28"></div>
+			{:else}
+				<Sparkline points={series} labels={seriesLabels} unit="videos" />
+			{/if}
+		</div>
 	</section>
 
-	<aside class="lg:pt-1">
-		<div class="mx-auto w-[108px]">
-			<Ring value={ready} total={assets.length} caption="Ready" />
-		</div>
-
-		<div class="mt-6 grid gap-3">
-			{#each Object.entries(UNITS) as [unit, spec] (unit)}
-				{@const line = lines.find((l) => l.unit === unit)}
-				<div class="flex items-baseline justify-between gap-3">
-					<span class="label">{spec.label}</span>
-					<b class="num text-[17px]">{line ? spec.format(line.quantity) : '—'}</b>
+	<section class="card min-w-0">
+		<p class="title">Where your videos are</p>
+		<p class="sub mt-1">Every one you have sent us, by what it is doing.</p>
+		<dl class="mt-5 grid gap-3">
+			{#each [['Ready to play', ready, 'Every size made. Nothing left to wait for.'], ['Still being made', working, 'Watchable already if a small size is done.'], ['Did not work', failed, 'Something about the file stopped us.']] as [label, count, why] (label)}
+				<div class="flex items-start justify-between gap-4">
+					<div class="min-w-0">
+						<dt class="text-sm font-medium">{label}</dt>
+						<dd class="sub mt-0.5">{why}</dd>
+					</div>
+					<b class="num flex-none text-[17px]" class:text-accent={label === 'Ready to play'}>
+						{count}
+					</b>
 				</div>
 			{/each}
-			<div class="rule my-1"></div>
-			<div class="flex items-baseline justify-between gap-3">
-				<span class="label">Videos</span>
-				<b class="num text-[17px]">{assets.length}</b>
-			</div>
-		</div>
-	</aside>
+		</dl>
+	</section>
 </div>
+
+<section class="mt-8">
+	<div class="flex items-baseline justify-between gap-4">
+		<h2 class="text-lg font-semibold tracking-tight">Recently sent</h2>
+		{#if assets.length > recent.length}
+			<a href="/app/videos/" class="label flex items-center gap-1.5 hover:text-ink">
+				All {assets.length}
+				<HugeiconsIcon icon={ArrowRight01Icon} size={13} strokeWidth={2.4} />
+			</a>
+		{/if}
+	</div>
+	<div class="card mt-4">
+		<AssetList assets={recent} {loading} />
+	</div>
+</section>

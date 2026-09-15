@@ -31,16 +31,10 @@
 	let copied = $state(false);
 	let field: HTMLInputElement | null = $state(null);
 
-	// Length is the only rule worth showing: composition rules push people toward
-	// Passw0rd! and nothing else.
-	const strength = $derived(Math.min(3, Math.floor(password.length / 6)));
-	const strengthWord = $derived(['Too short', 'Getting there', 'Good', 'Strong'][strength]);
-
-	const valid = $derived(
-		[org.trim().length > 0, /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()), password.length >= 10][
-			step
-		]
-	);
+	// Whether a name, an address or a password is acceptable is the API's ruling, not
+	// this page's. All that is checked here is that there is something to send —
+	// anything more is a second copy of a rule that drifts the moment the API moves.
+	const filled = $derived([org.trim(), email.trim(), password][step].length > 0);
 
 	// Autofocus on arrival and on every step change, so the whole flow is typeable
 	// without reaching for the mouse.
@@ -50,7 +44,14 @@
 
 	async function next() {
 		error = '';
-		if (!valid) return;
+		// Safari autofills without firing the events bind:value listens for, which
+		// leaves the bound value empty while the field looks filled in.
+		if (field?.value) {
+			if (step === 0) org = field.value;
+			else if (step === 1) email = field.value;
+			else password = field.value;
+		}
+		if (!filled) return;
 		if (step < steps.length - 1) {
 			step += 1;
 			return;
@@ -177,7 +178,7 @@
 								type="text"
 								name="organization"
 								autocomplete="organization"
-								placeholder="Nodi Academy"
+								placeholder="Nile Academy"
 								maxlength="120"
 								required
 							/>
@@ -212,18 +213,7 @@
 								required
 							/>
 						</label>
-						<div class="mt-2.5 flex items-center gap-2">
-							<div class="flex flex-1 gap-1">
-								{#each [0, 1, 2] as bar (bar)}
-									<span
-										class="h-1 flex-1 rounded-full transition-colors duration-300 {bar < strength
-											? 'bg-solid'
-											: 'bg-sunk'}"
-									></span>
-								{/each}
-							</div>
-							<span class="text-xs text-dim">{strengthWord}</span>
-						</div>
+						<p class="mono mt-2.5">A short sentence beats a clever word.</p>
 					{/if}
 
 					{#if error}
@@ -237,7 +227,7 @@
 								<span class="vh">Back</span>
 							</button>
 						{/if}
-						<button type="submit" class="btn-solid flex-1" disabled={!valid || busy}>
+						<button type="submit" class="btn-solid flex-1" disabled={!filled || busy}>
 							{#if busy}
 								Setting things up…
 							{:else if step < steps.length - 1}

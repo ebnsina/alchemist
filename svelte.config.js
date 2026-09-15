@@ -1,16 +1,17 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-node';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
 export default {
 	preprocess: vitePreprocess(),
 	kit: {
-		// A fallback page, because the dashboard has a route per asset and the id is
-		// not known at build time. Static hosting serves this for anything it has no
-		// file for, and the router takes over in the browser.
-		adapter: adapter({ fallback: '200.html' }),
-		// Absolute asset URLs, not relative. 404.html is served at whatever path the
-		// visitor asked for, and relative hrefs would resolve against that and 404 too.
+		// A Node server, because the AI routes hold provider keys and a key cannot
+		// live in page script. Everything that was static still is: the marketing
+		// pages and the dashboard shell prerender at build time and are served as
+		// files, so this only adds a server for the handful of routes that need one.
+		adapter: adapter(),
+		// Absolute asset URLs, not relative. An error page is served at whatever path
+		// the visitor asked for, and relative hrefs would resolve against that.
 		paths: { relative: false },
 		prerender: { entries: ['*'] }
 	}

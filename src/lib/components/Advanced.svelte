@@ -51,12 +51,14 @@
 	);
 
 	const clock = (iso: string | null) =>
-		iso ? new Intl.DateTimeFormat('en', { timeStyle: 'medium' }).format(new Date(iso)) : '—';
+		iso ? new Intl.DateTimeFormat('en', { timeStyle: 'medium' }).format(new Date(iso)) : 'not started';
 
 	const took = (a: Activity) =>
 		a.started_at && a.finished_at
 			? `${((new Date(a.finished_at).getTime() - new Date(a.started_at).getTime()) / 1000).toFixed(1)}s`
-			: '—';
+			: a.started_at
+				? 'running'
+				: 'waiting';
 
 	// Queue words, said plainly. "discarded" is not a failure — it is a job that was
 	// superseded, usually because the work was already done.
@@ -83,16 +85,16 @@
 	};
 </script>
 
-<section class="mt-8">
+<section class="mt-8 overflow-hidden rounded-md border border-sunk">
 	<button
 		type="button"
-		class="flex w-full items-center justify-between gap-4 rounded-xl border border-sunk px-4 py-3 text-left transition-colors hover:border-sunk"
+		class="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left transition-colors hover:bg-sunk"
 		onclick={() => (open = !open)}
 		aria-expanded={open}
 	>
-		<span>
-			<span class="text-sm font-semibold">Advanced</span>
-			<span class="ml-2 text-xs text-dim">Chunks, pipeline steps, and the raw response</span>
+		<span class="min-w-0">
+			<span class="block text-sm font-semibold">Advanced</span>
+			<span class="sub mt-0.5 block">Chunks, pipeline steps, and the raw response</span>
 		</span>
 		<HugeiconsIcon
 			icon={ArrowDown01Icon}
@@ -103,7 +105,7 @@
 	</button>
 
 	{#if open}
-		<div class="mt-4 grid gap-6">
+		<div class="grid gap-7 border-t border-sunk bg-sunk/40 p-4 sm:p-5">
 			{#if error}
 				<p class="text-sm text-red" role="alert">{error}</p>
 			{:else if !loaded}
@@ -111,7 +113,7 @@
 			{:else}
 				<div>
 					<h3 class="text-sm font-semibold">Chunk map</h3>
-					<p class="mt-1 text-xs text-dim">
+					<p class="sub mt-1">
 						Each square is a slice of the video, encoded on its own. Filled means the slice
 						exists in storage.
 					</p>
@@ -129,7 +131,7 @@
 									<div class="mt-2.5 flex flex-wrap gap-1">
 										{#each group.items as c (c.index)}
 											<span
-												class="h-3.5 w-3.5 rounded-[3px] {c.done ? 'bg-solid' : 'bg-sunk'}"
+												class="h-3.5 w-3.5 rounded-[3px] {c.done ? 'bg-brand' : 'bg-muted'}"
 												title="#{c.index} · {c.start_sec.toFixed(1)}s to {c.end_sec.toFixed(1)}s{c.done
 													? ''
 													: ' · not yet'}"
@@ -144,55 +146,44 @@
 
 				<div>
 					<h3 class="text-sm font-semibold">What happened</h3>
-					<p class="mt-1 text-xs text-dim">
+					<p class="sub mt-1">
 						Every step the queue ran for this video. Error text stays in our logs — what you
 						can act on is the code on the video itself.
 					</p>
 					{#if activity.length === 0}
 						<p class="mt-3 text-sm text-dim">Nothing recorded yet.</p>
 					{:else}
-						<div class="card mt-3 overflow-x-auto">
-							<table class="w-full text-sm">
-								<thead>
-									<tr class="text-xs text-dim">
-										<th class="px-4 py-2.5 text-left font-normal">Step</th>
-										<th class="px-4 py-2.5 text-left font-normal">State</th>
-										<th class="px-4 py-2.5 text-right font-normal">Tries</th>
-										<th class="px-4 py-2.5 text-right font-normal">Started</th>
-										<th class="px-4 py-2.5 text-right font-normal">Took</th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each activity as a, i (a.step + a.queued_at + i)}
-										<tr class="border-t border-sunk">
-											<td class="px-4 py-2.5">{STEP[a.step] ?? a.step}</td>
-											<td class="px-4 py-2.5">
-												<span
-													class={a.state === 'completed'
-														? 'text-ink'
-														: a.state === 'discarded'
-															? 'text-red'
-															: 'text-dim'}
-												>
-													{STATE[a.state] ?? a.state}
-												</span>
-											</td>
-											<td class="px-4 py-2.5 text-right tabular-nums">
-												{a.attempt}{#if a.failures > 0}<span class="text-red"> · {a.failures} failed</span>{/if}
-											</td>
-											<td class="px-4 py-2.5 text-right text-dim tabular-nums">{clock(a.started_at)}</td>
-											<td class="px-4 py-2.5 text-right tabular-nums">{took(a)}</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
+						<ul class="card mt-3 divide-y divide-sunk p-0">
+							{#each activity as a, i (a.step + a.queued_at + i)}
+								<li class="grid gap-x-4 gap-y-1 px-4 py-3 sm:grid-cols-[1fr_auto]">
+									<div class="flex min-w-0 items-center gap-2.5">
+										<span class="truncate text-sm font-medium">{STEP[a.step] ?? a.step}</span>
+										<span
+											class="chip flex-none"
+											class:chip-on={a.state === 'completed'}
+											class:text-red={a.state === 'discarded'}
+										>
+											{STATE[a.state] ?? a.state}
+										</span>
+									</div>
+									<div class="mono flex flex-wrap items-center gap-x-3 sm:justify-end">
+										<span>{clock(a.started_at)}</span>
+										<span>{a.finished_at ? `took ${took(a)}` : took(a)}</span>
+										<span>
+											try {a.attempt}{#if a.failures > 0}<span class="text-red">
+													· {a.failures} failed
+												</span>{/if}
+										</span>
+									</div>
+								</li>
+							{/each}
+						</ul>
 					{/if}
 				</div>
 
 				<div>
 					<h3 class="text-sm font-semibold">Raw response</h3>
-					<p class="mt-1 text-xs text-dim">The same call your own code would make.</p>
+					<p class="sub mt-1">The same call your own code would make.</p>
 					<div class="mt-3">
 						<Json source={JSON.stringify(asset, null, 2)} label="GET /v1/assets/{asset.id}" />
 					</div>

@@ -33,8 +33,8 @@
 <style>
 	.code {
 		border-radius: var(--radius-md);
-		background: var(--color-neutral);
-		border: 1px solid var(--color-outline);
+		background: var(--color-sunk);
+		border: 1px solid var(--color-muted);
 		overflow: hidden;
 	}
 	.code__bar {
@@ -42,7 +42,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 8px 12px;
-		border-bottom: 1px solid var(--color-outline);
+		border-bottom: 1px solid var(--color-muted);
 	}
 	.code__body {
 		margin: 0;
@@ -52,21 +52,24 @@
 		font-size: 0.8125rem;
 		line-height: 1.7;
 	}
-	/* Syntax colour inside the system: ink for keys, teal for values, slate for the
-	   punctuation between them. No new hues — weight and the one accent do the work.
-	   Measured on the paper ground: key 16.95:1, string 7.02:1, slate 4.93:1. */
+	/* Syntax colour inside the system, and no new hues: keys carry weight, values
+	   carry the one accent, and the punctuation between them recedes. Every one of
+	   these four is a defined token — the previous set named colours that did not
+	   exist anywhere, so the highlighting rendered as flat inherited text. */
 	.tok--key {
-		color: var(--color-primary);
-		font-weight: 500;
+		color: var(--color-ink);
+		font-weight: 600;
 	}
 	.tok--string {
-		color: var(--color-tertiary);
+		color: var(--color-accent);
 	}
 	.tok--number,
 	.tok--literal {
-		color: var(--color-tertiary-container);
+		color: var(--color-ink);
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
 	}
 	.tok--plain {
-		color: var(--color-secondary);
+		color: var(--color-faint);
 	}
 </style>

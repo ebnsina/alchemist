@@ -1,91 +1,102 @@
 # alchemist-web
 
-Marketing site for Alchemist. SvelteKit + TypeScript + **Tailwind CSS v4**, static
-output via `adapter-static`.
+Public marketing site and customer dashboard for Alchemist. SvelteKit + TypeScript +
+**Tailwind CSS v4**, served by **`adapter-node`**.
+
+It was static until the AI features arrived. A provider key cannot live in page
+script, and a static build has no server to keep one in — so there is a Node process
+now. Everything that can still be static still is: the marketing pages and the
+dashboard shell prerender at build time and are served as files. Only `/api/*` runs
+per request.
 
 ```sh
 npm install
-npm run dev       # local development
-npm run build     # static output in build/
-npm run verify    # checks the built output; see below
-npm run check     # svelte-check
+npm run dev        # local development on :5173
+npm run build      # build/ — a Node server plus prerendered pages
+node build/index.js            # run it: PORT and ORIGIN come from the environment
+npm run check      # svelte-check
+npm run verify     # builds nothing; serves build/ and checks it — see below
+npm run check:contrast           # samples the real pixel under every text node
 ```
 
 ## Structure
 
 ```
-src/app.html                     Inter from Google Fonts, language pre-paint script
-src/app.css                      @import "tailwindcss" + @theme + custom utilities
-src/routes/+layout.svelte        Nav + Footer
-src/routes/+page.svelte          composes the landing sections
-src/lib/components/              Logo, Nav, Hero, LogoTicker, Stats, Features,
-                                 HowItWorks, Pricing, Testimonials, FAQ, CTA, Footer
-src/lib/utils/scroll-reveal.js   IntersectionObserver action
-src/routes/{edtech,media,pricing,docs,about,404}/  the platform-facing pages
+src/app.html                  three self-hosted font preloads, nothing remote
+src/lib/server/ai.ts          provider-agnostic AI config; never bundled to the client
+src/routes/api/ai/+server.ts  the one route that runs per request
+src/app.css                   @import "tailwindcss" + @theme + custom utilities
+src/routes/+layout.svelte     skip link + Footer; the dashboard opts out of chrome
+src/routes/+page.svelte       the landing page, all of it, in one file
+src/routes/{login,signup,contact,404}/
+src/routes/app/               the dashboard: overview, keys, upload, videos, docs
+src/lib/components/           Logo, Footer, Player, ConversionFlow, AssetList, …
+src/lib/site.ts               origin, contact address, sitemap routes
+static/fonts/                 Archivo, Clash Display, Geist Mono — one woff2 each
 ```
 
 `Logo.svelte` is the only file holding the mark — a flask with a play triangle in it.
-Swap that one file to change the logo everywhere.
+Swap that one file and `static/favicon.svg` to change the logo everywhere.
 
-## Palette and contrast
+## AI
 
-Deep sea green on near-black, with white → emerald → gold gradient text for the
-transformation. Every pair was computed against `#06100d`, not eyeballed:
+Provider-agnostic through TanStack AI. `AI_PROVIDER` and `AI_MODEL` choose who
+answers; the adapter reads its own key from the environment and refuses to accept one
+in code, so a key cannot be captured by application code by accident. Adapters for
+Gemini and Ollama exist upstream and are deliberately not installed until wanted —
+adding one is a package and a case in `adapterFor`.
 
-| token | value | contrast |
+Nothing is guessed: an unset `AI_PROVIDER` fails the request with a message naming the
+variable, rather than falling back to a default nobody chose.
+
+## Design
+
+`DESIGN.md` is the reference and `src/app.css` is the implementation; the two are
+meant to agree. In short: monochrome console, lime brand, red only for loss. Dark is
+the default and the light theme is a token swap, not a second stylesheet.
+
+## Fonts
+
+Self-hosted from `static/fonts/`, one variable woff2 per family, latin subset only —
+85 KB for all three, preloaded, with no CDN in the critical path.
+
+| Family | Role | Size |
 |---|---|---|
-| text | `#e5e7eb` | 15.59:1 |
-| **muted** | **`rgba(255,255,255,0.55)`** | **6.24:1** |
-| emerald | `#10b981` | 7.61:1 |
-| emerald light | `#34d399` | 10.04:1 |
-| gold | `#fbbf24` | 11.57:1 |
-| seafoam | `#2dd4bf` | 10.37:1 |
+| Clash Display | headings | 29 KB |
+| Archivo | body | 35 KB |
+| Geist Mono | figures, labels, ids, code | 23 KB |
 
-Two values differ from the brief, both because the brief's would fail AA:
-
-- **muted is `0.55`, not `0.40`.** At 0.40 it measures **3.80:1** and fails.
-- **the emerald button uses `#06100d` text, not white.** White on `#10b981` is
-  **2.54:1**; dark-on-emerald is 7.61:1.
-
-`#064e3b` is 1.99:1 against the body and is used only as a fill behind white text or
-as a gradient stop, never as text.
+To change one: fetch the woff2, drop it in `static/fonts/`, update the `@font-face`
+at the top of `app.css` and the `<link rel="preload">` in `app.html`.
 
 ## Motion
 
-`scroll-reveal.js` adds `.scroll-fade` itself, so **with scripting off nothing is
-hidden** — the class that sets `opacity: 0` never lands. Under
-`prefers-reduced-motion: reduce` the action marks the element visible immediately and
-never observes anything, and the CSS stops the ticker, the shine sweep, the progress
-bar and every transition. `npm run verify` asserts both directions.
-
-## The three substituted sections
-
-`LogoTicker`, `Stats` and `Testimonials` sit where a template would put invented
-customers, invented metrics and invented people. The layout, animation and spacing are
-unchanged; the content is not fabricated:
-
-- **LogoTicker** — the kinds of work the tool is for, under "Built for creators,
-  teachers, and small businesses". No claim that anyone is a customer.
-- **Stats** — 93% smaller, under 60s, 8K, any device. Facts about the product rather
-  than a customer count or a star rating.
-- **Testimonials** — three use cases in neutral voice under "Who it's for". No names,
-  no roles, no avatars, no ratings.
-
-Do not fill these with people, companies, counts or ratings that do not exist.
+There is no animation library — `gsap` was a dependency nothing imported and it is
+gone. What is left is CSS transitions, the skeleton shimmer and the hero card cycling
+through its three states. All of it stops under `prefers-reduced-motion: reduce`, and
+`npm run verify` asserts that.
 
 ## Verification
 
-`npm run verify` serves `build/` and checks: WCAG AA contrast for every visible text
-node against its real composited background (gradient text is skipped and its stops
-checked separately), no horizontal scroll at 360px in both languages, no language
-leaking through the CSS swap, every scroll reveal completing, nothing hidden with
-scripting off, reduced motion stopping all four animations while they still run when
-motion is allowed, the language toggle persisting, and the page weight.
+`npm run verify` serves `build/` and checks WCAG AA contrast for every visible text
+node against its real composited background, no horizontal scroll at 360px in either
+theme, that reduced motion stops every transition while they still run when motion is
+allowed, and the page weight per route.
+
+`npm run check:contrast` is the harder one: it hides the glyphs, screenshots each
+viewport down the page and samples the actual pixel under every text node, so text
+sitting over artwork rather than over a background-color is measured honestly. It starts the
+server itself; `npm run build` is the only prerequisite.
+
+## Content rules
+
+Facts about the product, never invented customers. No counts, no logos, no
+testimonials, no star ratings, no names — none of those exist yet and none of them go
+on the page until they do.
 
 ## Before this goes live
 
 - `src/lib/site.ts` still has `alchemist.example` for the origin, contact address and
   repository links. Also in `static/robots.txt`.
-- The landing page describes a consumer file converter; `/edtech/`, `/media/`,
-  `/pricing/`, `/docs/` and `/about/` describe multi-tenant video infrastructure sold
-  to platforms. Those are two products and the site currently claims both.
+- Pricing is marked "not final until launch" on the page. Take that down or make the
+  rates real.

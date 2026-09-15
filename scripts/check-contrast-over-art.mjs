@@ -6,9 +6,29 @@
 // glyphs, screenshots each viewport down the page, and samples the real pixel
 // under each text node instead.
 //
-// Run against a served build: npm run preview, then npm run check:contrast
+// Run against a built site: npm run build, then npm run check:contrast
 
 import { chromium } from 'playwright';
+import { spawn } from 'node:child_process';
+
+// Starts the site's own adapter-node server. `vite preview` does not serve an
+// adapter-node build, and hand-serving build/ would measure something the deployment
+// never runs.
+const PORT = 4321;
+const app = spawn('node', ['build/index.js'], {
+	env: { ...process.env, PORT: String(PORT), ORIGIN: `http://localhost:${PORT}` },
+	stdio: ['ignore', 'ignore', 'inherit']
+});
+const BASE = `http://localhost:${PORT}`;
+process.on('exit', () => app.kill());
+for (let i = 0; i < 60; i++) {
+	try {
+		await fetch(BASE + '/');
+		break;
+	} catch {
+		await new Promise((r) => setTimeout(r, 250));
+	}
+}
 
 const W = 1280, H = 900;
 const PAGES = ['/', '/contact/', '/login/', '/signup/'];
@@ -17,10 +37,8 @@ const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.
 const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 
 const browser = await chromium.launch();
-// Reduced motion, deliberately. The landing page stacks its sections under a pinned
-// veil, so eight of the nine are clipped away at any moment and sampling them reads
-// the page ground rather than their own surface. Reduced motion is the same markup
-// and the same colours as an ordinary column, which is what this measures.
+// Reduced motion, deliberately: the same markup and colours, with nothing animating
+// mid-sample.
 const context = await browser.newContext({
 	viewport: { width: W, height: H },
 	deviceScaleFactor: 1,
@@ -35,12 +53,11 @@ const THEMES = ['light', 'dark'];
 
 for (const theme of THEMES) {
 for (const route of PAGES) {
-	await p.goto('http://localhost:4321' + route, { waitUntil: 'networkidle' });
+	await p.goto(BASE + route, { waitUntil: 'networkidle' });
 	await p.evaluate(t => document.documentElement.setAttribute('data-theme', t), theme);
 	// Scroll-reveal starts elements at opacity 0. Jumping straight to an offset can
 	// outrun the observer, and an unrevealed card samples as bare page instead of
 	// its own surface. The resting state is the final state, so pin it.
-	await p.addStyleTag({ content: '.scroll-fade{opacity:1!important;transform:none!important}' });
 	await p.waitForTimeout(800);
 	const total = await p.evaluate(() => document.body.scrollHeight);
 

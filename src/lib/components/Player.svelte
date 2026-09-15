@@ -1,14 +1,49 @@
 <script lang="ts">
 	import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
 
-	let { hls, poster }: { hls: string; poster?: string } = $props();
+	// currentTime and overlay exist for Studio: picking a trim point means watching the
+	// video, and a crop box has to be drawn on the frame it applies to. Everything
+	// about HLS — native vs hls.js, the SAMPLE-AES check — stays in one place.
+	let {
+		hls,
+		poster,
+		currentTime = $bindable(0),
+		playable = $bindable(true),
+		element = $bindable(null),
+		playing = $bindable(false),
+		overlay,
+		footer = true,
+		fit = false
+	}: {
+		hls: string;
+		poster?: string;
+		currentTime?: number;
+		playable?: boolean;
+		element?: HTMLVideoElement | null;
+		playing?: boolean;
+		fit?: boolean;
+		overlay?: import('svelte').Snippet;
+		footer?: boolean;
+	} = $props();
 
 	let video: HTMLVideoElement | null = $state(null);
+	let pausedInner = $state(true);
+	$effect(() => {
+		playing = !pausedInner;
+	});
 	let note = $state('The real file, played from the signed link');
 	let blocked = $state(false);
 	let level = $state('');
 
 	const src = $derived(PUBLIC_ALCHEMIST_API + hls);
+	$effect(() => {
+		playable = !blocked;
+	});
+	// Studio drives the video from its own timeline, so it needs the element and to
+	// know whether it is running.
+	$effect(() => {
+		element = video;
+	});
 	const posterSrc = $derived(poster ? PUBLIC_ALCHEMIST_API + poster : undefined);
 
 	$effect(() => {
@@ -81,7 +116,7 @@
 	});
 </script>
 
-<div class="card overflow-hidden">
+<div class="card overflow-hidden {fit ? 'w-full border-0 bg-transparent p-0' : ''}">
 	{#if blocked}
 		<!-- The poster is not encrypted, so the frame still proves the file is real. -->
 		<div class="relative aspect-video w-full bg-black">
@@ -90,20 +125,31 @@
 			{/if}
 		</div>
 	{:else}
-		<!-- svelte-ignore a11y_media_has_caption -->
-		<video
-			bind:this={video}
-			class="aspect-video w-full bg-black"
-			controls
-			playsinline
-			preload="metadata"
-			poster={posterSrc}
-		></video>
+		<div class="relative">
+			<!-- svelte-ignore a11y_media_has_caption -->
+			<video
+				bind:this={video}
+				bind:currentTime
+				bind:paused={pausedInner}
+				class="block aspect-video w-full bg-black object-contain"
+				controls
+				playsinline
+				preload="metadata"
+				poster={posterSrc}
+			></video>
+			{#if overlay}
+				<!-- Pointer events off: the overlay is a guide, and swallowing clicks
+				     would take the play button away. -->
+				<div class="pointer-events-none absolute inset-0">{@render overlay()}</div>
+			{/if}
+		</div>
 	{/if}
-	<div class="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs text-dim">
-		<span>{note}</span>
-		{#if !blocked}
-			<span>{level ? `Playing ${level} · ` : ''}link expires in four hours</span>
-		{/if}
-	</div>
+	{#if footer}
+		<div class="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs text-dim">
+			<span>{note}</span>
+			{#if !blocked}
+				<span>{level ? `Playing ${level} · ` : ''}link expires in four hours</span>
+			{/if}
+		</div>
+	{/if}
 </div>

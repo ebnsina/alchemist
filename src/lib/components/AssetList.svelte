@@ -67,8 +67,8 @@
 		{/each}
 	</div>
 {:else if assets.length === 0}
-	<div class="card mt-2 text-center">
-		<p class="text-base font-extrabold">Nothing here yet</p>
+	<div class="py-6 text-center">
+		<p class="title">Nothing here yet</p>
 		<p class="sub mx-auto mt-2 max-w-sm">
 			Send your first video and watch it come back smaller. A ten-minute clip takes about a
 			minute.

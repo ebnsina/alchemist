@@ -5,7 +5,7 @@
 	import { cubicOut } from 'svelte/easing';
 
 	const steps = [
-		{ label: 'They upload', hold: 2600 },
+		{ label: 'Your user uploads', hold: 2600 },
 		{ label: 'We encode', hold: 4200 },
 		{ label: 'You get a link', hold: 3400 }
 	];
