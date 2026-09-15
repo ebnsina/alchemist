@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -207,6 +208,37 @@ func (l LiveAssets) CreateForBroadcast(ctx context.Context, tenantID string) (st
 			 returning id::text`, tenantID).Scan(&assetID)
 	})
 	return assetID, err
+}
+
+// Orphans lists broadcast assets that have sat in a live state past the grace period.
+// Whether one still has a session is live's own question -- this only narrows the
+// search to assets a broadcast could have left behind.
+//
+// It exists because the asset and its session are created in two steps and the second
+// can fail: the reaper walks sessions, so an asset with none was invisible to it and
+// stayed ON AIR forever, with no error anywhere.
+func (l LiveAssets) Orphans(ctx context.Context, tenantID string, olderThan time.Duration) ([]string, error) {
+	var ids []string
+	err := l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx,
+			`select id::text from assets
+			  where state in ('live_armed', 'live')
+			    and created_at < now() - make_interval(secs => $1)
+			  limit 100`, olderThan.Seconds())
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				return err
+			}
+			ids = append(ids, id)
+		}
+		return rows.Err()
+	})
+	return ids, err
 }
 
 func (l LiveAssets) MarkLive(ctx context.Context, tenantID, assetID string) error {

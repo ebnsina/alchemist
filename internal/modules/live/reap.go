@@ -37,6 +37,12 @@ const RetryWindow = 24 * time.Hour
 // ReapInterval is how often Reap runs for each tenant that has live.
 const ReapInterval = time.Minute
 
+// OrphanGrace is how long an asset may sit in a live state with no session before it
+// counts as one whose arming never finished. Generous, because the session lands a
+// moment after the asset and a race here would fail a broadcast that is about to
+// start.
+const OrphanGrace = 5 * time.Minute
+
 // Reap moves abandoned broadcasts to a terminal state and reclaims the segments of
 // every broadcast that no longer needs them. Scoped to one tenant so live_sessions is
 // read under ordinary RLS; finding the tenants is the caller's problem.
@@ -77,6 +83,52 @@ func (w *Worker) Reap(ctx context.Context, tenantID string) error {
 	for _, s := range rows {
 		a.ID = s.sessionID
 		if err := w.reapOne(ctx, a, s.assetID, s.streamID, s.state); err != nil {
+			return err
+		}
+	}
+	return w.reapOrphans(ctx, tenantID)
+}
+
+// reapOrphans ends broadcast assets whose session never landed.
+//
+// The asset and its session are created in two steps, because live does not own
+// assets, and the second step can fail or the process can die between them. Every
+// other reaper pass walks sessions, so an asset with none was reachable by nothing:
+// it stayed ON AIR forever, with no error and no row to find it by.
+func (w *Worker) reapOrphans(ctx context.Context, tenantID string) error {
+	ids, err := w.Assets.Orphans(ctx, tenantID, OrphanGrace)
+	if err != nil || len(ids) == 0 {
+		return err
+	}
+
+	// One query rather than one per asset: every broadcast still on air is a candidate
+	// here for its whole run, and only the sessionless ones are orphans.
+	attached := map[string]bool{}
+	if err := w.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx,
+			`select distinct asset_id::text from live_sessions where asset_id = any($1::uuid[])`,
+			ids)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				return err
+			}
+			attached[id] = true
+		}
+		return rows.Err()
+	}); err != nil {
+		return err
+	}
+
+	for _, assetID := range ids {
+		if attached[assetID] {
+			continue
+		}
+		if err := w.Assets.MarkFailed(ctx, tenantID, assetID, "start_failed"); err != nil {
 			return err
 		}
 	}
