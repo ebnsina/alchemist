@@ -52,12 +52,21 @@ type ContentKeys struct {
 	Wrapper *keys.Wrapper
 }
 
+// Get resolves through deduplicated_from, the same way playback does.
+//
+// A duplicate owns no media and therefore no key: it plays the canonical asset's
+// encrypted bytes, so asking for its own key returns nothing and the player fails to
+// decrypt with no error anywhere but a 404 on /key. The canonical id is also what the
+// key was wrapped under, so it has to come back from the same query.
 func (c ContentKeys) Get(ctx context.Context, tenantID, assetID string) ([]byte, error) {
 	var wrapped, nonce []byte
+	var canonical string
 	err := c.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx,
-			`select wrapped_key, nonce from content_keys where asset_id = $1`,
-			assetID).Scan(&wrapped, &nonce)
+			`select k.wrapped_key, k.nonce, k.asset_id::text
+			   from assets a
+			   join content_keys k on k.asset_id = coalesce(a.deduplicated_from, a.id)
+			  where a.id = $1`, assetID).Scan(&wrapped, &nonce, &canonical)
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, delivery.ErrNotFound
@@ -65,7 +74,7 @@ func (c ContentKeys) Get(ctx context.Context, tenantID, assetID string) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	return c.Wrapper.Unwrap(wrapped, nonce, assetID)
+	return c.Wrapper.Unwrap(wrapped, nonce, canonical)
 }
 
 func (c ContentKeys) Put(ctx context.Context, tenantID, assetID string, keyID, key []byte) error {
