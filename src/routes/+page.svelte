@@ -8,7 +8,9 @@
 		ArrowShrinkIcon,
 		SecurityLockIcon,
 		DatabaseLockedIcon,
-		MonitorSmartphoneIcon
+		MonitorSmartphoneIcon,
+		BrickWallShieldIcon,
+		FingerPrintIcon
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import Logo from '$lib/components/Logo.svelte';
@@ -63,6 +65,31 @@
 			icon: MonitorSmartphoneIcon,
 			title: 'One file, every device',
 			body: 'HLS and DASH out of the same source, so an old Android, a new iPhone, a laptop and a TV all get something they can play.'
+		}
+	];
+
+	// The thing buyers with paid content ask about first, and the page said almost
+	// nothing about it. Consequence first; the mechanism is the API reference's job.
+	const protections = [
+		{
+			icon: SecurityLockIcon,
+			title: 'A copy of the file is not a copy of the video',
+			body: 'What we store is scrambled. The part that unscrambles it is handed over separately, and only to a viewer who already passed the link check. Lift the file off storage and you have noise.'
+		},
+		{
+			icon: Timer02Icon,
+			title: 'A shared link stops working',
+			body: 'Every play goes through a link that expires when you say it does. Forwarded, posted, pasted into a group — it dies on the clock you set, not on trust.'
+		},
+		{
+			icon: BrickWallShieldIcon,
+			title: 'Nothing is served without the check',
+			body: 'Not even a video already sitting on the machine nearest your viewer. A request that cannot prove it is allowed gets nothing, however many times that video has been watched.'
+		},
+		{
+			icon: FingerPrintIcon,
+			title: 'We cannot hand over what we never kept',
+			body: 'Your keys are shown once and stored only as a fingerprint. We cannot show them to you a second time, and we cannot lose what we do not hold.'
 		}
 	];
 
@@ -151,6 +178,10 @@
 			a: 'Not for long. Links stop working after a time you set, so a forwarded one is dead by the time it spreads. A saved copy of the link will not play either.'
 		},
 		{
+			q: 'What if someone just downloads the video file itself?',
+			a: 'They end up with something that will not play. What we store is scrambled, and the piece that unscrambles it only goes to a viewer holding a live link from you. Pulling the file down gets them a file, not a video.'
+		},
+		{
 			q: 'Could another customer ever see my videos?',
 			a: 'No. The separation is enforced by the database itself, not by our code remembering to filter. Even a query written wrongly returns only your own account\u2019s videos.'
 		},
@@ -182,7 +213,7 @@
 
 <Seo
 	title="Alchemist — video infrastructure for your product"
-	description="An API for upload, encoding and delivery. Your users send video, we make every size their viewers need, and you hand out signed links. Usage pricing, isolated accounts, no seats."
+	description="An API for upload, encoding and delivery. Your users send video, we make every size their viewers need, and you hand out links that expire. Encrypted at rest, isolated accounts, usage pricing, no seats."
 />
 
 <!-- overflow-x: clip, because the hero glow is a blurred pseudo-element that bleeds
@@ -273,6 +304,34 @@
 				<div class="card">
 					<h3>{u.who}</h3>
 					<p class="sub mt-3">{u.why}</p>
+				</div>
+			{/each}
+		</div>
+	</section>
+
+	<div class="rule"></div>
+
+	<section id="security" class="scroll-mt-8 py-24">
+		<p class="label">Keeping it yours</p>
+		<h2 class="mt-5 max-w-[20ch]">Sold once should not mean free forever.</h2>
+		<p class="sub measure mt-4">
+			If you charge for what you publish — a course, a match, a film — the worry is not
+			whether it plays. It is what happens the first time somebody tries to take it.
+		</p>
+
+		<div class="mt-14 grid gap-4 md:grid-cols-2">
+			{#each protections as p (p.title)}
+				<div class="card">
+					<div class="flex items-start justify-between gap-4">
+						<h3>{p.title}</h3>
+						<HugeiconsIcon
+							icon={p.icon}
+							size={22}
+							strokeWidth={1.8}
+							class="mt-0.5 flex-none text-accent"
+						/>
+					</div>
+					<p class="sub mt-3">{p.body}</p>
 				</div>
 			{/each}
 		</div>
