@@ -108,6 +108,14 @@ customer's valid key publish over everyone else's broadcast.
 With the ingest server in front, one RTMP port and one SRT port serve every stream, so
 `ALCHEMIST_LIVE_PORT_RANGE` stops being the concurrency ceiling. Cores still are.
 
+**Running a different ingest server.** The rule -- the key resolves to a live stream,
+and that stream is the path being published to -- is one function, and each server gets
+a small handler around it. They cannot share an endpoint: MediaMTX reads `204` as yes
+and `401` as no, while SRS requires `200` with a body of `0` and treats a bare `204` as
+a refusal. So swapping means one new handler on its own route plus a config file for
+that server, not a rewrite. There is no selector and no plugin layer, because running
+two at once is not a thing anyone wants.
+
 One live rung is roughly one CPU core held for the length of the broadcast. Size
 `ALCHEMIST_LIVE_PORT_RANGE` against cores, not against ambition: a box with 16 cores
 does not run 100 concurrent streams. See `docs/06-live.md`.
