@@ -197,8 +197,9 @@ paths:
     get:
       summary: Fetch an asset
       description: |
-        `playback` appears once the state is `ready` or `partially_ready`. URLs are
-        signed and expire.
+        `playback` appears once the state is `ready` or `partially_ready`, and
+        throughout a broadcast (`live`, then `live_ended`). URLs are signed and
+        expire.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -579,6 +580,82 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "200": { description: Up to 500 items, newest first }
+
+  /v1/live-streams:
+    get:
+      summary: Your live streams
+      description: |
+        Present only when this deployment has live ingest configured. Without an
+        ingest host there is nowhere for an encoder to connect, so the endpoints are
+        not served at all rather than served and always failing.
+      responses:
+        "200": { description: Up to 200 streams, newest first }
+    post:
+      summary: Create a live stream
+      description: |
+        Returns the stream key **once**. Only its hash is stored, so a lost key is
+        replaced rather than recovered.
+
+        Creating a stream reserves nothing. Call `start` when you are ready to go on
+        air; that is what takes an ingest port and waits for your encoder.
+
+        SRT is the default because it holds up on a lossy uplink. RTMP is there for
+        hardware encoders that speak nothing else.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                protocol: { type: string, enum: [srt, rtmp], default: srt }
+      responses:
+        "201": { description: The stream, including its key, shown this once only }
+        "400": { description: invalid_request, invalid_protocol }
+
+  /v1/live-streams/{id}:
+    get:
+      summary: One live stream and its current state
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: State, and the asset the latest broadcast is watched at }
+        "404": { description: stream_not_found }
+    delete:
+      summary: Delete a live stream
+      description: |
+        Removes the stream and its sessions. Anything already broadcast stays as its
+        own asset and is deleted through the asset.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: stream_not_found }
+
+  /v1/live-streams/{id}/start:
+    post:
+      summary: Go on air
+      description: |
+        Takes an ingest port, creates the video the broadcast will be watched at, and
+        waits for your encoder. Point OBS or your hardware encoder at the
+        `ingest_url` that comes back.
+
+        The video is playable from the first segment: fetch it at
+        `GET /v1/assets/{asset_id}` and use the playback URLs there, exactly as you
+        would for an upload. When the broadcast ends the same URL keeps working.
+
+        Ingest is currently authorised by the port, not by the stream key — the port
+        is opened only for this broadcast, and the range should be reachable only
+        from your encoders.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "202": { description: Armed. Carries ingest_url, asset_id and session_id }
+        "404": { description: stream_not_found }
+        "409": { description: stream_busy }
+        "503": { description: no_ingest_port }
 
   /v1/edits:
     get:

@@ -14,6 +14,10 @@ Things that will otherwise surprise you:
   returns immediately; 480p and above are generated on first playback. Treat
   `ready` and `partially_ready` as equally playable. Waiting for `ready` will hang
   for content nobody has watched yet.
+- **A live stream is an asset.** `live` means a broadcast is happening and playable
+  now; `live_ended` means it has finished and the recording is still being kept as
+  live segments. The playback URLs are the same ones an upload gets and keep working
+  across both, so a link handed out before the broadcast survives it.
 - **Playback URLs expire** (4h) and carry `exp`, `kid` and `sig`. One signature
   authorizes the manifest, every segment, the content key, the poster and the
   thumbnails. Re-fetch the asset to get a fresh set; do not construct them yourself.
@@ -73,6 +77,13 @@ GET  /v1/usage                 -> billable aggregates: ingest seconds, egress by
                                   storage gb_hours
 GET  /v1/branding              -> account name and logo URL
 GET  /v1/playback-settings     -> whether playback encryption is on
+
+Live, present only where this deployment configures ingest:
+POST   /v1/live-streams           -> create; the stream key is shown once
+GET    /v1/live-streams           -> your streams
+GET    /v1/live-streams/{id}      -> state and the asset the broadcast plays at
+POST   /v1/live-streams/{id}/start -> go on air; returns the ingest_url for OBS
+DELETE /v1/live-streams/{id}      -> delete
 
 Session only (an API key gets 403 session_required):
 GET    /v1/members             -> teammates and pending invites

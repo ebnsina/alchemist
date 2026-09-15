@@ -55,6 +55,11 @@ var bangla = map[string]string{
 	"stitch_failed":           "ভিডিওটি প্রসেস করা যায়নি।",
 	"package_failed":          "ভিডিওটি প্রসেস করা যায়নি।",
 	"invalid_ladder_profile":  "আপনার অ্যাকাউন্টের ভিডিও সেটিংসে সমস্যা আছে।",
+	"stream_not_found":        "এই লাইভ স্ট্রিমটি খুঁজে পাওয়া যায়নি।",
+	"stream_busy":             "এই স্ট্রিমটি আগে থেকেই এনকোডারের অপেক্ষায় আছে।",
+	"no_ingest_port":          "এখন নতুন লাইভ স্ট্রিম নেওয়া যাচ্ছে না। একটু পরে চেষ্টা করুন।",
+	"invalid_protocol":        "srt অথবা rtmp বেছে নিন।",
+	"ingest_failed":           "এনকোডার থেকে ভিডিও নেওয়া যায়নি।",
 }
 
 // ErrorCodes lists every code with Bangla copy, so a test can assert that the set

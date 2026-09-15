@@ -25,10 +25,12 @@ func TestOpenAPIMatchesRouter(t *testing.T) {
 	documented := parseSpecRoutes(string(raw))
 
 	// A server with nil dependencies is enough: only route registration is inspected.
-	// The accounts surface is mounted deliberately — without an origin it is absent
-	// from the router, and the spec drift it can carry would go unnoticed.
+	// The accounts and live surfaces are mounted deliberately — without an origin or
+	// an ingest host they are absent from the router, and the spec drift they can
+	// carry would go unnoticed.
 	routes := map[string]bool{}
 	srv := &Server{webOrigins: []string{"https://example.test"},
+		live:        Live{IngestHost: "ingest.example", PortLow: 9100, PortHigh: 9199},
 		authLimiter: newAuthLimiter(10, time.Minute)}
 	router, ok := srv.Routes().(chi.Routes)
 	if !ok {

@@ -62,6 +62,27 @@ folding into the day.
 `ALCHEMIST_ENCODE_WORKERS` should be roughly the core count. Encoding already uses a
 per-job worker pool, so setting it far above that only lengthens the tail.
 
+## Live ingest
+
+Off unless both `ALCHEMIST_LIVE_INGEST_HOST` and `ALCHEMIST_LIVE_PORT_RANGE` are set;
+one without the other refuses to boot. With neither, the `/v1/live-streams` endpoints
+are not served at all rather than served and always failing.
+
+`ALCHEMIST_LIVE_PORT_RANGE` is `low-high`, one port per armed stream, so the range
+size is the number of concurrent broadcasts this box accepts. ffmpeg in listener mode
+takes one connection and cannot dispatch on SRT's streamid, which is why streams
+cannot share a port.
+
+**Open the range to your customers' encoders and to nobody else.** Ingest is currently
+authorised by the port rather than by the stream key, because ffmpeg never exposes the
+streamid it was handed. Both TCP (RTMP) and UDP (SRT) need the range open, and SRT
+needs an ffmpeg built with `--enable-libsrt` -- the distribution and Homebrew builds
+generally are not, and without it only RTMP works.
+
+One live rung is roughly one CPU core held for the length of the broadcast. Size
+`ALCHEMIST_LIVE_PORT_RANGE` against cores, not against ambition: a box with 16 cores
+does not run 100 concurrent streams. See `docs/06-live.md`.
+
 ## Edge
 
 The edge needs njs, which ships as a standard package -- do not build nginx by hand:

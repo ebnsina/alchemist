@@ -35,6 +35,7 @@ type Server struct {
 	sessionDomain string
 	sessionSecure bool
 	authLimiter   *authLimiter
+	live          Live
 }
 
 // Accounts carries what the browser-facing signup and login surface needs. Zero
@@ -45,9 +46,9 @@ type Accounts struct {
 	SessionSecure bool
 }
 
-func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry, acc Accounts) *Server {
+func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry, acc Accounts, live Live) *Server {
 	return &Server{db: database, store: store, river: rc, delivery: d, keys: kw,
-		adminKey: adminKey, metrics: m,
+		adminKey: adminKey, metrics: m, live: live,
 		webOrigins: acc.WebOrigins, sessionDomain: acc.SessionDomain,
 		sessionSecure: acc.SessionSecure,
 		// Ten attempts a minute from one address: generous for a person, useless for
@@ -155,6 +156,16 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/migration-providers", s.listProviders)
 		r.Get("/migrations", s.listMigrations)
 		r.Get("/migrations/{id}/items", s.listMigrationItems)
+		// Live is mounted only when an ingest host is configured: without somewhere
+		// for an encoder to connect, the endpoints could only ever fail.
+		if s.liveEnabled() {
+			r.Post("/live-streams", s.createLiveStream)
+			r.Get("/live-streams", s.listLiveStreams)
+			r.Get("/live-streams/{id}", s.getLiveStream)
+			r.Post("/live-streams/{id}/start", s.startLiveStream)
+			r.Delete("/live-streams/{id}", s.deleteLiveStream)
+		}
+
 		r.Post("/edits", s.createEdit)
 		r.Get("/edits", s.listEdits)
 		r.Delete("/edits/{id}", s.deleteEdit)

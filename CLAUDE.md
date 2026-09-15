@@ -41,6 +41,7 @@ Prose still needs judgement. After changing behaviour, check:
 | Account/session behaviour | `llms.txt`, `api/openapi.yaml`, `.claude/skills/alchemist-api/SKILL.md` |
 | Migrations | `deploy/README.md` |
 | Phase scope | `docs/04-roadmap.md` |
+| Live ingest, ports, segments | `docs/06-live.md`, `deploy/README.md` |
 | Asset states, URL TTLs, headers | `llms.txt` (claims are not test-enforced) |
 | Costs, volumes, BD assumptions | `docs/03-cost-model.md`, `docs/05-bangladesh.md` |
 
@@ -155,6 +156,17 @@ These were established by measurement and are expensive to rediscover.
 - **River's default `UniqueOpts.ByState` includes `Completed`,** and completed jobs are
   retained 24h. A recurring job left on the default runs once per day, not once per
   interval. Bucket sync lists its states explicitly for this reason.
+- **Live cannot call `media.Package()`.** `Package()` shells out once with
+  `CombinedOutput()` over complete files and writes one byte-range CMAF file per
+  rendition. A live packager never exits, cannot read a file still being written, and
+  cannot append to an S3 object; invoking it per segment restarts the timeline every
+  two seconds. Live segments with ffmpeg instead, through `media.LiveCommand`. The
+  roadmap's "packager as a library" line overstates what the code does.
+- **Live objects are a working set, not a library.** Live writes per-segment objects
+  under `live/{tenant}/{asset}/`, which is the opposite of the byte-range CMAF rule.
+  That holds only because nothing written there survives: the recording converts into
+  the ordinary `cmaf/` layout and the live prefix is swept. Never serve the permanent
+  library from small objects.
 - **Cross-tenant sweeps need a `SECURITY DEFINER` function.** RLS is forced, so a
   background job with no tenant in scope silently reads zero rows — it does not error.
   `active_bucket_sources()` and `resolve_api_key()` exist for this.

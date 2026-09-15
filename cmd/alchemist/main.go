@@ -90,11 +90,15 @@ func main() {
 	river.AddWorker(workers, &pipeline.SweepWorker{DB: database, Store: store})
 	river.AddWorker(workers, &pipeline.ReclaimWorker{Store: store})
 	river.AddWorker(workers, &pipeline.StorageWorker{DB: database})
+	liveWorker := &pipeline.LiveWorker{DB: database, Store: store, WorkDir: cfg.WorkDir}
+	river.AddWorker(workers, liveWorker)
 
 	riverClient, err := river.NewClient(riverpgxv5.New(database.Pool()), &river.Config{
 		Queues: map[string]river.QueueConfig{
 			pipeline.QueueEncode: {MaxWorkers: cfg.EncodeWorkers},
 			pipeline.QueueIO:     {MaxWorkers: 8},
+			// One slot per port: a live job holds its worker for the whole broadcast.
+			pipeline.QueueLive: {MaxWorkers: max(1, cfg.LivePortHigh-cfg.LivePortLow+1)},
 		},
 		Workers:      workers,
 		PeriodicJobs: pipeline.PeriodicJobs(),
@@ -109,6 +113,7 @@ func main() {
 	migrator.River = riverClient
 	editor.River = riverClient
 	reconciler.River = riverClient
+	liveWorker.River = riverClient
 
 	if err := riverClient.Start(ctx); err != nil {
 		log.Error("river start", "err", err)
@@ -135,7 +140,9 @@ func main() {
 				WebOrigins:    cfg.WebOrigins,
 				SessionDomain: cfg.SessionDomain,
 				SessionSecure: cfg.SessionSecure,
-			}).Routes(),
+			},
+			api.Live{IngestHost: cfg.LiveIngestHost, PortLow: cfg.LivePortLow,
+				PortHigh: cfg.LivePortHigh}).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

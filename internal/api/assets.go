@@ -181,7 +181,10 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resp.State == "ready" || resp.State == "partially_ready" {
+	// A broadcast is watchable while it is happening, and through the window where
+	// it has ended but the recording has not been converted yet.
+	switch resp.State {
+	case "ready", "partially_ready", "live", "live_ended":
 		exp := time.Now().Add(4 * time.Hour).Unix()
 		base := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
 		kid, sig := s.delivery.SignPlayback(base, exp)
