@@ -105,23 +105,29 @@ type LazyRenditions struct {
 // low ladder is already playing.
 func (l LazyRenditions) OnPlaybackStarted(ctx context.Context, tenantID, assetID string) {
 	type pending struct {
-		height int
-		codec  string
+		assetID string
+		height  int
+		codec   string
 	}
 	var want []pending
 
+	// Resolved through deduplicated_from: a duplicate shares the canonical asset's
+	// media, so a rung generated under the duplicate's own id is published where no
+	// playback request will ever look for it.
 	if err := l.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx,
 			`update renditions set requested_at = now()
-			  where asset_id = $1 and lazy and state = 'pending' and requested_at is null
-			 returning height, codec`, assetID)
+			  where asset_id = (select coalesce(deduplicated_from, id)
+			                      from assets where id = $1)
+			    and lazy and state = 'pending' and requested_at is null
+			 returning asset_id::text, height, codec`, assetID)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
 		for rows.Next() {
 			var p pending
-			if err := rows.Scan(&p.height, &p.codec); err != nil {
+			if err := rows.Scan(&p.assetID, &p.height, &p.codec); err != nil {
 				return err
 			}
 			want = append(want, p)
@@ -134,7 +140,7 @@ func (l LazyRenditions) OnPlaybackStarted(ctx context.Context, tenantID, assetID
 	for _, p := range want {
 		// Unique-by-args on the job means a burst of viewers produces one encode.
 		_, _ = l.River.Insert(ctx, pipeline.JITArgs{
-			AssetID: assetID, TenantID: tenantID, Height: p.height, Codec: p.codec,
+			AssetID: p.assetID, TenantID: tenantID, Height: p.height, Codec: p.codec,
 		}, nil)
 	}
 }

@@ -205,7 +205,8 @@ func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID, dir 
 	w.emit(ctx, TranscodeArgs{AssetID: assetID, TenantID: tenantID}, "rendition.ready",
 		map[string]any{"asset_id": assetID, "renditions": len(variants)})
 
-	// Everything the profile asked for now exists, so the asset is fully ready.
+	// Everything the profile asked for now exists, so the asset is fully ready --
+	// and so is every duplicate, which plays these same renditions.
 	return w.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx,
 			`update assets set state = case
@@ -213,7 +214,7 @@ func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID, dir 
 			                   where asset_id = $1 and state <> 'ready')
 			     then 'partially_ready'::asset_state else 'ready'::asset_state end,
 			    updated_at = now()
-			  where id = $1 and state <> 'failed'`, assetID)
+			  where (id = $1 or deduplicated_from = $1) and state <> 'failed'`, assetID)
 		return err
 	})
 }

@@ -152,7 +152,10 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 
 		rows, err := tx.Query(r.Context(),
 			`select height, codec, bitrate_bps, state, chunks_done, chunks_total, bytes, lazy
-			   from renditions where asset_id = $1 order by height desc, codec`, assetID)
+			   from renditions
+			  where asset_id = (select coalesce(deduplicated_from, id)
+			                      from assets where id = $1)
+			  order by height desc, codec`, assetID)
 		if err != nil {
 			return err
 		}

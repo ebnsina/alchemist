@@ -594,19 +594,10 @@ func (w *TranscodeWorker) linkToDuplicate(ctx context.Context, a TranscodeArgs, 
 			  where dst.id = $1 and src.id = $2`, a.AssetID, existingID, sum); err != nil {
 			return err
 		}
-		// Mirror the rendition rows. Without them the API reports an asset with no
-		// renditions while its playback URLs work, and nothing knows which rungs are
-		// still deferred.
-		_, err := tx.Exec(ctx,
-			`insert into renditions (asset_id, tenant_id, height, codec, bitrate_bps,
-			        encoder_version, params_hash, state, object_key, lazy, width,
-			        codec_string, avg_bandwidth_bps, dash_representation)
-			 select $1, tenant_id, height, codec, bitrate_bps, encoder_version,
-			        params_hash, state, object_key, lazy, width, codec_string,
-			        avg_bandwidth_bps, dash_representation
-			   from renditions where asset_id = $2
-			 on conflict (asset_id, height, codec) do nothing`, a.AssetID, existingID)
-		return err
+		// No rendition rows of its own. They describe media this asset does not own,
+		// and a copied pending rung queues an encode published where nothing reads it;
+		// the API resolves renditions through deduplicated_from instead.
+		return nil
 	})
 	if err != nil {
 		return err

@@ -31,7 +31,8 @@ func (s *Server) listChunks(w http.ResponseWriter, r *http.Request) {
 			        c.completed_at is not null
 			   from chunks c
 			   join renditions r on r.id = c.rendition_id
-			  where r.asset_id = $1
+			  where r.asset_id = (select coalesce(deduplicated_from, id)
+			                        from assets where id = $1)
 			  order by r.height desc, c.idx`, assetID)
 		if err != nil {
 			return err
