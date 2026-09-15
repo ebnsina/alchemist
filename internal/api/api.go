@@ -125,6 +125,8 @@ func (s *Server) Routes() http.Handler {
 		r.Post("/assets/{id}/complete", s.completeUpload)
 		r.Get("/assets/{id}", s.getAsset)
 		r.Get("/assets", s.listAssets)
+		r.Get("/assets/{id}/chunks", s.listChunks)
+		r.Get("/assets/{id}/activity", s.listActivity)
 		r.Post("/assets", s.createAssetFromURL)
 		r.Post("/webhooks", s.createWebhook)
 		r.Get("/webhooks", s.listWebhooks)

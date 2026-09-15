@@ -35,6 +35,16 @@ type Options struct {
 	// rather than scoring everything: the point is catching a regression, not a
 	// per-asset report, and VMAF costs more than the encode it is checking.
 	VMAFSample float64
+
+	// OnPlan is called once, with the ladder and the chunk plan, before any chunk is
+	// encoded. OnChunkDone is called after each chunk lands, from several goroutines
+	// at once, so an implementation has to be safe to call concurrently.
+	//
+	// These exist so progress can be recorded where somebody can see it. Without
+	// them the only observable states are "started" and "finished", which on an hour
+	// of video is an hour of nothing.
+	OnPlan      func(rungs []Rung, chunks []Chunk) error
+	OnChunkDone func(r Rung, c Chunk)
 }
 
 func DefaultOptions() Options {
@@ -93,6 +103,12 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 		return nil, fmt.Errorf("%w: source too short to chunk", ErrUnreadableSource)
 	}
 
+	if opts.OnPlan != nil {
+		if err := opts.OnPlan(rungs, chunks); err != nil {
+			return nil, err
+		}
+	}
+
 	chunkDir := filepath.Join(workDir, "chunks")
 	if err := os.MkdirAll(chunkDir, 0o750); err != nil {
 		return nil, err
@@ -111,7 +127,15 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 			out := filepath.Join(chunkDir,
 				fmt.Sprintf("%dp-%s-%05d.mp4", r.Height, ParamsHash(r), c.Index))
 			paths[ri][ci] = out
-			g.Go(func() error { return EncodeChunk(gctx, mezz, c, r, out) })
+			g.Go(func() error {
+				if err := EncodeChunk(gctx, mezz, c, r, out); err != nil {
+					return err
+				}
+				if opts.OnChunkDone != nil {
+					opts.OnChunkDone(r, c)
+				}
+				return nil
+			})
 		}
 	}
 	audio := filepath.Join(workDir, "audio.mp4")

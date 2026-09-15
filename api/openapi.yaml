@@ -239,6 +239,32 @@ paths:
         "204": { description: Revoked }
         "404": { description: No such key, or it was already revoked }
 
+  /v1/assets/{id}/chunks:
+    get:
+      summary: The chunk map for one asset
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      description: |
+        Every chunk of every rendition, with its time range and whether it exists
+        yet. This is what progress is made of.
+      responses:
+        "200": { description: Chunks, largest rendition first }
+        "401": { description: Missing or invalid credentials }
+
+  /v1/assets/{id}/activity:
+    get:
+      summary: What the pipeline did to one asset
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      description: |
+        Queue steps with state, attempt count and timings. Deliberately not the
+        error text: a queue failure carries whatever ffmpeg or the storage client
+        said, including paths and internal arguments. The actionable part is the
+        stable `error_code` on the asset itself.
+      responses:
+        "200": { description: Steps in the order they were queued }
+        "404": { description: No such asset for this tenant }
+
   /v1/webhooks:
     get:
       summary: List webhook endpoints

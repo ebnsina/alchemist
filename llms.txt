@@ -55,6 +55,8 @@ POST /v1/assets {"url":"..."}  -> import from a URL instead
 
 GET  /v1/assets                -> recent assets, newest first (dashboard listing)
 GET  /v1/assets/{id}           -> state, renditions with chunk progress, playback URLs
+GET  /v1/assets/{id}/chunks    -> the chunk map, per rendition
+GET  /v1/assets/{id}/activity  -> pipeline steps, states and timings (no error text)
 GET  /v1/keys                  -> names and dates, never the key
 POST /v1/keys                  -> another key (shown once)
 POST /v1/contact               -> an enquiry from the public site (no account)

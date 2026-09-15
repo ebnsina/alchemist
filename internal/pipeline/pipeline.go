@@ -173,6 +173,18 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		return fmt.Errorf("store content key: %w", err)
 	}
 
+	// Progress, written where it can be seen. The rendition rows are created up
+	// front in the encoding state with their chunk plan, so a customer watching an
+	// hour of video go through does not stare at one unchanging state for an hour.
+	opts.OnPlan = func(rungs []media.Rung, chunks []media.Chunk) error {
+		return w.recordPlan(ctx, a, rungs, chunks)
+	}
+	opts.OnChunkDone = func(r media.Rung, c media.Chunk) {
+		// Called from several encode goroutines. A progress write that fails is not
+		// worth failing the encode over — the work is the point, the counter is not.
+		w.recordChunkDone(ctx, a, r, c)
+	}
+
 	// Only the eager rungs are encoded now. The rest are recorded as pending and
 	// generated when a viewer first asks for them.
 	lazy := media.LazyRungs(rungs)
@@ -330,6 +342,61 @@ func contentType(name string) string {
 		return ct
 	}
 	return "application/octet-stream"
+}
+
+// recordPlan creates the rendition rows before the work starts and lays down one
+// row per chunk, so progress has somewhere to accumulate.
+func (w *TranscodeWorker) recordPlan(ctx context.Context, a TranscodeArgs,
+	rungs []media.Rung, chunks []media.Chunk) error {
+	return w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		for _, r := range rungs {
+			var renditionID string
+			if err := tx.QueryRow(ctx,
+				`insert into renditions (asset_id, tenant_id, height, codec, bitrate_bps,
+				        encoder_version, params_hash, state, lazy, chunks_total, chunks_done)
+				 values ($1,$2,$3,$4,$5,$6,$7,'encoding',false,$8,0)
+				 on conflict (asset_id, height, codec) do update set
+				   state = 'encoding', chunks_total = excluded.chunks_total, chunks_done = 0
+				 returning id::text`,
+				a.AssetID, a.TenantID, r.Height, r.Codec, r.MaxrateBPS,
+				media.EncoderVersion, media.ParamsHash(r), len(chunks)).Scan(&renditionID); err != nil {
+				return err
+			}
+			for _, c := range chunks {
+				if _, err := tx.Exec(ctx,
+					`insert into chunks (rendition_id, idx, tenant_id, start_sec, end_sec)
+					 values ($1,$2,$3,$4,$5)
+					 on conflict (rendition_id, idx) do update set
+					   start_sec = excluded.start_sec, end_sec = excluded.end_sec,
+					   completed_at = null`,
+					renditionID, c.Index, a.TenantID, c.StartSec, c.EndSec); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+}
+
+// recordChunkDone marks one chunk finished and moves the rendition's counter.
+func (w *TranscodeWorker) recordChunkDone(ctx context.Context, a TranscodeArgs,
+	r media.Rung, c media.Chunk) {
+	_ = w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx,
+			`with target as (
+			   select id from renditions
+			    where asset_id = $1 and height = $2 and codec = $3
+			 ), marked as (
+			   update chunks set completed_at = now()
+			    where rendition_id = (select id from target) and idx = $4
+			      and completed_at is null
+			   returning 1
+			 )
+			 update renditions set chunks_done = chunks_done + (select count(*) from marked)
+			  where id = (select id from target)`,
+			a.AssetID, r.Height, r.Codec, c.Index)
+		return err
+	})
 }
 
 func (w *TranscodeWorker) setState(ctx context.Context, a TranscodeArgs, state string) {
