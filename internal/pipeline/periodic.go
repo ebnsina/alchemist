@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 
+	"github.com/ebnsina/alchemist/internal/modules/live"
 	"github.com/ebnsina/alchemist/internal/platform/db"
 )
 
@@ -84,6 +85,11 @@ func PeriodicJobs() []*river.PeriodicJob {
 		river.NewPeriodicJob(
 			river.PeriodicInterval(SweepInterval),
 			func() (river.JobArgs, *river.InsertOpts) { return SweepArgs{}, nil },
+			&river.PeriodicJobOpts{RunOnStart: true},
+		),
+		river.NewPeriodicJob(
+			river.PeriodicInterval(live.ReapInterval),
+			func() (river.JobArgs, *river.InsertOpts) { return LiveReapArgs{}, nil },
 			&river.PeriodicJobOpts{RunOnStart: true},
 		),
 		// Safe to run on start because the day's row is replaced, not added to.

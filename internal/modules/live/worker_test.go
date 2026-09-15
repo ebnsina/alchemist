@@ -25,15 +25,15 @@ func TestPlaylistFilesTakesInitAndSegmentsOnly(t *testing.T) {
 		"",
 	}, "\n")
 
-	got := playlistFiles([]byte(playlist))
+	got := PlaylistFiles([]byte(playlist))
 	want := []string{"init.mp4", "0.m4s", "1.m4s"}
 
 	if len(got) != len(want) {
-		t.Fatalf("playlistFiles = %v, want %v", got, want)
+		t.Fatalf("PlaylistFiles = %v, want %v", got, want)
 	}
 	for i := range want {
 		if got[i] != want[i] {
-			t.Errorf("playlistFiles[%d] = %q, want %q", i, got[i], want[i])
+			t.Errorf("PlaylistFiles[%d] = %q, want %q", i, got[i], want[i])
 		}
 	}
 }
@@ -41,8 +41,8 @@ func TestPlaylistFilesTakesInitAndSegmentsOnly(t *testing.T) {
 // A playlist ffmpeg has opened but not yet written a segment into must publish
 // nothing, or the first viewer gets an empty stream instead of waiting.
 func TestPlaylistFilesEmptyBeforeFirstSegment(t *testing.T) {
-	if got := playlistFiles([]byte("#EXTM3U\n#EXT-X-VERSION:7\n")); len(got) != 0 {
-		t.Errorf("playlistFiles = %v, want nothing", got)
+	if got := PlaylistFiles([]byte("#EXTM3U\n#EXT-X-VERSION:7\n")); len(got) != 0 {
+		t.Errorf("PlaylistFiles = %v, want nothing", got)
 	}
 }
 

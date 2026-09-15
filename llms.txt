@@ -15,9 +15,11 @@ Things that will otherwise surprise you:
   `ready` and `partially_ready` as equally playable. Waiting for `ready` will hang
   for content nobody has watched yet.
 - **A live stream is an asset.** `live` means a broadcast is happening and playable
-  now; `live_ended` means it has finished and the recording is still being kept as
-  live segments. The playback URLs are the same ones an upload gets and keep working
-  across both, so a link handed out before the broadcast survives it.
+  now; `live_ended` means it has finished and its recording is being turned into an
+  ordinary video. That conversion needs no re-upload and the asset keeps its id, so a
+  link handed out before the broadcast plays the broadcast, then the recording, with
+  no gap and nothing to re-fetch. When it lands the asset reaches `ready` or
+  `partially_ready` like any upload and `asset.ready` fires.
 - **Playback URLs expire** (4h) and carry `exp`, `kid` and `sig`. One signature
   authorizes the manifest, every segment, the content key, the poster and the
   thumbnails. Re-fetch the asset to get a fresh set; do not construct them yourself.
@@ -88,7 +90,8 @@ POST /v1/contact               -> an enquiry from the public site (no account)
 DELETE /v1/assets/{id}         -> delete a video; media shared with a deduplicated
                                   copy survives until the last of them is gone
 DELETE /v1/keys/{id}           -> revoke
-POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready
+POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready,
+                                  live.started, live.ended, live.failed
 GET  /v1/usage                 -> billable aggregates: ingest seconds, egress bytes,
                                   storage gb_hours
 GET  /v1/branding              -> account name and logo URL
@@ -102,6 +105,11 @@ GET    /v1/live-streams           -> your streams
 GET    /v1/live-streams/{id}      -> state and the asset the broadcast plays at
 POST   /v1/live-streams/{id}/start -> go on air; returns the ingest_url for OBS
 DELETE /v1/live-streams/{id}      -> delete
+
+live.started fires when the encoder connects, live.ended when the broadcast stops,
+live.failed when it never started or the ingest broke (with an error_code). The
+recording is reported by asset.ready on the same asset id, so an integrator who
+already handles uploads gets the VOD for free.
 
 Session only (an API key gets 403 session_required):
 GET    /v1/members             -> teammates and pending invites

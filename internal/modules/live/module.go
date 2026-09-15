@@ -27,6 +27,10 @@ type Assets interface {
 	MarkLive(ctx context.Context, tenantID, assetID string) error
 	MarkEnded(ctx context.Context, tenantID, assetID string) error
 	MarkFailed(ctx context.Context, tenantID, assetID, code string) error
+	// State is how the sweep knows a recording has finished converting. Reading it
+	// rather than watching for a webhook keeps the decision to delete segments on the
+	// same side as the decision to keep them.
+	State(ctx context.Context, tenantID, assetID string) (string, error)
 }
 
 // Ladder resolves the rungs a broadcast's asset was armed with. ladder_profiles is
@@ -45,6 +49,11 @@ type ObjectStore interface {
 // driver with it when it is extracted; cmd/ registers the worker that runs it.
 type Queue interface {
 	EnqueueSession(ctx context.Context, sessionID, tenantID string) error
+	// ConvertRecording turns a finished broadcast's segments into the ordinary VOD
+	// asset. Which job and which queue that is stays on the adapter's side.
+	ConvertRecording(ctx context.Context, tenantID, assetID string) error
+	// ReclaimPrefix deletes objects nothing will ever convert.
+	ReclaimPrefix(ctx context.Context, prefix string) error
 }
 
 // Events publishes the broadcast lifecycle to whoever is listening. Nil simply does

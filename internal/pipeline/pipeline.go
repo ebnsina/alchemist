@@ -80,16 +80,16 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		}
 	}()
 
-	var profile string
+	var profile, state string
 	var sourceKey, sourceURL, bucketSourceID, objectKey *string
 	var ladderRaw []byte
 	err = w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx,
 			`select a.source_key, a.source_url, a.bucket_source_id::text,
-			        a.source_object_key, a.ladder_profile, p.rungs
+			        a.source_object_key, a.ladder_profile, a.state::text, p.rungs
 			   from assets a join ladder_profiles p on p.name = a.ladder_profile
 			  where a.id = $1`, a.AssetID).
-			Scan(&sourceKey, &sourceURL, &bucketSourceID, &objectKey, &profile, &ladderRaw)
+			Scan(&sourceKey, &sourceURL, &bucketSourceID, &objectKey, &profile, &state, &ladderRaw)
 	})
 	if err != nil {
 		return fmt.Errorf("load asset %s: %w", a.AssetID, err)
@@ -108,6 +108,10 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 
 	src := filepath.Join(dir, "source")
 	switch {
+	case state == "live_ended":
+		if err := w.pullRecording(ctx, a, src); err != nil {
+			return w.fail(ctx, a, "recording_unreadable", err)
+		}
 	case bucketSourceID != nil && objectKey != nil:
 		if err := w.pullFromBucket(ctx, a, *bucketSourceID, *objectKey, src); err != nil {
 			return err
@@ -425,10 +429,15 @@ func (w *TranscodeWorker) recordChunkDone(ctx context.Context, a TranscodeArgs,
 	})
 }
 
+// setState never moves a converting recording out of live_ended. The storage prefix
+// switches on that column, so "encoding" would point every viewer at cmaf/ objects
+// that do not exist yet -- a 404 mid-playback for a link the customer already gave
+// out. The one write that does move it is the final one, after the objects are up.
 func (w *TranscodeWorker) setState(ctx context.Context, a TranscodeArgs, state string) {
 	_ = w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx,
-			`update assets set state = $2::asset_state, updated_at = now() where id = $1`,
+			`update assets set state = $2::asset_state, updated_at = now()
+			  where id = $1 and state <> 'live_ended'`,
 			a.AssetID, state)
 		return err
 	})
@@ -444,13 +453,17 @@ func (w *TranscodeWorker) fail(ctx context.Context, a TranscodeArgs, code string
 
 // markFailed uses a fresh context: the job context may already be cancelled or past
 // its deadline, which is exactly when recording the failure matters most.
+//
+// live_ended is excluded alongside ready: a recording that fails to convert still has
+// its segments, and they are still what playback reads. The error code is reported,
+// the broadcast keeps playing, and the reaper hands the conversion back.
 func (w *TranscodeWorker) markFailed(ctx context.Context, a TranscodeArgs, code string) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 	defer cancel()
 	_ = w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx,
 			`update assets set state = 'failed', error_code = $2, updated_at = now()
-			  where id = $1 and state <> 'ready'`, a.AssetID, code)
+			  where id = $1 and state not in ('ready', 'live_ended')`, a.AssetID, code)
 		return err
 	})
 }

@@ -112,6 +112,11 @@ curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json'
 # -> {"secret":"..."}   shown once
 ```
 
+The events are `asset.ready`, `asset.failed`, `rendition.ready`, and for live
+`live.started`, `live.ended`, `live.failed` (which carries `error_code`). A broadcast
+is an asset, so its recording is reported by `asset.ready` on the same asset id --
+nothing live-specific to handle.
+
 Deliveries carry `X-Alchemist-Signature: sha256=<hmac-sha256 of the raw body>`.
 Verify it with a constant-time compare before trusting anything in the payload:
 

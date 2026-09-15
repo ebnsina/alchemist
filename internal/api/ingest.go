@@ -90,8 +90,13 @@ type createWebhookResponse struct {
 	Secret string   `json:"secret"`
 }
 
+// The live lifecycle is three events, not one. A customer integrating live needs to
+// know the encoder arrived, that the broadcast is over, and that it never started --
+// and asset.ready already tells them the recording converted, because a broadcast is
+// an asset and its recording becomes an ordinary VOD one. See docs/06-live.md.
 var validEvents = map[string]bool{
 	"asset.ready": true, "asset.failed": true, "rendition.ready": true,
+	"live.started": true, "live.ended": true, "live.failed": true,
 }
 
 func (s *Server) createWebhook(w http.ResponseWriter, r *http.Request) {
