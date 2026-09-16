@@ -265,6 +265,7 @@ make test              all Go tests
 make edge              local nginx edge cache
 make customer-servers  stand-ins for a third-party customer
 ./test/journey.sh KEY  end-to-end as a customer, public API only
+make live-journey KEY=...  a real broadcast, with a mid-class encoder drop
 ```
 
 Local dev needs `packager` (shaka-packager) and `weed` (SeaweedFS) on PATH; neither is
