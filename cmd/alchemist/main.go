@@ -30,6 +30,13 @@ import (
 func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
+	// One binary with a subcommand rather than a second one: the seed needs the same
+	// password hashing as signup, and a copy of that drifts.
+	if len(os.Args) > 1 && os.Args[1] == "create-admin" {
+		createAdmin(log, os.Args[2:])
+		return
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Error("configuration", "err", err)

@@ -28,6 +28,12 @@ db-reset:
 dev-account:
 	./scripts/dev-account.sh
 
+# The platform administrator. Password from the environment only -- there is no
+# default and no fallback, and a second run promotes rather than duplicating.
+#   ALCHEMIST_STAFF_PASSWORD=... make create-admin EMAIL=you@example.com
+create-admin: build
+	set -a; . ./.env; set +a; ./bin/alchemist create-admin $(EMAIL)
+
 test:
 	ALCHEMIST_TEST_DATABASE_URL="$(DB_APP)" ALCHEMIST_TEST_ADMIN_URL="$(DB_ADMIN)" go test ./...
 
@@ -43,4 +49,4 @@ edge-stop:
 customer-servers:
 	python3 test/customer_servers.py
 
-.PHONY: build run storage db-reset test edge edge-stop customer-servers
+.PHONY: build run storage db-reset create-admin test edge edge-stop customer-servers
