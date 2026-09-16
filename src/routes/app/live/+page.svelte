@@ -40,9 +40,12 @@
 	let armed = $state<{ id: string; ingest_url: string } | null>(null);
 	let watching = $state<{ id: string; name: string; asset: AssetDetail } | null>(null);
 	let copied = $state('');
+	let viewer = $state<HTMLElement | null>(null);
 	let confirming = $state('');
 	let unsold = $state(false);
+	let justMade = $state('');
 
+	const UNKNOWN = { chip: 'Unknown', means: 'We do not recognise the state this stream is in. Reload the page.' };
 	const STATE: Record<LiveStream['state'], { chip: string; means: string }> = {
 		idle: { chip: 'Idle', means: 'Made, never started. Open it to go on air.' },
 		armed: { chip: 'Waiting', means: 'Holding a slot for your encoder. It goes on air the moment one connects.' },
@@ -90,11 +93,15 @@
 	async function make(e: SubmitEvent) {
 		e.preventDefault();
 		error = '';
+		justMade = '';
 		try {
 			const s = await createLiveStream(name.trim(), source === 'camera' ? 'camera' : protocol);
 			// A camera stream's key is minted again when it goes on air, so there is
 			// nothing here for the customer to write down.
 			fresh = source === 'camera' ? null : { name: s.name, stream_key: s.stream_key };
+			// A camera stream shows no key panel, so without this the form simply emptied
+			// itself and the only sign anything happened was a new row further down.
+			justMade = fresh ? '' : s.name;
 			name = '';
 			source = 'camera';
 			protocol = 'srt';
@@ -142,6 +149,9 @@
 				return;
 			}
 			watching = { id: s.id, name: s.name, asset: await getAsset(full.asset_id) };
+			// The player renders below the list, which on a long one is off the screen the
+			// button was pressed on.
+			queueMicrotask(() => viewer?.scrollIntoView({ block: 'nearest' }));
 		} catch (err) {
 			error = said(err);
 		}
@@ -223,6 +233,13 @@
 		</p>
 		<button type="button" class="btn mt-4" onclick={() => (fresh = null)}>I have saved it</button>
 	</div>
+{/if}
+
+{#if justMade}
+	<p class="mt-4 text-sm" role="status">
+		“{justMade}” is ready. Open it below to turn your camera on and go live — nothing goes
+		out until you do.
+	</p>
 {/if}
 
 {#if armed}
@@ -386,10 +403,10 @@
 				<a href="/app/live/{s.id}/" class="min-w-0 flex-1 hover:opacity-80">
 					<p class="truncate text-sm font-semibold">{s.name}</p>
 					<p class="mt-0.5 text-xs text-dim">
-						{SOURCE[s.protocol]} · made {when(s.created_at)} · {STATE[s.state].means}
+						{SOURCE[s.protocol] ?? 'A stream'} · made {when(s.created_at)} · {(STATE[s.state] ?? UNKNOWN).means}
 					</p>
 				</a>
-				<span class="chip {s.state === 'live' ? 'chip-on' : ''}">{STATE[s.state].chip}</span>
+				<span class="chip {s.state === 'live' ? 'chip-on' : ''}">{(STATE[s.state] ?? UNKNOWN).chip}</span>
 				{#if s.protocol === 'camera' && s.state !== 'live'}
 					<!-- The camera is asked for on the stream's own page, at the moment it is
 					     needed. Arming from here would hand out a key nothing is holding. -->
@@ -435,7 +452,7 @@
 {/if}
 
 {#if watching}
-	<section class="mt-8">
+	<section class="mt-8" bind:this={viewer}>
 		<div class="flex items-baseline justify-between gap-3">
 			<h2 class="text-lg font-semibold tracking-tight">{watching.name}</h2>
 			<button type="button" class="btn btn-sm" onclick={() => (watching = null)}>Close</button>

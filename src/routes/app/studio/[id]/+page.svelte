@@ -623,7 +623,7 @@
 			<Tooltip icon={TextIcon} label="Add text" onclick={addText} />
 			<Tooltip
 				icon={ImageAdd02Icon}
-				label={brand?.logo_url ? 'Add your logo' : 'Upload a logo first'}
+				label={brand?.logo_url ? 'Add your logo' : 'No logo yet — add one under Branding'}
 				disabled={!brand?.logo_url}
 				onclick={addLogo}
 			/>

@@ -34,6 +34,7 @@
 	let providers = $state<MigrationProvider[]>([]);
 	let migrations = $state<Migration[]>([]);
 	let items = $state<Record<string, MigrationItem[]>>({});
+	let itemsFailed = $state<Record<string, boolean>>({});
 	let loading = $state(true);
 	let error = $state('');
 	let busy = $state('');
@@ -108,14 +109,18 @@
 	// rather than waiting behind a button.
 	$effect(() => {
 		for (const m of migrations) {
-			if (m.state === 'previewing' && m.preview_done && !items[m.id]) void fetchItems(m.id);
+			if (m.state === 'previewing' && m.preview_done && !items[m.id] && !itemsFailed[m.id])
+				void fetchItems(m.id);
 		}
 	});
 
 	async function fetchItems(id: string) {
 		try {
 			items = { ...items, [id]: (await listMigrationItems(id)).items };
+			itemsFailed = { ...itemsFailed, [id]: false };
 		} catch (e) {
+			// Remembered, or the skeleton below waits for a list that is never coming.
+			itemsFailed = { ...itemsFailed, [id]: true };
 			error = e instanceof ApiError ? e.message : 'Something went wrong.';
 		}
 	}
@@ -417,10 +422,14 @@
 		{/each}
 	</div>
 {:else if migrations.length === 0}
-	<p class="sub mt-6">
-		Nothing moved yet. This is a one-off for when you are arriving from somewhere else — day
-		to day, videos come in through the API or a connected bucket.
-	</p>
+	<div class="card mt-6 py-8 text-center">
+		<p class="title">Nothing moved yet</p>
+		<p class="sub mx-auto mt-2 max-w-md">
+			This is a one-off for when you are arriving from somewhere else. Start one above and we
+			will show you what is there before anything moves. Day to day, videos come in through
+			the API or a <a href="/app/sources/" class="link">connected bucket</a>.
+		</p>
+	</div>
 {:else}
 	<div class="mt-6 grid gap-3">
 		{#each migrations as m (m.id)}
@@ -544,7 +553,14 @@
 					</div>
 				{/if}
 
-				{#if p === 'previewing' && !items[m.id]}
+				{#if p === 'previewing' && itemsFailed[m.id]}
+					<div class="mt-4 border-t border-sunk pt-4">
+						<p class="sub">We could not load the list this time. Nothing has moved.</p>
+						<button type="button" class="btn btn-sm mt-3" onclick={() => fetchItems(m.id)}>
+							Try again
+						</button>
+					</div>
+				{:else if p === 'previewing' && !items[m.id]}
 					<ul class="mt-4 grid gap-2 border-t border-sunk pt-4">
 						{#each [0, 1, 2] as i (i)}<li class="sk h-4 w-full"></li>{/each}
 					</ul>

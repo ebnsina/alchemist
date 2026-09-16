@@ -236,9 +236,11 @@
 					class="account-menu"
 					transition:fly={{ y: 6, duration: 160, easing: cubicOut }}
 				>
+					<!-- The sidebar and this menu point at the same page, so they say the same
+					     word. "Account settings" promised a page that does not exist. -->
 					<a href="/app/settings/" class="side-link">
 						<HugeiconsIcon icon={PaintBoardIcon} size={16} strokeWidth={1.7} />
-						Account settings
+						Branding
 					</a>
 					<a href="/" class="side-link">
 						<HugeiconsIcon icon={ArrowUpRight01Icon} size={16} strokeWidth={1.7} />
