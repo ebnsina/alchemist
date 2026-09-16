@@ -9,6 +9,10 @@
   broadcast tells the engine and closes the connection and the camera together.
 
 ### Fixed
+- **The API reference is in the repository.** `docs` in `.gitignore` had no leading
+  slash, so git ignored any directory of that name at any depth — including
+  `src/routes/app/docs/`, the reference the sidebar has linked to all along. A fresh
+  clone built a dashboard whose Docs link went nowhere.
 - **The trail no longer misnames the page it is on.** The videos list called itself
   "Video" and linked "Dashboard" at itself; Recordings called itself "Streams", because
   the first sidebar entry whose address prefixed the URL won and `/app/live/` prefixes
