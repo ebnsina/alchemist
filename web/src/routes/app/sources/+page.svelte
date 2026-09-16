@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { setCrumbs } from '$lib/crumbs.svelte';
 	import {
 		CloudServerIcon,
 		FolderLibraryIcon,
@@ -103,6 +104,10 @@
 	const when = (iso: string | null) =>
 		iso ? new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)) : 'Not yet';
 	const count = (n: number) => new Intl.NumberFormat('en').format(n);
+
+	$effect(() => {
+		setCrumbs([{ label: 'Videos', href: '/app/videos/' }, { label: 'Connected buckets' }]);
+	});
 </script>
 
 <Seo title="Connected buckets — Alchemist" description="Point us at a bucket and we take what lands in it." />

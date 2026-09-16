@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
-		RefreshIcon,
 		Upload01Icon,
 		VideoReplayIcon,
 		Timer02Icon,
@@ -136,10 +135,6 @@
 		<p class="mono mt-1.5">{stamp}</p>
 	</div>
 	<div class="flex flex-none items-center gap-2">
-		<button type="button" class="btn btn-sm" onclick={load} disabled={loading}>
-			<HugeiconsIcon icon={RefreshIcon} size={14} strokeWidth={2} />
-			Refresh
-		</button>
 		<a href="/app/upload/" class="btn-solid btn-sm">
 			<HugeiconsIcon icon={Upload01Icon} size={14} strokeWidth={2} />
 			Upload

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
+	import { setCrumbs } from '$lib/crumbs.svelte';
 	import { cubicOut } from 'svelte/easing';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
@@ -112,6 +113,10 @@
 		new Intl.NumberFormat('en', { style: 'unit', unit: 'megabyte', maximumFractionDigits: 1 }).format(
 			n / 1_000_000
 		);
+
+	$effect(() => {
+		setCrumbs([{ label: 'Videos', href: '/app/videos/' }, { label: 'Upload' }]);
+	});
 </script>
 
 <Seo title="Upload — Alchemist" description="Send a video to Alchemist." />
@@ -165,7 +170,9 @@
 					<p class="sub mt-3.5">
 						Already have a library somewhere? <a href="/app/sources/" class="link">
 							Connect a bucket
-						</a> and we take everything in it, and everything added to it later.
+						</a> and we take everything in it, and everything added to it later. Coming from
+						another video service, <a href="/app/migrate/" class="link">move the library
+						across</a> in one go.
 					</p>
 				{:else if step === 1 && method === 'file'}
 					<label

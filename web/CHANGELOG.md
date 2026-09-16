@@ -9,6 +9,15 @@
   broadcast tells the engine and closes the connection and the camera together.
 
 ### Changed
+- **The sidebar is ordered by what you came to do**: Videos, Live, then Develop and
+  Account. Getting video in is one job with three doors, so Upload, Connected buckets
+  and Move a library no longer take a row each — they are reached from the Upload
+  button on Videos, and Upload names the other two. Each keeps its own address and
+  now sets its own trail.
+- **The Refresh buttons are gone** from Videos and Live. Both pages already reload
+  themselves every five seconds while anything is in flight, so the button could only
+  ask again for a list that was either already coming or could not have changed.
+
 - **Moved into the Alchemist repository as the `web/` workspace**, with its history.
   The player is now a workspace dependency rather than `file:../alchemist-player`, so
   a clone builds on its own. `npm install` runs once at the repository root.

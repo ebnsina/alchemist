@@ -6,7 +6,6 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		DashboardSquare01Icon,
-		Upload01Icon,
 		Key01Icon,
 		Book02Icon,
 		Logout01Icon,
@@ -17,10 +16,8 @@
 		UserGroupIcon,
 		PaintBoardIcon,
 		ConnectIcon,
-		CloudServerIcon,
 		ChartHistogramIcon,
 		LiveStreaming01Icon,
-		ArrowDataTransferHorizontalIcon,
 		Scissor01Icon,
 		RecordIcon
 	} from '@hugeicons/core-free-icons';
@@ -41,23 +38,19 @@
 
 	const initial = $derived((me?.org ?? '?').trim().charAt(0).toUpperCase());
 
+	// What you came to do, then how it is set up. Getting video in is one job with
+	// three doors, so it is reached from Videos rather than taking three rows here.
 	const groups = [
 		{
 			label: 'Videos',
 			items: [
-				{ href: '/app/videos/', label: 'Videos', icon: DashboardSquare01Icon },
-				{ href: '/app/upload/', label: 'Upload', icon: Upload01Icon },
-				{ href: '/app/studio/', label: 'Studio', icon: Scissor01Icon },
-				{ href: '/app/sources/', label: 'Connected buckets', icon: CloudServerIcon },
-				{ href: '/app/migrate/', label: 'Move a library', icon: ArrowDataTransferHorizontalIcon }
-			]
-		},
-		{
-			label: 'Develop',
-			items: [
-				{ href: '/app/keys/', label: 'API keys', icon: Key01Icon },
-				{ href: '/app/webhooks/', label: 'Webhooks', icon: ConnectIcon },
-				{ href: '/app/docs/', label: 'API reference', icon: Book02Icon }
+				{
+					href: '/app/videos/',
+					label: 'Videos',
+					icon: DashboardSquare01Icon,
+					owns: ['/app/upload', '/app/sources', '/app/migrate']
+				},
+				{ href: '/app/studio/', label: 'Studio', icon: Scissor01Icon }
 			]
 		},
 		{
@@ -66,6 +59,14 @@
 			items: [
 				{ href: '/app/live/', label: 'Streams', icon: LiveStreaming01Icon },
 				{ href: '/app/live/recordings/', label: 'Recordings', icon: RecordIcon }
+			]
+		},
+		{
+			label: 'Develop',
+			items: [
+				{ href: '/app/keys/', label: 'API keys', icon: Key01Icon },
+				{ href: '/app/webhooks/', label: 'Webhooks', icon: ConnectIcon },
+				{ href: '/app/docs/', label: 'API reference', icon: Book02Icon }
 			]
 		},
 		{

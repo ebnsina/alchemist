@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { setCrumbs } from '$lib/crumbs.svelte';
 	import {
 		ArrowDataTransferHorizontalIcon,
 		SquareLock01Icon,
@@ -224,6 +225,10 @@
 		);
 	const pct = (m: Migration) => (m.total === 0 ? 0 : Math.round((m.handled / m.total) * 100));
 	const portion = new Intl.NumberFormat('en');
+
+	$effect(() => {
+		setCrumbs([{ label: 'Videos', href: '/app/videos/' }, { label: 'Move a library' }]);
+	});
 </script>
 
 <Seo title="Move a library — Alchemist" description="Bring your videos across from another host." />

@@ -2,7 +2,7 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { Copy01Icon, Tick02Icon, Delete02Icon, RefreshIcon } from '@hugeicons/core-free-icons';
+	import { Copy01Icon, Tick02Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
 	import {
@@ -193,10 +193,6 @@
 			out to viewers and is kept afterwards as an ordinary recording.
 		</p>
 	</div>
-	<button type="button" class="btn btn-sm flex-none" onclick={load} disabled={loading}>
-		<HugeiconsIcon icon={RefreshIcon} size={14} strokeWidth={2} />
-		Refresh
-	</button>
 </header>
 
 {#if fresh}
