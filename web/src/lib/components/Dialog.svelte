@@ -69,16 +69,16 @@
 </dialog>
 
 <style>
-	/* Every dialog is the same size, so opening one never moves the page around and a
-	   long form scrolls inside itself rather than growing the panel. */
+	/* One width everywhere, and a height that fits its content up to a cap: a two-field
+	   form has no business drawing a box two thirds of the screen tall. */
 	.dlg {
 		margin: auto;
 		padding: 0;
 		border: 0;
 		background: transparent;
 		width: min(560px, calc(100vw - 32px));
-		height: min(620px, calc(100dvh - 48px));
-		max-height: calc(100dvh - 48px);
+		height: auto;
+		max-height: min(620px, calc(100dvh - 48px));
 		overflow: visible;
 		color: var(--color-ink);
 	}
@@ -89,7 +89,7 @@
 	.dlg__panel {
 		display: flex;
 		flex-direction: column;
-		height: 100%;
+		max-height: 100%;
 		background: var(--color-card);
 		border: 1px solid var(--color-sunk);
 		border-radius: var(--radius-lg);
@@ -105,7 +105,6 @@
 		border-bottom: 1px solid var(--color-sunk);
 	}
 	.dlg__body {
-		flex: 1;
 		min-height: 0;
 		overflow-y: auto;
 		padding: 24px;
