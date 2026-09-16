@@ -7,15 +7,33 @@
 		Notification01Icon,
 		CheckmarkCircle02Icon,
 		ArrowLeft01Icon,
-		ArrowRight01Icon
+		ArrowRight01Icon,
+		PencilEdit02Icon,
+		PlayIcon,
+		PauseIcon,
+		Delete02Icon
 	} from '@hugeicons/core-free-icons';
+	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
 	import Seo from '$lib/Seo.svelte';
 	import Check from '$lib/components/Check.svelte';
 	import Steps from '$lib/components/Steps.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
-	import { listWebhooks, createWebhook, WEBHOOK_EVENTS, ApiError, type Webhook } from '$lib/api';
+	import Confirm from '$lib/components/Confirm.svelte';
+	import DataTable from '$lib/components/DataTable.svelte';
+	import RowMenu from '$lib/components/RowMenu.svelte';
+	import Badge from '$lib/components/Badge.svelte';
+	import {
+		listWebhooks,
+		createWebhook,
+		patchWebhook,
+		deleteWebhook,
+		WEBHOOK_EVENTS,
+		ApiError,
+		type Webhook
+	} from '$lib/api';
 
-	let hooks = $state<Webhook[]>([]);
+	let rows = $state<Webhook[]>([]);
+	let total = $state(0);
 	let loading = $state(true);
 	let error = $state('');
 	let url = $state('');
@@ -25,6 +43,27 @@
 	let secretCard = $state<HTMLElement | null>(null);
 	let step = $state(0);
 	let open = $state(false);
+
+	let page = $state(0);
+	let size = $state(10);
+	let sorting = $state<{ id: string; desc: boolean }[]>([{ id: 'created_at', desc: true }]);
+	let q = $state('');
+	let only = $state('');
+
+	// Each dialog owns a plain boolean: passing !!row unbound means Escape closes it
+	// and the next render opens it straight back up.
+	let editOpen = $state(false);
+	let removeOpen = $state(false);
+	let editing = $state<Webhook | null>(null);
+	let removing = $state<Webhook | null>(null);
+	let newUrl = $state('');
+	let busyRow = $state(false);
+
+	const FILTERS = [
+		{ value: '', label: 'Every endpoint' },
+		{ value: 'true', label: 'Live' },
+		{ value: 'false', label: 'Paused' }
+	];
 
 	// An address, a choice of events and a signing secret to save are three separate
 	// things to get right, so they arrive one at a time.
@@ -50,10 +89,23 @@
 	];
 	let copied = $state(false);
 
+	// One read of every control the table owns, so a change to any of them refetches
+	// exactly once rather than each firing its own request.
+	const query = $derived({
+		limit: size,
+		offset: page * size,
+		q,
+		sort: sorting[0]?.id ?? 'created_at',
+		order: (sorting[0]?.desc ?? true ? 'desc' : 'asc') as 'asc' | 'desc',
+		filters: { active: only || undefined }
+	});
+
 	async function load() {
 		error = '';
 		try {
-			hooks = (await listWebhooks()).webhooks;
+			const r = await listWebhooks(query);
+			rows = r.webhooks;
+			total = r.total;
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong.';
 		} finally {
@@ -62,8 +114,50 @@
 	}
 
 	$effect(() => {
+		query;
 		load();
 	});
+
+	async function saveUrl(e: SubmitEvent) {
+		e.preventDefault();
+		if (!editing) return;
+		error = '';
+		busyRow = true;
+		try {
+			await patchWebhook(editing.id, { url: newUrl.trim() });
+			editOpen = false;
+			await load();
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Something went wrong.';
+		} finally {
+			busyRow = false;
+		}
+	}
+
+	async function toggleActive(h: Webhook) {
+		error = '';
+		try {
+			await patchWebhook(h.id, { active: !h.active });
+			await load();
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Something went wrong.';
+		}
+	}
+
+	async function remove() {
+		if (!removing) return;
+		error = '';
+		busyRow = true;
+		try {
+			await deleteWebhook(removing.id);
+			removeOpen = false;
+			await load();
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Something went wrong.';
+		} finally {
+			busyRow = false;
+		}
+	}
 
 	const filled = $derived([url.trim().length > 0, picked.length > 0, true][step]);
 
@@ -123,6 +217,64 @@
 			copied = false;
 		}
 	}
+	const columns: ColumnDef<any, Webhook>[] = [
+		{ accessorKey: 'url', header: 'We call' },
+		{
+			id: 'events',
+			header: 'About',
+			enableSorting: false,
+			cell: (c) =>
+				(c.row.original as Webhook).events.map((e) => EVENTS[e]?.label ?? e).join(', ')
+		},
+		{
+			id: 'state',
+			header: 'State',
+			enableSorting: false,
+			cell: (c) => {
+				const h = c.row.original as Webhook;
+				return renderComponent(Badge, {
+					label: h.active ? 'Live' : 'Paused',
+					tone: h.active ? 'good' : 'idle'
+				});
+			}
+		},
+		{
+			id: 'actions',
+			header: '',
+			enableSorting: false,
+			cell: (c) => {
+				const h = c.row.original as Webhook;
+				return renderComponent(RowMenu, {
+					label: `Actions for ${h.url}`,
+					actions: [
+						{
+							label: 'Edit URL',
+							icon: PencilEdit02Icon,
+							onclick: () => {
+								editing = h;
+								newUrl = h.url;
+								editOpen = true;
+							}
+						},
+						{
+							label: h.active ? 'Pause' : 'Resume',
+							icon: h.active ? PauseIcon : PlayIcon,
+							onclick: () => toggleActive(h)
+						},
+						{
+							label: 'Delete',
+							icon: Delete02Icon,
+							danger: true,
+							onclick: () => {
+								removing = h;
+								removeOpen = true;
+							}
+						}
+					]
+				});
+			}
+		}
+	];
 </script>
 
 <Seo title="Webhooks — Alchemist" description="Be told when a video is ready instead of asking." />
@@ -264,25 +416,97 @@
 </Dialog>
 
 <h2 class="mt-10 text-lg font-semibold tracking-tight">Your endpoints</h2>
-{#if loading}
-	<div class="mt-4 grid gap-2">
-		{#each [0, 1] as i (i)}<div class="sk h-14"></div>{/each}
-	</div>
-{:else if hooks.length === 0}
-	<p class="sub mt-4">
-		None yet. Without one, your code has to ask us whether a video is ready — use
-		<b>Add new</b> and we will tell you instead.
+
+<div class="mt-4">
+	<DataTable
+		{columns}
+		{rows}
+		{total}
+		{loading}
+		bind:page
+		bind:size
+		bind:sorting
+		bind:q
+		searchLabel="Search by address"
+	>
+		{#snippet toolbar()}
+			<label class="flex items-center gap-2">
+				<span class="vh">Show</span>
+				<select
+					class="select w-44"
+					value={only}
+					onchange={(e) => {
+						only = e.currentTarget.value;
+						page = 0;
+					}}
+				>
+					{#each FILTERS as f (f.value)}<option value={f.value}>{f.label}</option>{/each}
+				</select>
+			</label>
+		{/snippet}
+
+		{#snippet empty()}
+			<p class="title">No endpoints here</p>
+			<p class="sub mx-auto mt-2 max-w-sm">
+				{#if q || only}
+					No endpoint matches that. Clear the search, or pick Every endpoint above.
+				{:else}
+					Without one, your code has to ask us whether a video is ready — use
+					<b>Add new</b> and we will tell you instead.
+				{/if}
+			</p>
+		{/snippet}
+	</DataTable>
+</div>
+
+<Dialog
+	bind:open={editOpen}
+	title="Where should we call?"
+	hint="Changing the address does not change the signing secret."
+>
+	<form id="hook-url-form" onsubmit={saveUrl}>
+		<label class="block">
+			<span class="vh">Address</span>
+			<input
+				bind:value={newUrl}
+				class="field"
+				type="url"
+				placeholder="https://your-app.example/hooks/alchemist"
+				required
+			/>
+		</label>
+		<p class="sub mt-3">
+			Deliveries switch to the new address straight away. Anything already on its way to
+			the old one is not sent again.
+		</p>
+	</form>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			<button type="button" class="btn" onclick={() => (editOpen = false)}>Cancel</button>
+			<button
+				type="submit"
+				form="hook-url-form"
+				class="btn-solid"
+				disabled={busyRow || !newUrl.trim()}
+			>
+				{busyRow ? 'Saving…' : 'Save the address'}
+			</button>
+		</div>
+	{/snippet}
+</Dialog>
+
+<Confirm
+	bind:open={removeOpen}
+	title="Delete this endpoint?"
+	confirm="Yes, delete it"
+	destructive
+	busy={busyRow}
+	onconfirm={remove}
+>
+	<p class="font-mono text-sm">{removing?.url ?? ''}</p>
+	<p class="sub mt-2">
+		We stop calling it and its signing secret is gone for good — adding the same address
+		again gets a new one. Pause it instead if you only want the calls to stop for a while.
 	</p>
-{:else}
-	<ul class="mt-4 divide-y divide-sunk border-y border-sunk">
-		{#each hooks as h (h.id)}
-			<li class="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
-				<div class="min-w-48 flex-1">
-					<p class="truncate font-mono text-sm">{h.url}</p>
-					<p class="mono mt-0.5">{h.events.join(' · ')}</p>
-				</div>
-				<span class="chip" class:chip-on={h.active}>{h.active ? 'Live' : 'Paused'}</span>
-			</li>
-		{/each}
-	</ul>
-{/if}
+</Confirm>

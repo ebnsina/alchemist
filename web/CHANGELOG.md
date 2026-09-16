@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Changed
+- **Webhook endpoints can be changed, not only made.** The list was a row, a Live/Paused
+  chip and nothing that could move either. It is now a table — address, events, state —
+  with a Live/Paused filter and a row menu that edits the address, pauses or resumes the
+  endpoint, and deletes it behind a confirm that says the signing secret goes too.
 - **API keys is a real table** — name, made, state — with a Live/Switched off filter and
   a row menu that renames a key as well as switching it off. Renaming a key was in the
   API and had no control anywhere in the dashboard. The last live key still cannot be
