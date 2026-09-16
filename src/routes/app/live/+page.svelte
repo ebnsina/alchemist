@@ -50,7 +50,8 @@
 		idle: { chip: 'Idle', means: 'Made, never started. Open it to go on air.' },
 		armed: { chip: 'Waiting', means: 'Holding a slot for your encoder. It goes on air the moment one connects.' },
 		live: { chip: 'On air', means: 'Going out now. Viewers can watch it.' },
-		ended: { chip: 'Ended', means: 'Finished. The recording is under Recordings.' }
+		// Nothing went out means nothing was kept, and that stream ends here too.
+		ended: { chip: 'Ended', means: 'Finished. If anything went out, it is under Recordings.' }
 	};
 
 	const SOURCE: Record<LiveStream['protocol'], string> = {

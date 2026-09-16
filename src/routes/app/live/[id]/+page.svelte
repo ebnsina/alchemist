@@ -51,7 +51,7 @@
 		idle: 'Made, never started.',
 		armed: 'Waiting for your encoder.',
 		live: 'On air now.',
-		ended: 'Finished. The recording is under Recordings.'
+		ended: 'Finished. If anything went out, it is under Recordings.'
 	};
 
 	const said = (e: unknown) => (e instanceof ApiError ? e.message : 'Something went wrong.');
