@@ -3,6 +3,12 @@
 ## Unreleased
 
 ### Changed
+- **Studio's "What you have made" is a table** — what we made, which video it came from,
+  state and when — paged and sorted by the server instead of showing the newest ten and
+  hiding the rest, with a row menu that opens the new video once it is finished and
+  removes the record. Removing says plainly that the video it made stays. The picker no
+  longer counts how many edits came from each video: with the list paged that count
+  would only have been of the edits on screen.
 - **Connected buckets is a table with controls.** Bucket, prefix, state, how many videos
   it has taken in and when it was last checked, with a row menu that pauses, resumes or
   disconnects it. Disconnecting a bucket whose videos are still being made is refused by
