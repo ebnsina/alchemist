@@ -2,12 +2,14 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Scissor01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import { listAssets, listEdits, ApiError, type Asset, type Edit } from '$lib/api';
 
 	let assets = $state<Asset[]>([]);
 	let edits = $state<Edit[]>([]);
 	let loading = $state(true);
 	let error = $state('');
+	let picking = $state(false);
 
 	async function load() {
 		error = '';
@@ -73,12 +75,22 @@
 
 <Seo title="Studio — Alchemist" description="Cut, crop and reshape your videos." />
 
-<h1 class="text-2xl font-semibold tracking-tight">Studio</h1>
-<p class="sub mt-1 max-w-xl">
-	Cut a video down, crop it, or turn it upright for phones. Everything you make here is a
-	<strong class="text-ink">new</strong> video — the one you started from never changes, so a link
-	you have already handed out keeps working.
-</p>
+<header class="flex flex-wrap items-start justify-between gap-4">
+	<div class="min-w-0">
+		<h1 class="text-2xl font-semibold tracking-tight">Studio</h1>
+		<p class="sub mt-1 max-w-xl">
+			Cut a video down, crop it, or turn it upright for phones. Everything you make here is a
+			<strong class="text-ink">new</strong> video — the one you started from never changes, so
+			a link you have already handed out keeps working.
+		</p>
+	</div>
+	{#if editable.length > 0}
+		<button type="button" class="btn-solid flex-none" onclick={() => (picking = true)}>
+			<HugeiconsIcon icon={Scissor01Icon} size={15} strokeWidth={2} />
+			Edit a video
+		</button>
+	{/if}
+</header>
 
 {#if error}
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
@@ -102,36 +114,45 @@
 		<a href="/app/upload/" class="btn-solid mt-6">Upload a video</a>
 	</div>
 {:else}
-	<h2 class="mt-8 text-lg font-semibold tracking-tight">Pick one to work on</h2>
-	<ul class="card mt-4 divide-y divide-sunk p-0">
-		{#each editable as a (a.id)}
-			<li>
-				<a href="/app/studio/{a.id}/" class="flex items-center gap-4 px-4 py-3.5 hover:bg-sunk">
-					<span class="grid h-9 w-9 flex-none place-items-center rounded-md bg-sunk text-faint">
-						<HugeiconsIcon icon={Scissor01Icon} size={16} strokeWidth={1.8} />
-					</span>
-					<span class="min-w-0 flex-1">
-						<span class="block truncate font-mono text-sm">{a.id.slice(0, 8)}</span>
-						<span class="mono mt-0.5 block">
-							{length(a.duration_sec)} · {shape(a)} · added {when(a.created_at)}
-							{#if editCount(a.id) > 0}
-								· {editCount(a.id)} made from it
-							{/if}
+	<Dialog bind:open={picking} title="Pick a video to edit">
+		<ul class="-mx-6 divide-y divide-sunk border-y border-sunk">
+			{#each editable as a (a.id)}
+				<li>
+					<a href="/app/studio/{a.id}/" class="flex items-center gap-4 px-6 py-3.5 hover:bg-sunk">
+						<span class="grid h-9 w-9 flex-none place-items-center rounded-md bg-sunk text-faint">
+							<HugeiconsIcon icon={Scissor01Icon} size={16} strokeWidth={1.8} />
 						</span>
-					</span>
-					<HugeiconsIcon
-						icon={ArrowRight01Icon}
-						size={15}
-						strokeWidth={2.2}
-						class="flex-none text-faint"
-					/>
-				</a>
-			</li>
-		{/each}
-	</ul>
+						<span class="min-w-0 flex-1">
+							<span class="block truncate font-mono text-sm">{a.id.slice(0, 8)}</span>
+							<span class="mono mt-0.5 block">
+								{length(a.duration_sec)} · {shape(a)} · added {when(a.created_at)}
+								{#if editCount(a.id) > 0}
+									· {editCount(a.id)} made from it
+								{/if}
+							</span>
+						</span>
+						<HugeiconsIcon
+							icon={ArrowRight01Icon}
+							size={15}
+							strokeWidth={2.2}
+							class="flex-none text-faint"
+						/>
+					</a>
+				</li>
+			{/each}
+		</ul>
+	</Dialog>
 
-	{#if edits.length > 0}
-		<h2 class="mt-10 text-lg font-semibold tracking-tight">What you have made</h2>
+	<h2 class="mt-8 text-lg font-semibold tracking-tight">What you have made</h2>
+	{#if edits.length === 0}
+		<div class="card mt-4 py-8 text-center">
+			<p class="title">Nothing made yet</p>
+			<p class="sub mx-auto mt-2 max-w-sm">
+				Use <b>Edit a video</b> to pick one of your {editable.length} finished videos and cut
+				it down. The original is never touched.
+			</p>
+		</div>
+	{:else}
 		<ul class="card mt-4 divide-y divide-sunk p-0">
 			{#each edits.slice(0, 10) as e (e.id)}
 				<li class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
