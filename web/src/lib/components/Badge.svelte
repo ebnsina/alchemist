@@ -1,7 +1,9 @@
 <script lang="ts" module>
-	// Lime for work that is done or going out, red for work that is lost, plain for
-	// work still happening. The icon carries the color; the word stays readable ink,
-	// so the two hues never have to do the job of the label.
+	// Called tag, not badge: app.css already has a badge utility and it is a 24px
+	// circle, which quietly turned this into a crescent with the label outside it.
+	// Lime for done or going out, red for lost, plain for still happening. The icon
+	// and the word both take the tone, so a state reads at a glance from across a
+	// column without anybody parsing the label.
 	export type Tone = 'good' | 'bad' | 'busy' | 'idle';
 </script>
 
@@ -24,47 +26,33 @@
 	};
 </script>
 
-<span class="badge badge--{tone}">
-	<HugeiconsIcon icon={ICON[tone]} size={14} strokeWidth={2} class="badge__icon" />
+<span class="tag tag--{tone}">
+	<HugeiconsIcon icon={ICON[tone]} size={14} strokeWidth={2} />
 	{label}
 </span>
 
 <style>
-	.badge {
+	.tag {
 		display: inline-flex;
 		align-items: center;
 		gap: 7px;
 		padding: 4px 10px 4px 8px;
 		border-radius: var(--radius-sm);
-		border: 1px solid var(--color-sunk);
-		border-left-width: 3px;
 		background: var(--color-sunk);
 		font-size: 12px;
 		white-space: nowrap;
 		color: var(--color-ink);
 	}
-	.badge--good {
-		border-left-color: var(--color-brand);
-	}
-	.badge--good :global(.badge__icon) {
+	.tag--good {
 		color: var(--color-accent);
 	}
-	.badge--bad {
-		border-left-color: var(--color-red);
-	}
-	.badge--bad :global(.badge__icon) {
+	.tag--bad {
 		color: var(--color-red);
 	}
-	.badge--busy {
-		border-left-color: var(--color-dim);
-	}
-	.badge--busy :global(.badge__icon) {
+	.tag--busy {
 		color: var(--color-dim);
 	}
-	.badge--idle {
-		border-left-color: var(--color-muted, var(--color-sunk));
-	}
-	.badge--idle :global(.badge__icon) {
+	.tag--idle {
 		color: var(--color-faint);
 	}
 </style>

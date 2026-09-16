@@ -146,7 +146,7 @@
 	$effect(() => {
 		setCrumbs([
 			{ label: 'Studio', href: '/app/studio/' },
-			{ label: id.slice(0, 8), href: `/app/videos/${id}/` },
+			{ label: asset?.title || id.slice(0, 8), href: `/app/videos/${id}/` },
 			{ label: 'Editing' }
 		]);
 	});

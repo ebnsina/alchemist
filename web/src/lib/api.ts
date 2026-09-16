@@ -213,6 +213,7 @@ export type Rendition = {
 };
 export type AssetDetail = {
 	id: string;
+	title: string | null;
 	state: string;
 	error_code?: string;
 	duration_seconds?: number;

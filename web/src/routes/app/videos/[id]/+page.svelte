@@ -39,10 +39,12 @@
 	$effect(() => {
 		// A broadcast lives under Streams until it is a recording, so the trail leads
 		// back to where the customer actually came from.
+		// The name once it is known, not eight characters of an id nobody chose.
+		const name = asset?.title || id.slice(0, 8);
 		setCrumbs(
 			broadcast
-				? [{ label: 'Streams', href: '/app/live/' }, { label: id.slice(0, 8) }]
-				: [{ label: 'Videos', href: '/app/videos/' }, { label: id.slice(0, 8) }]
+				? [{ label: 'Streams', href: '/app/live/' }, { label: name }]
+				: [{ label: 'Videos', href: '/app/videos/' }, { label: name }]
 		);
 	});
 

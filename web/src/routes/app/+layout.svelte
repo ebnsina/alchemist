@@ -28,7 +28,7 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { session, logout, getBranding, whoami, ApiError, type Session, type Branding } from '$lib/api';
-	import { crumbs, setCrumbs } from '$lib/crumbs.svelte';
+	import { crumbs } from '$lib/crumbs.svelte';
 	import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
 
 	let { children } = $props();
@@ -147,12 +147,11 @@
 	});
 
 	// A route change closes the drawer, or it stays open over the page it just
-	// navigated to, and clears a trail belonging to the page being left.
+	// navigated to. The trail takes care of itself: it is stamped with its own path.
 	$effect(() => {
 		page.url.pathname;
 		drawer = false;
 		menu = false;
-		setCrumbs([]);
 	});
 
 	const trail = $derived(
