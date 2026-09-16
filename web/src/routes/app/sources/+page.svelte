@@ -216,31 +216,35 @@
 					<p class="text-sm text-red" role="alert">{error}</p>
 				{/if}
 
-				<div class="flex items-center gap-2">
-					{#if step > 0 && !busy}
-						<button type="button" class="btn flex-none" onclick={back} aria-label="Back">
-							<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
-						</button>
-					{/if}
-					<button
-						type="button"
-						class="btn-solid flex-1"
-						onclick={next}
-						disabled={busy || !filled}
-						aria-disabled={busy || !filled}
-					>
-						{#if busy}
-							Connecting…
-						{:else if step < steps.length - 1}
-							Next
-							<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
-						{:else}
-							Connect and scan
-						{/if}
-					</button>
-				</div>
 			</div>
 	</Steps>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			{#if step > 0 && !busy}
+				<button type="button" class="btn" onclick={back}>
+					<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					Back
+				</button>
+			{/if}
+			<button
+				type="button"
+				class="btn-solid"
+				onclick={next}
+				disabled={busy || !filled}
+				aria-disabled={busy || !filled}
+			>
+				{#if busy}
+					Connecting…
+				{:else if step < steps.length - 1}
+					Next
+					<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+				{:else}
+					Connect and scan
+				{/if}
+			</button>
+		</div>
+	{/snippet}
 </Dialog>
 
 {#if loading}

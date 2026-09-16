@@ -382,31 +382,35 @@
 					</p>
 				{/if}
 
-				<div class="flex items-center gap-2">
-					{#if step > 0 && busy !== 'new'}
-						<button type="button" class="btn flex-none" onclick={back} aria-label="Back">
-							<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
-						</button>
-					{/if}
-					<button
-						type="button"
-						class="btn-solid flex-1"
-						onclick={next}
-						disabled={busy === 'new' || !filled}
-						aria-disabled={busy === 'new' || !filled}
-					>
-						{#if busy === 'new'}
-							Having a look…
-						{:else if step < visible.length - 1}
-							Next
-							<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
-						{:else}
-							Show me what is there
-						{/if}
-					</button>
-				</div>
 			</div>
 	</Steps>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			{#if step > 0 && busy !== 'new'}
+				<button type="button" class="btn" onclick={back}>
+					<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					Back
+				</button>
+			{/if}
+			<button
+				type="button"
+				class="btn-solid"
+				onclick={next}
+				disabled={busy === 'new' || !filled}
+				aria-disabled={busy === 'new' || !filled}
+			>
+				{#if busy === 'new'}
+					Having a look…
+				{:else if step < visible.length - 1}
+					Next
+					<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+				{:else}
+					Show me what is there
+				{/if}
+			</button>
+		</div>
+	{/snippet}
 </Dialog>
 
 {#if loading}

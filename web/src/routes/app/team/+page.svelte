@@ -194,7 +194,7 @@
 {/if}
 
 <Dialog bind:open title="Invite someone">
-	<form onsubmit={invite}>
+	<form id="invite-form" onsubmit={invite}>
 		<Steps {steps} {step}>
 		<div class="mt-5">
 			{#if step === 0}
@@ -246,37 +246,31 @@
 				<p class="mt-3 text-sm text-red" role="alert">{error}</p>
 			{/if}
 
-			<div class="mt-6 flex items-center gap-2">
-				{#if step > 0 && !busy}
-					<button
-						type="button"
-						class="btn flex-none"
-						onclick={() => (step -= 1)}
-						aria-label="Back"
-					>
-						<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
-					</button>
-				{/if}
-				<button
-					type="submit"
-					class="btn-solid flex-1"
-					disabled={busy || !filled}
-					aria-disabled={busy || !filled}
-				>
-					{#if busy}
-						Inviting…
-					{:else if step < steps.length - 1}
-						Next
-						<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
-					{:else}
-						<HugeiconsIcon icon={UserAdd01Icon} size={15} strokeWidth={2} />
-						Make the invite link
-					{/if}
-				</button>
-			</div>
 		</div>
 		</Steps>
 	</form>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			{#if step > 0 && !busy}
+				<button type="button" class="btn" onclick={() => (step -= 1)}>
+					<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					Back
+				</button>
+			{/if}
+			<!-- The form attribute keeps this bound to a form it is no longer inside. -->
+			<button type="submit" form="invite-form" class="btn-solid" disabled={busy || !filled} aria-disabled={busy || !filled}>
+				{#if busy}
+					Inviting…
+				{:else if step < steps.length - 1}
+					Next
+					<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+				{:else}
+					Make the invite link
+				{/if}
+			</button>
+		</div>
+	{/snippet}
 </Dialog>
 
 <h2 class="mt-10 text-lg font-semibold tracking-tight">People</h2>
