@@ -37,14 +37,41 @@ func TestPerChunkScoresFollowRealBoundaries(t *testing.T) {
 	}
 	chunks := []Chunk{{Index: 0, StartSec: 0, EndSec: 2}, {Index: 1, StartSec: 2, EndSec: 3}}
 
-	got := perChunkScores(scores, chunks)
+	got := perChunkScores(scores, chunks, 30)
 	if len(got) != 2 {
 		t.Fatalf("want one score per chunk, got %v", got)
 	}
 	if got[0] != 90 || got[1] != 70 {
 		t.Fatalf("scores did not follow chunk boundaries: %v", got)
 	}
-	if one := perChunkScores(scores, nil); len(one) != 1 {
+	if one := perChunkScores(scores, nil, 30); len(one) != 1 {
 		t.Fatalf("no chunk plan should give one window, got %v", one)
+	}
+}
+
+// Forcing everything to 30 invented six frames a second on film and threw half of a
+// 60fps source away while still reporting it as 60.
+func TestMezzanineRate(t *testing.T) {
+	for _, c := range []struct {
+		src  float64
+		want int
+	}{
+		{23.976, 24}, {24, 24}, {25, 25}, {29.97, 30}, {30, 30},
+		{48, 24}, {50, 25}, {59.94, 30}, {60, 30}, {120, 30},
+		{15, 15},           // already cheap: inflating it only costs bitrate
+		{0, 30}, {900, 30}, // unreadable rate falls back rather than failing
+	} {
+		if got := MezzanineRate(c.src); got != c.want {
+			t.Errorf("MezzanineRate(%v) = %d, want %d", c.src, got, c.want)
+		}
+	}
+}
+
+// Two assets normalised to different rates must not share a params hash: the hash is
+// what says "this is the same encode", and the GOP length differs between them.
+func TestParamsHashSeparatesFrameRates(t *testing.T) {
+	r := Rung{Height: 720, Codec: "h264", Profile: "main", CRF: 24, MaxrateBPS: 2_200_000}
+	if ParamsHash(r, 24) == ParamsHash(r, 30) {
+		t.Fatal("24fps and 30fps encodes of the same rung hash the same")
 	}
 }

@@ -11,7 +11,7 @@ import (
 
 // EncoderVersion changes whenever encoding behaviour changes. It is part of every
 // output key, so a bump re-encodes rather than silently mixing old and new output.
-const EncoderVersion = "x264-v1"
+const EncoderVersion = "x264-v2"
 
 // EncodeChunk encodes one chunk at one rung.
 //
@@ -20,8 +20,11 @@ const EncoderVersion = "x264-v1"
 // needlessly well and a hard one needlessly badly, and quality visibly oscillates on
 // a chunk-length cycle. CRF holds quality constant across boundaries by construction
 // while maxrate/bufsize keep any chunk from blowing the client's bandwidth budget.
-func EncodeChunk(ctx context.Context, mezzanine string, c Chunk, r Rung, dst string) error {
-	keyint := strconv.Itoa(GOPSeconds * MezzanineFrameRate)
+func EncodeChunk(ctx context.Context, mezzanine string, c Chunk, r Rung, fps int, dst string) error {
+	if fps <= 0 {
+		fps = DefaultFrameRate
+	}
+	keyint := strconv.Itoa(GOPSeconds * fps)
 	bufsize := r.MaxrateBPS * 2
 
 	args := []string{
@@ -73,9 +76,9 @@ func EncodeAudio(ctx context.Context, mezzanine, dst string) error {
 
 // ParamsHash identifies an exact encode. Output objects are keyed by it, so a retry
 // overwrites deterministically and a parameter change never collides with old output.
-func ParamsHash(r Rung) string {
+func ParamsHash(r Rung, fps int) string {
 	h := sha256.Sum256([]byte(fmt.Sprintf("%s|%d|%s|%s|%d|%d|%d|%d",
 		EncoderVersion, r.Height, r.Codec, r.Profile, r.CRF, r.MaxrateBPS,
-		GOPSeconds, MezzanineFrameRate)))
+		GOPSeconds, fps)))
 	return hex.EncodeToString(h[:8])
 }

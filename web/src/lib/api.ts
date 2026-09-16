@@ -58,7 +58,12 @@ const MESSAGES: Record<string, string> = {
 	invalid_filter: 'We asked for that list the wrong way. Reload the page.',
 	invalid_title: 'That name is too long. Keep it under 200 characters.',
 	source_gone:
-		'The original file is no longer in storage, so this one has to be uploaded again.'
+		'The original file is no longer in storage, so this one has to be uploaded again.',
+	invalid_language: 'Use a language code like bn, en or bn-BD.',
+	invalid_label: 'Keep the name under 60 characters — it has to fit a player\u2019s menu.',
+	invalid_captions: 'That is not a WebVTT file. It has to start with the word WEBVTT.',
+	caption_too_large: 'That subtitle file is over 2 MB.',
+	caption_not_found: 'There is no subtitle track in that language on this video.'
 };
 
 export class ApiError extends Error {
@@ -393,6 +398,27 @@ export const putLogo = (file: File) =>
 		body: file,
 		headers: { 'Content-Type': file.type }
 	});
+
+export type Caption = {
+	language: string;
+	label: string;
+	bytes: number | null;
+	updated_at: string;
+};
+
+export const listCaptions = (id: string) =>
+	call<{ captions: Caption[] }>(`/v1/assets/${id}/captions`);
+
+// The body is the .vtt itself. Wrapping a file the customer exported from somewhere
+// else in a JSON envelope only gives them a step to get wrong.
+export const putCaption = (id: string, lang: string, label: string, file: File) =>
+	call<{ language: string; label: string; bytes: number }>(
+		`/v1/assets/${id}/captions/${encodeURIComponent(lang)}?label=${encodeURIComponent(label)}`,
+		{ method: 'PUT', body: file, headers: { 'Content-Type': 'text/vtt' } }
+	);
+
+export const deleteCaption = (id: string, lang: string) =>
+	call<void>(`/v1/assets/${id}/captions/${encodeURIComponent(lang)}`, { method: 'DELETE' });
 
 export type Webhook = { id: string; url: string; events: string[]; active: boolean };
 export const WEBHOOK_EVENTS = ['asset.ready', 'asset.failed', 'rendition.ready'] as const;

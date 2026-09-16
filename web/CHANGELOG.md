@@ -3,6 +3,12 @@
 ## Unreleased
 
 ### Added
+- **Subtitles.** A video's page takes a WebVTT file per language, names it as viewers
+  will see it in the player's menu, and lists what is already there. Uploading a
+  language you already have replaces it; removing one asks first and says the video
+  keeps playing either way. Nothing is switched on by default — the menu is offered,
+  the viewer chooses. The language box suggests the language's own name (বাংলা for
+  `bn`), because that is what someone scanning a menu is looking for.
 - **A failed video can be tried again.** The failure card on a video's page now offers
   "Try again" and says that the file we were sent is still here, so nothing has to be
   uploaded a second time. It is not offered for the three codes where the same bytes

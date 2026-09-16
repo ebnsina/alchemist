@@ -50,7 +50,7 @@ func Prefix(tenantID, assetID string) string {
 // recording looks like everything else in the library; only the preset drops to
 // veryfast, because realtime is a hard constraint and a soft frame beats a late one.
 func segmentCommand(ctx context.Context, input string, r media.Rung, outDir string) *exec.Cmd {
-	keyint := strconv.Itoa(segmentSeconds * media.MezzanineFrameRate)
+	keyint := strconv.Itoa(segmentSeconds * media.DefaultFrameRate)
 
 	args := []string{"-hide_banner", "-loglevel", "error"}
 	// TCP, because a dropped UDP packet on the private hop between the ingest server

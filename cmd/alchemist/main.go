@@ -96,6 +96,7 @@ func main() {
 	reconciler := &pipeline.ReconcileWorker{DB: database}
 	river.AddWorker(workers, reconciler)
 	river.AddWorker(workers, &pipeline.JITWorker{TranscodeWorker: transcoder})
+	river.AddWorker(workers, &pipeline.RepublishWorker{TranscodeWorker: transcoder})
 	river.AddWorker(workers, &pipeline.SweepWorker{DB: database, Store: store})
 	river.AddWorker(workers, &pipeline.ReclaimWorker{Store: store})
 	river.AddWorker(workers, &pipeline.StorageWorker{DB: database})

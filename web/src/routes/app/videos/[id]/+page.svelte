@@ -6,18 +6,25 @@
 		Tick02Icon,
 		PlayCircleIcon,
 		Image01Icon,
-		TimelineEventIcon
+		TimelineEventIcon,
+		Delete02Icon,
+		SubtitleIcon
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import { setCrumbs } from '$lib/crumbs.svelte';
 	import { canRetry } from '$lib/assets';
+	import Confirm from '$lib/components/Confirm.svelte';
 	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
 	import Advanced from '$lib/components/Advanced.svelte';
 	import Diagnostics from '$lib/components/Diagnostics.svelte';
-	import { me } from '$lib/me.svelte';
+	import { me, readOnly } from '$lib/me.svelte';
 	import {
 		getAsset,
 		retryAsset,
+		listCaptions,
+		putCaption,
+		deleteCaption,
+		type Caption,
 		assetDiagnostics,
 		ApiError,
 		type AssetDetail,
@@ -150,6 +157,76 @@
 			retryError = e instanceof ApiError ? e.message : 'Something went wrong.';
 		} finally {
 			retrying = false;
+		}
+	}
+
+	// Subtitles. Loaded beside the asset rather than with it: the tracks change without
+	// the video changing, and folding them into the asset response would make every
+	// four-second poll while encoding carry them too.
+	let captions = $state<Caption[]>([]);
+	let capError = $state('');
+	let capBusy = $state(false);
+	let capLang = $state('bn');
+	let capLabel = $state('');
+	let capFile = $state<File | null>(null);
+	let capInput = $state<HTMLInputElement | null>(null);
+	let dropping = $state<Caption | null>(null);
+	let dropOpen = $state(false);
+
+	// The language's own name, because that is what a viewer scanning a player's menu
+	// is looking for. Anything else they type is theirs to name.
+	const NATIVE: Record<string, string> = {
+		bn: 'বাংলা',
+		en: 'English',
+		hi: 'हिन्दी',
+		ur: 'اردو',
+		ar: 'العربية'
+	};
+
+	async function loadCaptions() {
+		if (!id) return;
+		try {
+			captions = (await listCaptions(id)).captions;
+			capError = '';
+		} catch (e) {
+			capError = e instanceof ApiError ? e.message : 'Something went wrong.';
+		}
+	}
+
+	$effect(() => {
+		if (id) loadCaptions();
+	});
+
+	async function addCaption(e: SubmitEvent) {
+		e.preventDefault();
+		if (!capFile) return;
+		capError = '';
+		capBusy = true;
+		try {
+			await putCaption(id, capLang.trim(), (capLabel || NATIVE[capLang.trim()] || capLang).trim(), capFile);
+			capFile = null;
+			capLabel = '';
+			if (capInput) capInput.value = '';
+			await loadCaptions();
+		} catch (err) {
+			capError = err instanceof ApiError ? err.message : 'Something went wrong.';
+		} finally {
+			capBusy = false;
+		}
+	}
+
+	async function dropCaption() {
+		if (!dropping) return;
+		capError = '';
+		capBusy = true;
+		try {
+			await deleteCaption(id, dropping.language);
+			dropOpen = false;
+			await loadCaptions();
+		} catch (err) {
+			capError = err instanceof ApiError ? err.message : 'Something went wrong.';
+		} finally {
+			capBusy = false;
 		}
 	}
 
@@ -429,6 +506,88 @@
 		{/if}
 	</section>
 
+	<section class="mt-8">
+		<h2 class="text-lg font-semibold tracking-tight">Subtitles</h2>
+		<p class="mt-1 text-sm text-dim">
+			A WebVTT file for each language. Viewers pick one from the player's menu — none is
+			switched on for them. The video itself is not touched, so adding a language to
+			something already published changes nothing for anyone watching it.
+		</p>
+
+		{#if capError}
+			<p class="mt-3 text-sm text-red" role="alert">{capError}</p>
+		{/if}
+
+		{#if captions.length}
+			<ul class="card mt-4 divide-y divide-sunk">
+				{#each captions as c (c.language)}
+					<li class="flex items-center gap-3 px-4 py-3">
+						<HugeiconsIcon icon={SubtitleIcon} size={15} strokeWidth={1.8} />
+						<span class="min-w-0 flex-1 truncate text-sm">{c.label}</span>
+						<code class="flex-none font-mono text-xs text-dim">{c.language}</code>
+						<button
+							type="button"
+							class="icon-btn flex-none"
+							aria-label="Remove the {c.label} subtitles"
+							disabled={capBusy}
+							onclick={() => {
+								dropping = c;
+								dropOpen = true;
+							}}
+						>
+							<HugeiconsIcon icon={Delete02Icon} size={15} strokeWidth={1.8} />
+						</button>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="sub mt-4">No subtitles on this one yet.</p>
+		{/if}
+
+		{#if !readOnly()}
+			<form class="card mt-4 flex flex-wrap items-end gap-3" onsubmit={addCaption}>
+				<label class="min-w-28 flex-none">
+					<span class="label">Language</span>
+					<input
+						bind:value={capLang}
+						class="field mt-1.5"
+						type="text"
+						maxlength="12"
+						placeholder="bn"
+						required
+					/>
+				</label>
+				<label class="min-w-40 flex-1">
+					<span class="label">Name in the menu</span>
+					<input
+						bind:value={capLabel}
+						class="field mt-1.5"
+						type="text"
+						maxlength="60"
+						placeholder={NATIVE[capLang.trim()] ?? capLang}
+					/>
+				</label>
+				<label class="min-w-40 flex-1">
+					<span class="label">File</span>
+					<input
+						bind:this={capInput}
+						class="field mt-1.5"
+						type="file"
+						accept=".vtt,text/vtt"
+						required
+						onchange={(e) => (capFile = e.currentTarget.files?.[0] ?? null)}
+					/>
+				</label>
+				<button type="submit" class="btn-solid flex-none" disabled={capBusy || !capFile}>
+					{capBusy ? 'Adding…' : 'Add subtitles'}
+				</button>
+			</form>
+			<p class="sub mt-2">
+				A .vtt file, up to 2 MB. Uploading a language you already have replaces it.
+			</p>
+		{/if}
+	</section>
+
 	{#if asset.playback}
 		<section class="mt-8">
 			<h2 class="text-lg font-semibold tracking-tight">The links</h2>
@@ -465,6 +624,21 @@
 	{/if}
 
 	<Advanced {asset} live={working} />
+
+	<Confirm
+		bind:open={dropOpen}
+		title="Remove these subtitles?"
+		confirm="Yes, remove them"
+		destructive
+		busy={capBusy}
+		onconfirm={dropCaption}
+	>
+		<p class="text-sm">{dropping?.label ?? ''}</p>
+		<p class="sub mt-2">
+			The track disappears from the player's menu for everyone watching. The video keeps
+			playing and nothing else changes. Upload the file again to put it back.
+		</p>
+	</Confirm>
 
 	{#if me()?.platform_admin}
 		<Diagnostics jobs={diag.jobs} facts={diag.facts} loading={diagLoading} error={diagError} />

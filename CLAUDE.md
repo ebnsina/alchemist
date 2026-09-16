@@ -142,6 +142,21 @@ These were established by measurement and are expensive to rediscover.
   means two jobs overwriting each other's mezzanine and chunks, and one's deferred
   cleanup deleting the other's working files. It surfaces as unrelated-looking
   stitch/encode/probe failures that pass on retry.
+- **Frame rate is chosen once, in `MezzanineRate`, and carried.** The GOP grid, the
+  chunk plan, the params hash and VMAF's frame-to-time mapping are all whole frames of
+  that rate, so it cannot be re-derived per stage. 24 and 25 survive, 48/50/60/120
+  halve back onto the set, and anything under 24 is left alone rather than inflated.
+  High frame rate is not offered: it is bitrate the budget Android fleet cannot spend.
+- **Subtitles are sidecar WebVTT, referenced from the manifests, never burned in.**
+  Burning in means re-encoding the whole ladder per language and gives the viewer no
+  way to turn them off. The consequence is that `signManifest` must know which VTT it
+  is holding: the scrubbing index's cue payloads are image URLs and need signing, a
+  subtitle's cue payload is the sentence on screen and must not be touched.
+- **Expensive stages write to `.partial` and rename.** A file under its final name has
+  therefore finished, which is what lets a retry skip it — and the rename is what stops
+  a truncated file from a killed process being accepted and stitched. The working
+  directory survives between attempts for the same reason, and is removed only when
+  there is nothing left to resume.
 - **Every dimension comes from the mezzanine, never from the source probe.** ffmpeg
   applies a rotation matrix while building the mezzanine, so a phone clip that probes
   1920x1080 with `rotate:90` is encoded 1080x1920. Deriving a rendition's width from

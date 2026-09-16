@@ -158,6 +158,32 @@ default:
 }
 ```
 
+## Subtitles
+
+Sidecar WebVTT, one track per language, uploaded against a video that is already
+ready. The body is the file, not JSON:
+
+```bash
+curl -X PUT "$API/v1/assets/$ID/captions/bn?label=%E0%A6%AC%E0%A6%BE%E0%A6%82%E0%A6%B2%E0%A6%BE" \
+  -H "Authorization: Bearer $KEY" -H 'Content-Type: text/vtt' \
+  --data-binary @lecture.bn.vtt
+```
+
+`lang` is BCP-47 as the manifests carry it — `bn`, `en`, `bn-BD`. `label` is what a
+viewer picks from the player's menu, so send the language's own name rather than its
+code. Uploading the same language again replaces it.
+
+The manifests are rewritten in the background, so a track is not in `master.m3u8` the
+instant the call returns; poll `GET /v1/assets/{id}/captions` if you need to know it
+landed. The media is never touched, which is why adding a track to a published video
+costs nothing and evicts nothing from any cache.
+
+No track is marked default. A player shows the menu; the viewer chooses.
+
+`invalid_captions` means the file does not start with `WEBVTT`. That check is here
+because a player given a malformed track shows no subtitles and no error, and the
+customer concludes the feature is broken.
+
 ## Playing it
 
 ```bash

@@ -14,6 +14,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/rivertype"
 
 	"github.com/ebnsina/alchemist/internal/platform/db"
 	"github.com/ebnsina/alchemist/internal/platform/fetch"
@@ -105,29 +106,47 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		return w.fail(ctx, a, "invalid_ladder_profile", err)
 	}
 
+	// Kept between attempts so a retry resumes: the source is already downloaded, the
+	// mezzanine already built, and the chunks that landed are still there. Removed
+	// once there is nothing left to resume -- the job succeeded, gave up its last
+	// attempt, or cancelled outright on a source that will never be readable.
 	dir := filepath.Join(w.WorkDir, a.AssetID)
-	defer os.RemoveAll(dir)
+	defer func() {
+		var cancelled *rivertype.JobCancelError
+		if err == nil || job.Attempt >= job.MaxAttempts || errors.As(err, &cancelled) {
+			os.RemoveAll(dir)
+		}
+	}()
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return err
 	}
 
+	// Written under a temporary name and renamed, so the final name existing means the
+	// bytes all arrived. That is what lets a retry skip the download -- pulling 32 GB
+	// again because the packaging step timed out is most of a retry's cost.
 	src := filepath.Join(dir, "source")
-	switch {
-	case state == "live_ended":
-		if err := w.pullRecording(ctx, a, src); err != nil {
-			return w.fail(ctx, a, "recording_unreadable", err)
+	if !fileComplete(src) {
+		tmp := src + partialSuffix
+		switch {
+		case state == "live_ended":
+			if err := w.pullRecording(ctx, a, tmp); err != nil {
+				return w.fail(ctx, a, "recording_unreadable", err)
+			}
+		case bucketSourceID != nil && objectKey != nil:
+			if err := w.pullFromBucket(ctx, a, *bucketSourceID, *objectKey, tmp); err != nil {
+				return err
+			}
+		case sourceURL != nil && *sourceURL != "":
+			if err := w.pull(ctx, a, *sourceURL, tmp); err != nil {
+				return err
+			}
+		default:
+			if err := w.download(ctx, deref(sourceKey), tmp); err != nil {
+				return w.fail(ctx, a, "source_unreadable", err)
+			}
 		}
-	case bucketSourceID != nil && objectKey != nil:
-		if err := w.pullFromBucket(ctx, a, *bucketSourceID, *objectKey, src); err != nil {
+		if err := os.Rename(tmp, src); err != nil {
 			return err
-		}
-	case sourceURL != nil && *sourceURL != "":
-		if err := w.pull(ctx, a, *sourceURL, src); err != nil {
-			return err
-		}
-	default:
-		if err := w.download(ctx, deref(sourceKey), src); err != nil {
-			return w.fail(ctx, a, "source_unreadable", err)
 		}
 	}
 
@@ -197,8 +216,8 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 	// Progress, written where it can be seen. The rendition rows are created up
 	// front in the encoding state with their chunk plan, so a customer watching an
 	// hour of video go through does not stare at one unchanging state for an hour.
-	opts.OnPlan = func(rungs []media.Rung, chunks []media.Chunk) error {
-		return w.recordPlan(ctx, a, rungs, chunks)
+	opts.OnPlan = func(rungs []media.Rung, chunks []media.Chunk, fps int) error {
+		return w.recordPlan(ctx, a, rungs, chunks, fps)
 	}
 	opts.OnChunkDone = func(r media.Rung, c media.Chunk) {
 		// Called from several encode goroutines. A progress write that fails is not
@@ -269,7 +288,7 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 			        mezzanine_bytes = nullif($12,0)::bigint, updated_at = now()
 			  where id = $1`,
 			a.AssetID, res.Probe.DurationSec, res.MezzProbe.Width,
-			res.MezzProbe.Height, res.Probe.FrameRate, state, mezzKey,
+			res.MezzProbe.Height, res.FrameRate, state, mezzKey,
 			res.Complexity, sum, skeleton, srcBytes, mezzBytes); err != nil {
 			return err
 		}
@@ -297,7 +316,7 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 				   avg_bandwidth_bps = excluded.avg_bandwidth_bps,
 				   dash_representation = excluded.dash_representation`,
 				a.AssetID, a.TenantID, r.Height, r.Codec, r.MaxrateBPS,
-				media.EncoderVersion, media.ParamsHash(r),
+				media.EncoderVersion, media.ParamsHash(r, res.FrameRate),
 				fmt.Sprintf("%s/%dp.cmfv", prefix, r.Height),
 				width, codecString(r), reps[r.Height],
 				fileBytes(filepath.Join(res.OutDir, fmt.Sprintf("%dp.cmfv", r.Height)))); err != nil {
@@ -314,7 +333,7 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 				 values ($1,$2,$3,$4,$5,$6,$7,'pending',true)
 				 on conflict (asset_id, height, codec) do nothing`,
 				a.AssetID, a.TenantID, r.Height, r.Codec, r.MaxrateBPS,
-				media.EncoderVersion, media.ParamsHash(r)); err != nil {
+				media.EncoderVersion, media.ParamsHash(r, res.FrameRate)); err != nil {
 				return err
 			}
 		}
@@ -328,10 +347,19 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		return err
 	}
 
+	// The packager writes the master playlist, and it knows nothing about subtitles.
+	// A track uploaded while this was encoding would be in the database and missing
+	// from the manifest the viewer reads, with nothing to say so.
+	if captions, err := w.captionsFor(ctx, a.TenantID, a.AssetID); err == nil && len(captions) > 0 {
+		if err := w.republish(ctx, a.TenantID, a.AssetID); err != nil {
+			return fmt.Errorf("publish subtitle tracks: %w", err)
+		}
+	}
+
 	w.emit(ctx, a, "asset.ready", map[string]any{
 		"asset_id":         a.AssetID,
 		"duration_seconds": res.Probe.DurationSec,
-		"width":            res.Probe.Width, "height": res.Probe.Height,
+		"width":            res.MezzProbe.Width, "height": res.MezzProbe.Height,
 	})
 	return nil
 }
@@ -392,7 +420,7 @@ func contentType(name string) string {
 // recordPlan creates the rendition rows before the work starts and lays down one
 // row per chunk, so progress has somewhere to accumulate.
 func (w *TranscodeWorker) recordPlan(ctx context.Context, a TranscodeArgs,
-	rungs []media.Rung, chunks []media.Chunk) error {
+	rungs []media.Rung, chunks []media.Chunk, fps int) error {
 	return w.DB.AsTenant(ctx, a.TenantID, func(tx pgx.Tx) error {
 		for _, r := range rungs {
 			var renditionID string
@@ -404,7 +432,7 @@ func (w *TranscodeWorker) recordPlan(ctx context.Context, a TranscodeArgs,
 				   state = 'encoding', chunks_total = excluded.chunks_total, chunks_done = 0
 				 returning id::text`,
 				a.AssetID, a.TenantID, r.Height, r.Codec, r.MaxrateBPS,
-				media.EncoderVersion, media.ParamsHash(r), len(chunks)).Scan(&renditionID); err != nil {
+				media.EncoderVersion, media.ParamsHash(r, fps), len(chunks)).Scan(&renditionID); err != nil {
 				return err
 			}
 			for _, c := range chunks {
@@ -602,6 +630,16 @@ func (w *TranscodeWorker) pullFromBucket(ctx context.Context, a TranscodeArgs, s
 		return fmt.Errorf("read %s from customer bucket: %w", objectKey, err)
 	}
 	return nil
+}
+
+// partialSuffix marks a download still in flight. A file under the final name has
+// therefore finished arriving, which is the whole basis for resuming.
+const partialSuffix = ".partial"
+
+// fileComplete reports whether an earlier attempt already fetched this.
+func fileComplete(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.Size() > 0
 }
 
 // fileBytes is what an object costs to store, taken where the file is already on

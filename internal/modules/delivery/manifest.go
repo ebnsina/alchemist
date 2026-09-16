@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// spriteIndex is the one VTT whose cues are URLs rather than text.
+const spriteIndex = "sprite.vtt"
+
 var (
 	// URI="segment.m3u8" inside EXT-X-MAP, EXT-X-MEDIA and friends.
 	hlsAttrURI = regexp.MustCompile(`URI="([^"]+)"`)
@@ -20,10 +23,17 @@ func signManifest(body []byte, query, file string) []byte {
 		return body
 	}
 	if strings.HasSuffix(file, ".vtt") {
-		// The scrubbing index: every cue payload is a relative image URL with an
-		// #xywh fragment. Left unsigned the tile request 403s and the customer sees
-		// no thumbnails at all, even though the API advertised the URL.
-		return signVTT(body, query)
+		// Only the scrubbing index. Its cue payloads are relative image URLs with an
+		// #xywh fragment, and unsigned the tile request 403s, so the customer sees no
+		// thumbnails at all even though the API advertised the URL.
+		//
+		// A subtitle track is the same file format carrying the opposite thing: the
+		// cue payload is the sentence a viewer reads. Signing those appends the query
+		// to every line of dialogue and puts it on screen.
+		if file == spriteIndex {
+			return signVTT(body, query)
+		}
+		return body
 	}
 	if strings.HasSuffix(file, ".mpd") {
 		// A raw & is not well-formed XML, so the query must be entity-escaped or

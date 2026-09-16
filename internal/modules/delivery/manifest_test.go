@@ -54,3 +54,19 @@ func TestSignManifestVTTKeepsQueryBeforeFragment(t *testing.T) {
 		t.Errorf("a header or timing line was treated as a URI:\n%s", got)
 	}
 }
+
+// A subtitle track is a VTT whose cue payload is the sentence a viewer reads. The
+// sprite index is a VTT whose cue payload is an image URL. Signing the first the way
+// the second needs puts "?kid=...&sig=..." on screen under the video.
+func TestSubtitleCuesAreNotSigned(t *testing.T) {
+	subs := []byte("WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nআমরা শুরু করি\n")
+	got := string(signManifest(subs, "kid=k1&sig=abc&exp=99", "subs_bn.vtt"))
+	if strings.Contains(got, "sig=abc") {
+		t.Fatalf("subtitle text was signed as a URL:\n%s", got)
+	}
+
+	sprite := []byte("WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nsprite.jpg#xywh=0,0,160,90\n")
+	if s := string(signManifest(sprite, "kid=k1&sig=abc", "sprite.vtt")); !strings.Contains(s, "sig=abc") {
+		t.Fatalf("the scrubbing index still needs signing:\n%s", s)
+	}
+}
