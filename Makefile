@@ -28,11 +28,12 @@ db-reset:
 dev-account:
 	./scripts/dev-account.sh
 
-# The platform administrator. Password from the environment only -- there is no
-# default and no fallback, and a second run promotes rather than duplicating.
-#   ALCHEMIST_STAFF_PASSWORD=... make create-admin EMAIL=you@example.com
+# The platform administrator. Asks for the address and password at the terminal; set
+# ALCHEMIST_STAFF_PASSWORD instead when there is no terminal to ask at. A second run
+# promotes the account rather than duplicating it, and leaves its password alone.
+#   make create-admin
 create-admin: build
-	set -a; . ./.env; set +a; ./bin/alchemist create-admin $(EMAIL)
+	@set -a; . ./.env; set +a; ./bin/alchemist create-admin $(EMAIL)
 
 test:
 	ALCHEMIST_TEST_DATABASE_URL="$(DB_APP)" ALCHEMIST_TEST_ADMIN_URL="$(DB_ADMIN)" go test ./...

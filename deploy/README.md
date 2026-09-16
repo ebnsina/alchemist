@@ -82,18 +82,28 @@ already exist -- see below.
 ## The platform administrator
 
 One Alchemist account may act as any tenant, for support. Create it with the binary's
-own subcommand — the password comes from the environment, there is no default, and
-the command exits if it is unset:
+own subcommand, which asks:
 
 ```
-ALCHEMIST_STAFF_PASSWORD='...' /opt/alchemist/bin/alchemist create-admin you@example.com
+/opt/alchemist/bin/alchemist create-admin
+Email: you@example.com
+Password:
+Again:
 ```
 
-Locally that is `ALCHEMIST_STAFF_PASSWORD=... make create-admin EMAIL=you@example.com`.
+The password is not echoed and is asked for twice, because nothing in the product can
+reset it yet and a typo locks the only administrator out. Ten characters minimum, the
+same rule as signing up. Locally, `make create-admin`.
+
+With no terminal to ask at — a deploy script, CI — pass the address as an argument
+and the password in `ALCHEMIST_STAFF_PASSWORD`; the command exits if either is
+missing, and never takes the password as an argument, which would put it in the shell
+history and in `ps`.
+
 Run it twice and it promotes the account that is already there, leaving the password
 alone; it never creates a second user. A new account lands in a tenant called
-`Alchemist` with nothing in it — the flag grants everything, the tenant grants
-nothing.
+`Alchemist` — the flag grants everything, the tenant grants nothing, except live,
+which is switched on so staff are not sold their own product.
 
 Support then works by impersonation: `POST /v1/staff/impersonate {"tenant_id"}` makes
 every ordinary endpoint answer for that customer, and the session becomes read-only
