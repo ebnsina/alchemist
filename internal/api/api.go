@@ -68,6 +68,9 @@ const (
 	// Set only when the caller authenticated with a session cookie. An API key is a
 	// machine credential: it must never be able to invite a person or change a role.
 	userKey ctxKey = "user_id"
+	// Read from the session on every request, never cached: a platform_admin flag
+	// taken away has to stop working now, not when the session expires.
+	staffKey ctxKey = "platform_admin"
 )
 
 // liveEnabled is about this deployment: with no ingest host there is nowhere for an
@@ -195,6 +198,17 @@ func (s *Server) Routes() http.Handler {
 			s.live.Routes(r)
 		}
 
+		// Platform staff. Session only, and the flag is re-read every request.
+		r.Group(func(r chi.Router) {
+			r.Use(s.requireSession, s.staffOnly)
+			r.Get("/staff/tenants", s.staffTenants)
+			r.Post("/staff/impersonate", s.startImpersonation)
+			r.Delete("/staff/impersonate", s.stopImpersonation)
+			// The raw queue error, which the customer-facing activity view withholds.
+			r.Get("/assets/{id}/diagnostics", s.assetDiagnostics)
+			r.Get("/live-sessions/{id}/diagnostics", s.liveSessionDiagnostics)
+		})
+
 		r.Post("/edits", s.createEdit)
 		r.Get("/edits", s.listEdits)
 		r.Delete("/edits/{id}", s.deleteEdit)
@@ -242,9 +256,17 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 			// key. A session is accepted only from a configured origin, because a
 			// cookie is sent by the browser on any site's behalf and that is what
 			// CSRF is.
-			if tenantID, userID, ok := s.tenantFromSession(r); ok {
-				ctx := context.WithValue(r.Context(), tenantKey, tenantID)
-				ctx = context.WithValue(ctx, userKey, userID)
+			if sess, ok := s.tenantFromSession(r); ok {
+				// Impersonation is read-only, and the guard lives here rather than in
+				// each handler so no endpoint can be added that opts out of it.
+				if sess.Impersonating && !impersonationAllows(r) {
+					writeErrFor(w, r, http.StatusForbidden, "read_only_session",
+						"You are viewing this account as staff. Stop viewing it to make changes.")
+					return
+				}
+				ctx := context.WithValue(r.Context(), tenantKey, sess.TenantID)
+				ctx = context.WithValue(ctx, userKey, sess.UserID)
+				ctx = context.WithValue(ctx, staffKey, sess.PlatformAdmin)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
