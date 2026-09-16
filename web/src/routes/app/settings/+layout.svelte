@@ -9,7 +9,8 @@
 	const TABS = [
 		{ href: '/app/settings/profile/', label: 'Profile' },
 		{ href: '/app/settings/branding/', label: 'Branding' },
-		{ href: '/app/settings/encoding/', label: 'Encoding' }
+		{ href: '/app/settings/encoding/', label: 'Encoding' },
+		{ href: '/app/settings/playback/', label: 'Playback' }
 	];
 
 	const here = $derived(TABS.find((t) => page.url.pathname.startsWith(t.href)));

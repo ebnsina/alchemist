@@ -21,7 +21,7 @@ const MESSAGES: Record<string, string> = {
 	asset_not_found: 'We could not find that video.',
 	quota_exceeded: 'You have reached this month\u2019s limit. Upgrade or wait for the reset.',
 	session_required: 'Sign in to change this. An API key cannot.',
-	not_permitted: 'Only an owner or an admin can change who is on the team.',
+	not_permitted: 'Only an owner or an admin can change this.',
 	invalid_role: 'Pick admin or member. Only an owner can add another owner.',
 	already_a_member: 'That person is already on the team.',
 	last_owner: 'Make someone else an owner first. An account cannot be left without one.',
@@ -421,6 +421,18 @@ export const putCaption = (id: string, lang: string, label: string, file: File) 
 
 export const deleteCaption = (id: string, lang: string) =>
 	call<void>(`/v1/assets/${id}/captions/${encodeURIComponent(lang)}`, { method: 'DELETE' });
+
+// How a video is delivered, as opposed to how it is made. Both fields are written by
+// one call, so a change to either has to send the other back unchanged -- sending only
+// the toggle would silently drop the device cap to "no limit".
+export type DeliverySettings = {
+	encrypt_playback: boolean;
+	max_viewer_devices: number;
+};
+
+export const getDelivery = () => call<DeliverySettings>('/v1/playback-settings');
+export const setDelivery = (s: DeliverySettings) =>
+	call<DeliverySettings>('/v1/playback-settings', { method: 'PUT', body: JSON.stringify(s) });
 
 export type Webhook = { id: string; url: string; events: string[]; active: boolean };
 export const WEBHOOK_EVENTS = ['asset.ready', 'asset.failed', 'rendition.ready'] as const;
