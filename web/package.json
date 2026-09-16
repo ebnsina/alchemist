@@ -1,0 +1,40 @@
+{
+  "name": "alchemist-web",
+  "version": "0.1.0",
+  "description": "Public marketing site for Alchemist",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "node build/index.js",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "verify": "node scripts/check.mjs",
+    "check:contrast": "node scripts/check-contrast-over-art.mjs"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@sveltejs/adapter-node": "^5.5.7",
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.5.1",
+    "playwright": "^1.63.0",
+    "pngjs": "^7.0.0",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.0"
+  },
+  "private": true,
+  "dependencies": {
+    "@hugeicons/core-free-icons": "^4.3.3",
+    "@hugeicons/svelte": "^1.1.5",
+    "@tanstack/ai": "^0.54.0",
+    "@tanstack/ai-anthropic": "^0.18.6",
+    "@tanstack/ai-openai": "^0.22.6",
+    "@tanstack/ai-svelte": "^0.21.1",
+    "hls.js": "^1.7.3",
+    "@alchemist/player": "file:../alchemist-player"
+  }
+}
