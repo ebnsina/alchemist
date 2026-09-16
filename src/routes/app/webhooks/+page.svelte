@@ -1,8 +1,17 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { Copy01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
+	import {
+		Copy01Icon,
+		Tick02Icon,
+		Link01Icon,
+		Notification01Icon,
+		CheckmarkCircle02Icon,
+		ArrowLeft01Icon,
+		ArrowRight01Icon
+	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import Check from '$lib/components/Check.svelte';
+	import Steps from '$lib/components/Steps.svelte';
 	import { listWebhooks, createWebhook, WEBHOOK_EVENTS, ApiError, type Webhook } from '$lib/api';
 
 	let hooks = $state<Webhook[]>([]);
@@ -13,6 +22,30 @@
 	let busy = $state(false);
 	let fresh = $state<{ url: string; secret: string } | null>(null);
 	let secretCard = $state<HTMLElement | null>(null);
+	let step = $state(0);
+
+	// An address, a choice of events and a signing secret to save are three separate
+	// things to get right, so they arrive one at a time.
+	const steps = [
+		{
+			key: 'where',
+			icon: Link01Icon,
+			title: 'Where should we call?',
+			hint: 'An https address of yours that answers a POST.'
+		},
+		{
+			key: 'what',
+			icon: Notification01Icon,
+			title: 'What should we call about?',
+			hint: 'Pick at least one. Most people only need the first.'
+		},
+		{
+			key: 'add',
+			icon: CheckmarkCircle02Icon,
+			title: 'Ready to add it?',
+			hint: 'The signing secret is shown once, on the next screen.'
+		}
+	];
 	let copied = $state(false);
 
 	async function load() {
@@ -30,14 +63,22 @@
 		load();
 	});
 
+	const filled = $derived([url.trim().length > 0, picked.length > 0, true][step]);
+
 	async function add(e: SubmitEvent) {
 		e.preventDefault();
+		if (!filled) return;
+		if (step < steps.length - 1) {
+			step += 1;
+			return;
+		}
 		error = '';
 		busy = true;
 		try {
 			const r = await createWebhook(url.trim(), picked);
 			fresh = { url: r.url, secret: r.secret };
 			url = '';
+			step = 0;
 			// Same as a stream key and an API key: the secret gets the attention, because
 			// this is the only time it is on screen.
 			queueMicrotask(() => secretCard?.focus());
@@ -117,40 +158,94 @@
 	</div>
 {/if}
 
-<form class="card mt-6" onsubmit={add}>
-	<p class="title">Add an endpoint</p>
-	<label class="mt-4 block">
-		<span class="label mb-1.5 block">Where we should call</span>
-		<input
-			bind:value={url}
-			class="field"
-			type="url"
-			placeholder="https://your-app.example/hooks/alchemist"
-			required
-		/>
-	</label>
-	<fieldset class="mt-5">
-		<legend class="label mb-2.5">Tell me about</legend>
-		<div class="grid gap-2.5 sm:grid-cols-3">
-			{#each WEBHOOK_EVENTS as ev (ev)}
-				<Check
-					card
-					label={EVENTS[ev].label}
-					hint={EVENTS[ev].what}
-					checked={picked.includes(ev)}
-					onchange={() => toggle(ev)}
-				/>
-			{/each}
+<form class="card mt-6 max-w-2xl" onsubmit={add}>
+	<Steps {steps} {step}>
+		<div class="mt-5">
+			{#if step === 0}
+				<label class="block">
+					<span class="vh">Where we should call</span>
+					<input
+						bind:value={url}
+						class="field"
+						type="url"
+						placeholder="https://your-app.example/hooks/alchemist"
+						required
+					/>
+				</label>
+				<p class="sub mt-2.5">
+					It has to be reachable from the public internet, and answer within a few
+					seconds. We retry a call that fails.
+				</p>
+			{:else if step === 1}
+				<fieldset>
+					<legend class="vh">Tell me about</legend>
+					<div class="grid gap-2.5 sm:grid-cols-3">
+						{#each WEBHOOK_EVENTS as ev (ev)}
+							<Check
+								card
+								label={EVENTS[ev].label}
+								hint={EVENTS[ev].what}
+								checked={picked.includes(ev)}
+								onchange={() => toggle(ev)}
+							/>
+						{/each}
+					</div>
+					{#if picked.length === 0}
+						<p class="sub mt-2.5">
+							Pick at least one, or we will have nothing to call you about.
+						</p>
+					{/if}
+				</fieldset>
+			{:else}
+				<dl class="grid gap-3 rounded-md border border-sunk p-4">
+					<div class="flex items-baseline justify-between gap-4">
+						<dt class="label">We call</dt>
+						<dd class="truncate font-mono text-xs">{url}</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-4">
+						<dt class="label">About</dt>
+						<dd class="text-sm">{picked.map((e) => EVENTS[e].label).join(', ')}</dd>
+					</div>
+				</dl>
+				<p class="sub mt-3">
+					Every delivery is signed with a secret we show you once, on the next screen.
+					Check that signature before you trust anything in the body.
+				</p>
+			{/if}
+
+			{#if error}
+				<p class="mt-3 text-sm text-red" role="alert">{error}</p>
+			{/if}
+
+			<div class="mt-6 flex items-center gap-2">
+				{#if step > 0 && !busy}
+					<button
+						type="button"
+						class="btn flex-none"
+						onclick={() => (step -= 1)}
+						aria-label="Back"
+					>
+						<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					</button>
+				{/if}
+				<button
+					type="submit"
+					class="btn-solid flex-1"
+					disabled={busy || !filled}
+					aria-disabled={busy || !filled}
+				>
+					{#if busy}
+						Adding…
+					{:else if step < steps.length - 1}
+						Next
+						<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+					{:else}
+						Add the endpoint
+					{/if}
+				</button>
+			</div>
 		</div>
-		{#if picked.length === 0}
-			<p class="sub mt-2.5">
-				Pick at least one, or we will have nothing to call you about.
-			</p>
-		{/if}
-	</fieldset>
-	<button type="submit" class="btn-solid mt-5" disabled={busy || !url.trim()}>
-		{busy ? 'Adding…' : 'Add endpoint'}
-	</button>
+	</Steps>
 </form>
 
 <h2 class="mt-10 text-lg font-semibold tracking-tight">Your endpoints</h2>

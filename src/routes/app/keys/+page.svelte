@@ -2,8 +2,17 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { Copy01Icon, Tick02Icon, Delete02Icon } from '@hugeicons/core-free-icons';
+	import {
+		Copy01Icon,
+		Tick02Icon,
+		Delete02Icon,
+		Key01Icon,
+		CheckmarkCircle02Icon,
+		ArrowLeft01Icon,
+		ArrowRight01Icon
+	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
+	import Steps from '$lib/components/Steps.svelte';
 	import { listKeys, createKey, revokeKey, ApiError, type ApiKey } from '$lib/api';
 	import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
 
@@ -16,6 +25,25 @@
 	let keyCard = $state<HTMLElement | null>(null);
 	let copied = $state(false);
 	let confirming = $state('');
+	let step = $state(0);
+	let busy = $state(false);
+
+	// One question a screen, like every other form here. Naming a key and being told
+	// what happens when it is made are two different things to take in.
+	const steps = [
+		{
+			key: 'name',
+			icon: Key01Icon,
+			title: 'What is this key for?',
+			hint: 'A name only you see, so you can tell your keys apart later.'
+		},
+		{
+			key: 'make',
+			icon: CheckmarkCircle02Icon,
+			title: 'Ready to make it?',
+			hint: 'The key is shown once, on the next screen, and never again.'
+		}
+	];
 
 	async function load() {
 		try {
@@ -33,16 +61,24 @@
 
 	async function mint(e: SubmitEvent) {
 		e.preventDefault();
+		if (step === 0) {
+			if (name.trim()) step = 1;
+			return;
+		}
 		error = '';
+		busy = true;
 		try {
 			fresh = await createKey(name.trim() || 'Untitled key');
 			name = '';
+			step = 0;
 			// The key is the only thing that matters now. Clearing the form put the cursor
 			// back in the name field, pulling attention off a secret shown exactly once.
 			queueMicrotask(() => keyCard?.focus());
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
+		} finally {
+			busy = false;
 		}
 	}
 
@@ -114,12 +150,67 @@
 	</div>
 {/if}
 
-<form class="mt-6 flex flex-col gap-3 sm:flex-row" onsubmit={mint}>
-	<label class="flex-1">
-		<span class="vh">Name this key</span>
-		<input bind:value={name} class="field" type="text" placeholder="What is it for? e.g. Website" maxlength="60" />
-	</label>
-	<button type="submit" class="btn-solid flex-none">Make a key</button>
+<form class="card mt-6 max-w-2xl" onsubmit={mint}>
+	<Steps {steps} {step}>
+		<div class="mt-5">
+			{#if step === 0}
+				<label class="block">
+					<span class="vh">Name this key</span>
+					<input
+						bind:value={name}
+						class="field"
+						type="text"
+						placeholder="e.g. Website"
+						maxlength="60"
+						required
+					/>
+				</label>
+			{:else}
+				<dl class="grid gap-3 rounded-md border border-sunk p-4">
+					<div class="flex items-baseline justify-between gap-4">
+						<dt class="label">Name</dt>
+						<dd class="truncate text-sm font-medium">{name}</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-4">
+						<dt class="label">Can do</dt>
+						<dd class="text-sm">Everything an account can, except manage the team</dd>
+					</div>
+				</dl>
+				<p class="sub mt-3">
+					Have somewhere to paste it before you press this. We keep only a scrambled copy,
+					so there is no reading it back — a lost key is replaced, not recovered.
+				</p>
+			{/if}
+
+			<div class="mt-6 flex items-center gap-2">
+				{#if step > 0 && !busy}
+					<button
+						type="button"
+						class="btn flex-none"
+						onclick={() => (step = 0)}
+						aria-label="Back"
+					>
+						<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					</button>
+				{/if}
+				<button
+					type="submit"
+					class="btn-solid flex-1"
+					disabled={busy || (step === 0 && !name.trim())}
+					aria-disabled={busy || (step === 0 && !name.trim())}
+				>
+					{#if busy}
+						Making it…
+					{:else if step === 0}
+						Next
+						<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+					{:else}
+						Make the key
+					{/if}
+				</button>
+			</div>
+		</div>
+	</Steps>
 </form>
 
 {#if error}
