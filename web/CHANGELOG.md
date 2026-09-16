@@ -8,12 +8,19 @@
   behind a confirm step, for both an encoder stream and a camera one; stopping a camera
   broadcast tells the engine and closes the connection and the camera together.
 
+### Added
+- **An Overview page at `/app/`.** The videos list had been doing both jobs: it opened
+  with a greeting, four figures and a month of uploads, and the list itself was below
+  all of it. Overview keeps the figures and now also names any broadcast on air or
+  waiting, above everything else. `/app/videos/` is the list and nothing else.
+
 ### Changed
 - **The sidebar is ordered by what you came to do**: Videos, Live, then Develop and
   Account. Getting video in is one job with three doors, so Upload, Connected buckets
-  and Move a library no longer take a row each — they are reached from the Upload
-  button on Videos, and Upload names the other two. Each keeps its own address and
-  now sets its own trail.
+  and Connected buckets no longer take a row each — they are reached from the Upload
+  button, and the Upload page names the bucket route where somebody looks for it.
+  Moving a library in from another service keeps its own row: it is a job of its own,
+  not a way to upload.
 - **The Refresh buttons are gone** from Videos and Live. Both pages already reload
   themselves every five seconds while anything is in flight, so the button could only
   ask again for a list that was either already coming or could not have changed.
@@ -23,6 +30,10 @@
   a clone builds on its own. `npm install` runs once at the repository root.
 
 ### Fixed
+- **Only one sidebar row lights at a time.** On Recordings both Streams and Recordings
+  were highlighted, because the row test asked "does the address start with mine" and
+  `/app/live/` prefixes `/app/live/recordings/`. The breadcrumb already took the
+  longest match; now the rows follow it rather than deciding again.
 - **The API reference is in the repository.** `docs` in `.gitignore` had no leading
   slash, so git ignored any directory of that name at any depth — including
   `src/routes/app/docs/`, the reference the sidebar has linked to all along. A fresh

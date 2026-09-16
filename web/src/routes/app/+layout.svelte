@@ -6,6 +6,8 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		DashboardSquare01Icon,
+		VideoReplayIcon,
+		ArrowDataTransferHorizontalIcon,
 		Key01Icon,
 		Book02Icon,
 		Logout01Icon,
@@ -38,6 +40,9 @@
 
 	const initial = $derived((me?.org ?? '?').trim().charAt(0).toUpperCase());
 
+	// The account at a glance, above everything it is a glance at.
+	const home = { href: '/app/', label: 'Overview', icon: DashboardSquare01Icon };
+
 	// What you came to do, then how it is set up. Getting video in is one job with
 	// three doors, so it is reached from Videos rather than taking three rows here.
 	const groups = [
@@ -47,10 +52,16 @@
 				{
 					href: '/app/videos/',
 					label: 'Videos',
-					icon: DashboardSquare01Icon,
-					owns: ['/app/upload', '/app/sources', '/app/migrate']
+					icon: VideoReplayIcon,
+					owns: ['/app/upload', '/app/sources']
 				},
-				{ href: '/app/studio/', label: 'Studio', icon: Scissor01Icon }
+				{ href: '/app/studio/', label: 'Studio', icon: Scissor01Icon },
+				// Arriving from another service is a job of its own, not a way to upload.
+				{
+					href: '/app/migrate/',
+					label: 'Move a library',
+					icon: ArrowDataTransferHorizontalIcon
+				}
 			]
 		},
 		{
@@ -79,7 +90,7 @@
 		}
 	];
 
-	const flat = groups.flatMap((g) => g.items);
+	const flat = [home, ...groups.flatMap((g) => g.items)];
 
 	// A nested route keeps its section lit. Exact match alone left every deeper page
 	// with nothing selected; a bare startsWith would light Overview on all of them,
@@ -95,7 +106,7 @@
 	const active = $derived(
 		[...flat].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(i, page.url.pathname))
 	);
-	const current = $derived(active?.label ?? 'Videos');
+	const current = $derived(active?.label ?? 'Overview');
 
 	// The session lives in an HttpOnly cookie, so the page cannot read it — asking
 	// the API is the only way to know, and the only way to be sure it is still live.
@@ -138,7 +149,7 @@
 	});
 
 	const trail = $derived(
-		crumbs().length ? crumbs() : page.url.pathname === '/app/videos/' ? [] : [{ label: current }]
+		crumbs().length ? crumbs() : page.url.pathname === '/app/' ? [] : [{ label: current }]
 	);
 
 	async function signOut() {
@@ -179,7 +190,9 @@
 	<!-- The sidebar sits on the page ground. That is what makes the panel inset. -->
 	<aside class="sidebar" class:sidebar--open={drawer}>
 		<div class="flex items-center justify-between px-4 pt-4">
-			<a href="/" class="flex items-center gap-2 text-base font-semibold tracking-tight">
+			<!-- Home is the dashboard now that there is one; the marketing site is still
+			     in the account menu. -->
+			<a href="/app/" class="flex items-center gap-2 text-base font-semibold tracking-tight">
 				<Logo size={22} />
 				Alchemist
 			</a>
@@ -194,6 +207,19 @@
 		</div>
 
 		<nav class="mt-5 flex-1 overflow-y-auto px-3" aria-label="Dashboard">
+			<ul class="grid gap-0.5">
+				<li>
+					<a
+						href={home.href}
+						class="side-link"
+						class:side-link--on={home === active}
+						aria-current={home === active ? 'page' : undefined}
+					>
+						<HugeiconsIcon icon={home.icon} size={17} strokeWidth={1.7} />
+						{home.label}
+					</a>
+				</li>
+			</ul>
 			{#each groups as group (group.label)}
 				{@const locked = !!group.live && !live}
 				<p class="flex items-center gap-2 px-2 pt-4 pb-2">
@@ -201,7 +227,9 @@
 				</p>
 				<ul class="grid gap-0.5">
 					{#each group.items as item (item.href)}
-						{@const on = isActive(item, page.url.pathname)}
+						<!-- Identity, not another isActive call: /app/live/recordings/ also
+						     starts with /app/live/, so both rows lit at once. -->
+						{@const on = item === active}
 						<li>
 							{#if locked}
 								<span class="side-link opacity-45" aria-disabled="true">
@@ -305,10 +333,10 @@
 				<nav class="flex min-w-0 items-center gap-2 text-sm" aria-label="Breadcrumb">
 					<!-- The list is the dashboard, so on that page the root crumb is a label,
 					     not a link back to the page you are already reading. -->
-					{#if page.url.pathname === '/app/videos/'}
+					{#if page.url.pathname === '/app/'}
 						<span class="flex-none font-medium" aria-current="page">Dashboard</span>
 					{:else}
-						<a href="/app/videos/" class="flex-none text-dim transition-colors hover:text-ink">Dashboard</a>
+						<a href="/app/" class="flex-none text-dim transition-colors hover:text-ink">Dashboard</a>
 					{/if}
 					{#each trail as c, i (c.label + i)}
 						<span class="flex-none text-dim" aria-hidden="true">/</span>
