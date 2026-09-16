@@ -3,6 +3,14 @@
 ## Unreleased
 
 ### Added
+- **Settings has a Playback tab**, which is where the scrambling switch lives now. It
+  had an API and no screen anywhere in the product, so a customer whose iPhone viewers
+  got a refusal had no way to turn it off themselves — and it is on by default for new
+  accounts. The page says what the trade actually is: Apple devices cannot play a
+  scrambled video and are told so plainly rather than shown a black screen, the change
+  applies to videos sent from now on, and live broadcasts are never scrambled. The
+  per-viewer device limit moved here too, because one call writes both and a screen
+  that sent only the toggle would have quietly removed the limit.
 - **The marketing page sells live and editing, which it had never mentioned.** Two new
   sections: going live from a browser camera or an encoder, and what can be done to a
   video after it is uploaded — cutting, reshaping, watermarking and subtitles. Both say
