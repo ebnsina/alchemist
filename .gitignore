@@ -1,5 +1,7 @@
-docs/
-data/
+/docs/
+/data/
 .env
 /bin/
 .local/
+node_modules/
+.DS_Store

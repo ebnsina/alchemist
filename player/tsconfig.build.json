@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationDir": "dist/sdk",
+    "rootDir": "src",
+    // The source imports with .ts extensions, which tsc will not emit for. Rewriting
+    // them is the supported way to keep that style and still ship types.
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["src"]
+}
