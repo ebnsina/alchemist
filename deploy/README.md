@@ -71,9 +71,40 @@ returns zero rows without erroring.
 `assets.title` and nothing else; it is additive, safe to re-run, and deliberately
 backfills nothing — null means a video nobody has named and the dashboard shows the
 short id instead.
+`internal/platform/db/migrations/039_staff.sql` adds `users.platform_admin` and
+`sessions.acting_tenant_id`, both nullable or defaulted and safe to re-run, and
+replaces `auth_session()` so a session resolves to the tenant it is acting as. It is
+dropped and recreated rather than replaced in place, because its return type changes.
 `internal/platform/db/migrations/033_encryption_default.sql` flips
 `tenants.encrypt_playback` to default true and changes **nothing** for tenants that
 already exist -- see below.
+
+## The platform administrator
+
+One Alchemist account may act as any tenant, for support. Create it with the binary's
+own subcommand — the password comes from the environment, there is no default, and
+the command exits if it is unset:
+
+```
+ALCHEMIST_STAFF_PASSWORD='...' /opt/alchemist/bin/alchemist create-admin you@example.com
+```
+
+Locally that is `ALCHEMIST_STAFF_PASSWORD=... make create-admin EMAIL=you@example.com`.
+Run it twice and it promotes the account that is already there, leaving the password
+alone; it never creates a second user. A new account lands in a tenant called
+`Alchemist` with nothing in it — the flag grants everything, the tenant grants
+nothing.
+
+Support then works by impersonation: `POST /v1/staff/impersonate {"tenant_id"}` makes
+every ordinary endpoint answer for that customer, and the session becomes read-only
+(`403 read_only_session` on every write) until `DELETE /v1/staff/impersonate`. Staff
+see one thing a customer does not: `GET /v1/assets/{id}/diagnostics` and
+`GET /v1/live-sessions/{id}/diagnostics` return the raw `river_job` error text, which
+the customer-facing activity view withholds because it carries paths and internal
+arguments.
+
+Changing something on a customer's behalf is still `/admin/*` with
+`ALCHEMIST_ADMIN_KEY`. Impersonation reads; it does not write.
 
 `ALCHEMIST_ENCODE_WORKERS` should be roughly the core count. Encoding already uses a
 per-job worker pool, so setting it far above that only lengthens the tail.

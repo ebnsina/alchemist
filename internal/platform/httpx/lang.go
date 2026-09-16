@@ -79,6 +79,9 @@ var bangla = map[string]string{
 	"not_broadcasting":        "এই স্ট্রিমটি এখন সম্প্রচারে নেই, তাই বন্ধ করার কিছু নেই।",
 	"stopped":                 "কিছু পাঠানোর আগেই স্ট্রিমটি বন্ধ করা হয়েছে।",
 	"start_failed":            "স্ট্রিমটি চালু করা শেষ হয়নি, তাই সম্প্রচার হয়নি।",
+	"staff_only":              "এটি কেবল Alchemist স্টাফের জন্য।",
+	"read_only_session":       "আপনি স্টাফ হিসেবে এই অ্যাকাউন্টটি দেখছেন। বদলাতে হলে দেখা বন্ধ করুন।",
+	"tenant_not_found":        "এই অ্যাকাউন্টটি খুঁজে পাওয়া যায়নি।",
 }
 
 // ErrorCodes lists every code with Bangla copy, so a test can assert that the set

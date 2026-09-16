@@ -165,15 +165,20 @@ func (s *Server) getSession(w http.ResponseWriter, r *http.Request) {
 	}
 	sum := sha256.Sum256([]byte(c.Value))
 	var userID, tenantID, email, org string
+	var admin, impersonating bool
 	err = s.db.Pool().QueryRow(r.Context(),
-		`select user_id::text, tenant_id::text, email::text, org_name from auth_session($1)`, sum[:]).
-		Scan(&userID, &tenantID, &email, &org)
+		`select user_id::text, tenant_id::text, email::text, org_name,
+		        platform_admin, impersonating from auth_session($1)`, sum[:]).
+		Scan(&userID, &tenantID, &email, &org, &admin, &impersonating)
 	if err != nil {
 		writeErrFor(w, r, http.StatusUnauthorized, "no_session", "You are not signed in.")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{
+	// tenant_id and org are already the account being viewed, so a staff session
+	// needs these three to draw a banner the person cannot miss.
+	writeJSON(w, http.StatusOK, map[string]any{
 		"user_id": userID, "tenant_id": tenantID, "email": email, "org": org,
+		"platform_admin": admin, "impersonating": impersonating,
 	})
 }
 

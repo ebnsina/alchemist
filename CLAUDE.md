@@ -197,6 +197,11 @@ These were established by measurement and are expensive to rediscover.
   a link the customer handed out before the match. `setState` and `markFailed` in
   `internal/pipeline/pipeline.go` both exclude it; the only write that moves the asset
   is the final one, which already runs after the upload.
+- **A session becomes a tenant in exactly one place: `auth_session()`.** Platform-admin
+  impersonation is resolved there, so every endpoint acts on the customer's account
+  with no second code path, and the flag is re-read on every request — revoking it
+  ends impersonation on the next call rather than when the session expires. While
+  impersonating the session is read-only, enforced in `authenticate`, not per handler.
 - **Cross-tenant sweeps need a `SECURITY DEFINER` function.** RLS is forced, so a
   background job with no tenant in scope silently reads zero rows — it does not error.
   `active_bucket_sources()`, `resolve_api_key()` and `live_tenants()` exist for this.

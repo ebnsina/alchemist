@@ -46,6 +46,11 @@ Things that will otherwise surprise you:
   it — render the first characters of the id rather than inventing "Untitled". Set
   it on upload or import, or with `PATCH /v1/assets/{id}`. An import with no title
   takes the last segment of the source URL, decoded, without its extension.
+- **A session can be acting as someone else.** `GET /v1/auth/session` returns
+  `platform_admin` and `impersonating`; when `impersonating` is true, `tenant_id` and
+  `org` are the account being viewed by Alchemist staff and every write is refused
+  with `403 read_only_session`. For a customer's own session both flags are false and
+  nothing changes.
 - **Errors are `{"error":{"code","message"}}`.** Branch on `code`, which is stable.
   `message` is written for a human and is translated when the request sends
   `Accept-Language: bn`.
@@ -124,6 +129,18 @@ GET  /v1/usage                 -> billable aggregates: ingest seconds, egress by
                                   storage gb_hours
 GET  /v1/branding              -> account name and logo URL
 GET  /v1/playback-settings     -> playback encryption, and the per-viewer device cap
+
+Alchemist staff only, and there is exactly one such account. Support works by
+assuming a customer's scope, not by a separate view of everyone: while impersonating,
+every endpoint above answers for that account and the session is read-only, so a
+support visit cannot change anything. Anyone else gets 403 `staff_only`:
+GET    /v1/staff/tenants        -> every account: name, id, counts. No customer
+                                   content; q matches name and id prefix
+POST   /v1/staff/impersonate    -> {"tenant_id"} -- act as that account, read-only
+DELETE /v1/staff/impersonate    -> back to your own account
+GET    /v1/assets/{id}/diagnostics       -> queue rows WITH the raw error text
+GET    /v1/live-sessions/{id}/diagnostics -> a broadcast, its last_seen_at, and the
+                                   queue rows for its asset with their error text
 
 Live, present only where this deployment configures ingest, and only for a tenant
 who has bought it -- otherwise every endpoint here answers `live_not_enabled` (403).

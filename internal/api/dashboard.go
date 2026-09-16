@@ -20,19 +20,32 @@ import (
 // Both authenticate the same way as the rest of /v1 — an API key, or a session
 // cookie from a configured origin.
 
+// sessionInfo is who a cookie belongs to and what it is currently acting as.
+// TenantID is already the acting tenant when a platform admin is impersonating, so
+// every endpoint below scopes to the customer without knowing impersonation exists.
+type sessionInfo struct {
+	UserID        string
+	TenantID      string
+	Email         string
+	Org           string
+	PlatformAdmin bool
+	Impersonating bool
+}
+
 // tenantFromSession resolves the session cookie, but only for a request that came
 // from an origin we published the dashboard on. Without that check the cookie would
 // authorise any site that can make the browser send it.
-func (s *Server) tenantFromSession(r *http.Request) (tenant, user string, ok bool) {
+func (s *Server) tenantFromSession(r *http.Request) (sessionInfo, bool) {
+	var out sessionInfo
 	if !s.authEnabled() {
-		return "", "", false
+		return out, false
 	}
 	origin := r.Header.Get("Origin")
 	if origin == "" {
 		// Same-origin GETs arrive without Origin in some browsers. Sec-Fetch-Site is
 		// the modern signal and cannot be set by script.
 		if site := r.Header.Get("Sec-Fetch-Site"); site != "same-origin" && site != "none" {
-			return "", "", false
+			return out, false
 		}
 	} else {
 		listed := false
@@ -43,22 +56,34 @@ func (s *Server) tenantFromSession(r *http.Request) (tenant, user string, ok boo
 			}
 		}
 		if !listed {
-			return "", "", false
+			return out, false
 		}
 	}
 
 	c, err := r.Cookie(sessionCookie)
 	if err != nil || c.Value == "" {
-		return "", "", false
+		return out, false
 	}
 	sum := sha256.Sum256([]byte(c.Value))
-	var userID, tenantID, email, org string
 	if err := s.db.Pool().QueryRow(r.Context(),
-		`select user_id::text, tenant_id::text, email::text, org_name from auth_session($1)`,
-		sum[:]).Scan(&userID, &tenantID, &email, &org); err != nil {
-		return "", "", false
+		`select user_id::text, tenant_id::text, email::text, org_name,
+		        platform_admin, impersonating from auth_session($1)`, sum[:]).
+		Scan(&out.UserID, &out.TenantID, &out.Email, &out.Org,
+			&out.PlatformAdmin, &out.Impersonating); err != nil {
+		return sessionInfo{}, false
 	}
-	return tenantID, userID, true
+	return out, true
+}
+
+// impersonationAllows lists what a read-only support session may still do: read
+// anything, and end the impersonation itself -- without that exception, stopping
+// would be refused by the rule that made it read-only and staff would be stuck.
+func impersonationAllows(r *http.Request) bool {
+	switch r.Method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+		return true
+	}
+	return r.URL.Path == "/v1/staff/impersonate"
 }
 
 // requireSession rejects an API key on the endpoints that administer the account
