@@ -7,8 +7,18 @@
 	let {
 		open = $bindable(false),
 		title,
-		children
-	}: { open?: boolean; title: string; children: import('svelte').Snippet } = $props();
+		hint,
+		id,
+		children,
+		footer
+	}: {
+		open?: boolean;
+		title: string;
+		hint?: string;
+		id?: string;
+		children: import('svelte').Snippet;
+		footer?: import('svelte').Snippet;
+	} = $props();
 
 	let el = $state<HTMLDialogElement | null>(null);
 
@@ -21,6 +31,7 @@
 
 <dialog
 	bind:this={el}
+	{id}
 	class="dlg"
 	aria-label={title}
 	onclose={() => (open = false)}
@@ -30,26 +41,43 @@
 	}}
 >
 	<div class="dlg__panel">
-		<div class="flex items-start justify-between gap-4">
-			<h2 class="text-lg font-semibold tracking-tight">{title}</h2>
-			<button type="button" class="icon-btn flex-none" onclick={() => (open = false)} aria-label="Close">
+		<div class="dlg__head">
+			<div class="min-w-0">
+				<h2 class="text-lg font-semibold tracking-tight">{title}</h2>
+				{#if hint}<p class="sub mt-1">{hint}</p>{/if}
+			</div>
+			<button
+				type="button"
+				class="icon-btn flex-none"
+				onclick={() => (open = false)}
+				aria-label="Close"
+			>
 				<HugeiconsIcon icon={Cancel01Icon} size={17} strokeWidth={1.8} />
 			</button>
 		</div>
-		<div class="mt-5">
+
+		<div class="dlg__body">
 			{@render children()}
 		</div>
+
+		{#if footer}
+			<div class="dlg__foot">
+				{@render footer()}
+			</div>
+		{/if}
 	</div>
 </dialog>
 
 <style>
+	/* Every dialog is the same size, so opening one never moves the page around and a
+	   long form scrolls inside itself rather than growing the panel. */
 	.dlg {
 		margin: auto;
 		padding: 0;
 		border: 0;
 		background: transparent;
-		max-width: min(640px, calc(100vw - 32px));
-		width: 100%;
+		width: min(560px, calc(100vw - 32px));
+		height: min(620px, calc(100dvh - 48px));
 		max-height: calc(100dvh - 48px);
 		overflow: visible;
 		color: var(--color-ink);
@@ -59,12 +87,34 @@
 		backdrop-filter: blur(2px);
 	}
 	.dlg__panel {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
 		background: var(--color-card);
 		border: 1px solid var(--color-sunk);
 		border-radius: var(--radius-lg);
-		padding: 24px;
-		max-height: calc(100dvh - 48px);
+		overflow: hidden;
+	}
+	.dlg__head {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 16px;
+		flex: none;
+		padding: 20px 24px;
+		border-bottom: 1px solid var(--color-sunk);
+	}
+	.dlg__body {
+		flex: 1;
+		min-height: 0;
 		overflow-y: auto;
+		padding: 24px;
+	}
+	.dlg__foot {
+		flex: none;
+		padding: 16px 24px;
+		border-top: 1px solid var(--color-sunk);
+		background: var(--color-card);
 	}
 	.dlg[open] {
 		animation: dlg-in 180ms cubic-bezier(0.22, 1, 0.36, 1);

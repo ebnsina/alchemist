@@ -256,6 +256,9 @@
 {/if}
 
 <Dialog bind:open title="Start a migration">
+	{#if error}
+		<p class="mb-4 text-sm text-red" role="alert">{error}</p>
+	{/if}
 	<Steps steps={visible} {step}>
 			<div class="mt-5 grid gap-4">
 				{#if stepKey === 'who'}

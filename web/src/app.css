@@ -312,7 +312,13 @@
   corner-shape: squircle;
 }
 
-/* Red is destruction, never emphasis. */
+/* Red is destruction, never emphasis. Card is near-black on dark and white on light,
+   so it reads on both without a second token. */
+@utility btn-danger {
+  @apply btn;
+  background: var(--color-red);
+  color: var(--color-card);
+}
 
 /* The card ground is only a shade off the page — #161618 on #0D0D0F is about 1.1:1,
    which is a surface you can measure but not see. The border is what actually draws
