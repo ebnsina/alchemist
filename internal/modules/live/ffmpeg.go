@@ -49,7 +49,18 @@ func Prefix(tenantID, assetID string) string {
 // Rate control matches the VOD path (CRF with a VBV cap, never per-chunk ABR) so the
 // recording looks like everything else in the library; only the preset drops to
 // veryfast, because realtime is a hard constraint and a soft frame beats a late one.
-func segmentCommand(ctx context.Context, input string, r media.Rung, outDir string) *exec.Cmd {
+// resuming appends to the playlist already in the directory instead of starting a new
+// one, which is what an encoder reconnecting mid-broadcast needs: ffmpeg continues the
+// segment numbering, leaves the earlier segments alone, and writes an
+// EXT-X-DISCONTINUITY at the join so a player knows the timeline restarts there.
+//
+// Verified against ffmpeg 9.0.1. `discont_start` is deliberately not set with it: it
+// puts a second DISCONTINUITY at the very top of the playlist, before the first
+// segment, where there is no discontinuity at all. `-start_number` is not set either —
+// append_list already continues the numbering, and forcing it made ffmpeg skip ahead
+// to a number neither side expected.
+func segmentCommand(ctx context.Context, input string, r media.Rung, outDir string,
+	resuming bool) *exec.Cmd {
 	keyint := strconv.Itoa(segmentSeconds * media.DefaultFrameRate)
 
 	args := []string{"-hide_banner", "-loglevel", "error"}
@@ -77,8 +88,11 @@ func segmentCommand(ctx context.Context, input string, r media.Rung, outDir stri
 		"-hls_list_size", "0",
 		"-hls_fmp4_init_filename", "init.mp4",
 		"-hls_segment_filename", filepath.Join(outDir, "%d.m4s"),
-		filepath.Join(outDir, PlaylistName),
 	)
+	if resuming {
+		args = append(args, "-hls_flags", "append_list")
+	}
+	args = append(args, filepath.Join(outDir, PlaylistName))
 	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
 	// SIGINT rather than the default kill, so a stopped broadcast finalises its
 	// playlist the way one whose encoder hung up does. WaitDelay is the backstop.
@@ -130,4 +144,30 @@ func publishURL(protocol, host, streamID string) string {
 	}
 	return fmt.Sprintf("rtmp://%s:%d/%s?user=publisher&pass=%s",
 		host, rtmpPort, streamID, keyPlaceholder)
+}
+
+// publishParts splits the same address into the two fields an encoder's settings
+// screen actually has.
+//
+// OBS, and most hardware, ask for a Server and a Stream Key and join them with a
+// slash. Handing over one URL gets the path appended twice and publishes to something
+// nothing authorised. The start response named both fields for that reason and then
+// sent the key as an empty string, so there was nothing to paste into the second box
+// and the placeholder sat inside the first -- a customer following the dashboard could
+// not go on air at all.
+//
+// The key half carries the placeholder, because only the hash of the real key is
+// stored: it was shown once at creation and cannot be put back into a URL, even for
+// its owner. A stream whose key nobody wrote down needs a new one.
+func publishParts(protocol, host, streamID string) (server, key string) {
+	switch protocol {
+	case "camera":
+		return publishURL(protocol, host, streamID), ""
+	case "srt":
+		// SRT carries everything in streamid, so the whole address is the "server"
+		// and there is no second field to fill.
+		return publishURL(protocol, host, streamID), ""
+	}
+	return fmt.Sprintf("rtmp://%s:%d", host, rtmpPort),
+		fmt.Sprintf("%s?user=publisher&pass=%s", streamID, keyPlaceholder)
 }

@@ -1,0 +1,12 @@
+-- live_streams.ingest_port was never written.
+--
+-- It is from the design where every armed stream bound its own ingest port and ffmpeg
+-- listened on it directly. That did not survive contact with SRT: ffmpeg's listener
+-- accepts one connection and never exposes the streamid, so it could not check a
+-- stream key, which left the port itself as the credential. The ingest server replaced
+-- it and dispatches every stream on one port by path -- so nothing has assigned a port
+-- since, while two code paths went on carefully setting it back to null.
+--
+-- A column nothing writes reads as a mechanism that exists. Dropping it is the only
+-- honest way to say there are no per-stream ports.
+alter table live_streams drop column if exists ingest_port;

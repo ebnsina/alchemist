@@ -43,6 +43,8 @@ const MESSAGES: Record<string, string> = {
 	invalid_protocol: 'Pick your camera, SRT or RTMP.',
 	stream_not_found: 'We could not find that stream.',
 	stream_busy: 'That stream is already waiting for an encoder.',
+	stream_on_air:
+		'That stream is on air or waiting for an encoder. Stop it first, then delete it.',
 	not_broadcasting: 'That stream is not on air, so there is nothing to stop.',
 	key_not_found: 'We could not find that key. Reload the page.',
 	webhook_not_found: 'We could not find that endpoint. Reload the page.',
@@ -610,12 +612,17 @@ export const createLiveStream = (name: string, protocol: LiveSource) =>
 
 // publish_token comes back only for a camera stream, because the browser is the
 // encoder and has no key to paste. It is minted for this broadcast and no other.
+// ingest_server and ingest_stream_key are the two fields an encoder's settings screen
+// actually has. RTMP fills both; SRT carries everything in one address and leaves the
+// key empty, and a camera stream has no encoder to configure at all.
 export const startLiveStream = (id: string) =>
 	call<{
 		stream_id: string;
 		session_id: string;
 		asset_id: string;
 		ingest_url: string;
+		ingest_server?: string;
+		ingest_stream_key?: string;
 		publish_token?: string;
 	}>(`/v1/live-streams/${id}/start`, { method: 'POST' });
 
