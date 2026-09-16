@@ -10,7 +10,15 @@
 		DatabaseLockedIcon,
 		MonitorSmartphoneIcon,
 		BrickWallShieldIcon,
-		FingerPrintIcon
+		FingerPrintIcon,
+		LiveStreaming01Icon,
+		RefreshIcon,
+		VideoReplayIcon,
+		Link01Icon,
+		Scissor01Icon,
+		CropIcon,
+		TextIcon,
+		SubtitleIcon
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import Logo from '$lib/components/Logo.svelte';
@@ -98,6 +106,56 @@
 		}
 	];
 
+	// A broadcast goes out at one quality, and the page must not imply otherwise: the
+	// ladder is made afterwards, from the recording. Nor is there a data-saving claim
+	// here -- BDIX is FUP-exempt on fixed broadband, which is 11% of the country, and
+	// the mobile majority pays for the bytes either way. See docs/07-live-product.md.
+	const live = [
+		{
+			icon: LiveStreaming01Icon,
+			title: 'Your camera, or your encoder',
+			body: 'Go live from this browser with nothing to install, or point OBS or a hardware encoder at an address we give you. Same broadcast either way.'
+		},
+		{
+			icon: RefreshIcon,
+			title: 'A dropped signal is not the end of the class',
+			body: 'Mobile uplinks drop. If yours does, the broadcast waits for you rather than ending on everybody watching, and picks up where it stopped when you are back.'
+		},
+		{
+			icon: VideoReplayIcon,
+			title: 'Somebody who joins late can start at the beginning',
+			body: 'The whole broadcast stays seekable while it is still going out. You do not set up a recording for that — it is the same stream, from the top.'
+		},
+		{
+			icon: Link01Icon,
+			title: 'The link does not change when it ends',
+			body: 'A finished broadcast becomes an ordinary video at the same address, and every size is made in the background afterwards. Nothing you handed out stops working.'
+		}
+	];
+
+	const studio = [
+		{
+			icon: Scissor01Icon,
+			title: 'Cut it down',
+			body: 'Take the silence off the front and the stray minute off the end, from the copy already with us. Nothing is uploaded a second time.'
+		},
+		{
+			icon: CropIcon,
+			title: 'Turn it upright',
+			body: 'Crop to the part that matters and reshape it — upright for phones, square for a feed, or leave it wide. One source, as many cuts as you need.'
+		},
+		{
+			icon: TextIcon,
+			title: 'Put your mark on it',
+			body: 'A logo or a line of text, in a corner or wherever you drag it, for the whole video or a few seconds of it.'
+		},
+		{
+			icon: SubtitleIcon,
+			title: 'Subtitles in as many languages as you like',
+			body: 'Send a subtitle file per language and viewers pick one from the player. None is switched on for them — the menu is offered, they choose.'
+		}
+	];
+
 	const tiers = [
 		{
 			name: 'Starter',
@@ -116,7 +174,7 @@
 			lead: false
 		},
 		{
-			name: 'Studio',
+			name: 'Standard',
 			who: 'A product with real viewers',
 			price: 'Pay per unit',
 			unit: 'no plan to outgrow',
@@ -160,6 +218,7 @@
 		'HLS and DASH, signed links, expiring on your terms',
 		'Webhooks, so you are told rather than polling',
 		'As many API keys and accounts as you need',
+		'Cutting, reshaping and subtitles, on any video already with us',
 		'No seat charge, no minimum, nothing to pay to leave'
 	];
 
@@ -195,6 +254,14 @@
 			a: 'You pay for three things: video sent in, video held for you, and video watched. Nothing for seats, nothing as a minimum. Start free while you are building and only start paying when real people are watching.'
 		},
 		{
+			q: 'Can I stream live as well?',
+			a: 'Yes, from the camera in a browser or from an encoder you already own. Viewers watch it through the same kind of link as anything else, and when it ends the broadcast is already a video at that same address — nothing you handed out breaks. Live is switched on per account rather than sold with a plan, so tell us you want it.'
+		},
+		{
+			q: 'Can I change a video after it is uploaded?',
+			a: 'Cut it shorter, crop it, turn it upright for phones, put a logo or a line of text on it, and add subtitles in as many languages as you like. You never upload it again — we work from the copy already here. Every edit comes out as a new video, so the original and every link to it keep working exactly as they did.'
+		},
+		{
 			q: 'What if I want to leave?',
 			a: 'Export everything and go. No notice period, no exit fee, and we do not charge you to take your own files out.'
 		}
@@ -203,7 +270,7 @@
 	const uses = [
 		{
 			who: 'Course platforms',
-			why: 'A lecture has to open on a phone on mobile data, in a village, on a plan that charges by the megabyte.'
+			why: 'A recorded lecture has to open on a phone on mobile data, in a village, on a plan that charges by the megabyte — and a live class has to hold up on the teacher\u2019s uplink.'
 		},
 		{
 			who: 'Marketplaces and social products',
@@ -218,7 +285,7 @@
 
 <Seo
 	title="Alchemist — video infrastructure for your product"
-	description="An API for upload, encoding and delivery. Your users send video, we make every size their viewers need, and you hand out links that expire. Isolated accounts, usage pricing, no seats."
+	description="An API for upload, encoding, live streaming and delivery. Your users send video or go live, we make every size their viewers need, and you hand out links that expire. Cut, reshape and subtitle without re-uploading. Isolated accounts, usage pricing, no seats."
 />
 
 <!-- overflow-x: clip, because the hero glow is a blurred pseudo-element that bleeds
@@ -293,6 +360,73 @@
 						/>
 					</div>
 					<p class="sub mt-3">{f.body}</p>
+				</div>
+			{/each}
+		</div>
+	</section>
+
+	<div class="rule"></div>
+
+	<section id="live" class="scroll-mt-8 py-24">
+		<p class="label">Live</p>
+		<h2 class="mt-5 max-w-[18ch]">Go live, and end up with a video.</h2>
+		<p class="sub measure mt-4">
+			Start from the camera in a browser or the encoder you already own. Viewers watch
+			through the same kind of link as everything else, and when it is over the broadcast
+			is already sitting in your library.
+		</p>
+
+		<div class="mt-14 grid gap-4 md:grid-cols-2">
+			{#each live as l (l.title)}
+				<div class="card">
+					<div class="flex items-start justify-between gap-4">
+						<h3>{l.title}</h3>
+						<HugeiconsIcon
+							icon={l.icon}
+							size={22}
+							strokeWidth={1.8}
+							class="mt-0.5 flex-none text-accent"
+						/>
+					</div>
+					<p class="sub mt-3">{l.body}</p>
+				</div>
+			{/each}
+		</div>
+
+		<!-- Said plainly rather than left to be discovered: a broadcast is one quality,
+		     and the ladder is made afterwards from the recording. -->
+		<p class="sub measure mt-8">
+			A broadcast goes out at a single quality, picked to hold up on a phone connection.
+			The full set of sizes is made afterwards, from the recording. Live is switched on per
+			account rather than sold with a plan —
+			<a href="/contact/" class="underline underline-offset-4">tell us you want it</a>.
+		</p>
+	</section>
+
+	<div class="rule"></div>
+
+	<section id="studio" class="scroll-mt-8 py-24">
+		<p class="label">After the upload</p>
+		<h2 class="mt-5 max-w-[20ch]">Change a video without uploading it again.</h2>
+		<p class="sub measure mt-4">
+			Trim it, reshape it, mark it, caption it — all from the copy already here. Everything
+			you make comes out as a new video, so the one you started from never changes and every
+			link you have already handed out keeps working.
+		</p>
+
+		<div class="mt-14 grid gap-4 md:grid-cols-2">
+			{#each studio as e (e.title)}
+				<div class="card">
+					<div class="flex items-start justify-between gap-4">
+						<h3>{e.title}</h3>
+						<HugeiconsIcon
+							icon={e.icon}
+							size={22}
+							strokeWidth={1.8}
+							class="mt-0.5 flex-none text-accent"
+						/>
+					</div>
+					<p class="sub mt-3">{e.body}</p>
 				</div>
 			{/each}
 		</div>

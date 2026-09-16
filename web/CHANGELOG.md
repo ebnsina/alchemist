@@ -3,6 +3,17 @@
 ## Unreleased
 
 ### Added
+- **The marketing page sells live and editing, which it had never mentioned.** Two new
+  sections: going live from a browser camera or an encoder, and what can be done to a
+  video after it is uploaded — cutting, reshaping, watermarking and subtitles. Both say
+  the thing a reader would otherwise find out the hard way: a broadcast goes out at one
+  quality with the full ladder made afterwards from the recording, and live is switched
+  on per account rather than sold with a plan. No data-saving claim is made about live,
+  because BDIX is FUP-exempt on fixed broadband only and the mobile majority pays for
+  the bytes.
+- The middle pricing tier is **Standard**, not Studio. The product already has a Studio
+  — it is the editing surface in the dashboard — and a plan sharing its name made the
+  new section read as a plan feature.
 - **A stream's encoder settings now show a Stream Key you can actually paste.** The
   field was always there and always empty, with the key buried in the server address
   as a placeholder, so nobody following the page could get OBS connected. Server and
