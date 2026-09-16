@@ -15,6 +15,7 @@
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import Steps from '$lib/components/Steps.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import Check from '$lib/components/Check.svelte';
 	import {
 		listMigrationProviders,
@@ -229,33 +230,33 @@
 
 <Seo title="Move a library — Alchemist" description="Bring your videos across from another host." />
 
-<h1 class="text-2xl font-semibold tracking-tight">Move a library</h1>
-<p class="sub mt-1 max-w-xl">
-	Give us read access to your account somewhere else and we will show you what is there. You
-	decide what happens next — nothing is brought across until you say so, and nothing is deleted
-	on the far side.
-</p>
+<header class="flex flex-wrap items-start justify-between gap-4">
+	<div class="min-w-0">
+		<h1 class="text-2xl font-semibold tracking-tight">Move a library</h1>
+		<p class="sub mt-1 max-w-xl">
+			Give us read access to your account somewhere else and we will show you what is there.
+			You decide what happens next — nothing is brought across until you say so, and nothing
+			is deleted on the far side.
+		</p>
+	</div>
+	<button
+		type="button"
+		class="btn-solid flex-none"
+		onclick={() => {
+			step = 0;
+			open = true;
+		}}
+	>
+		Start a migration
+	</button>
+</header>
 
 {#if error}
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
 {/if}
 
-<div class="mt-6">
-	<button
-		type="button"
-		class={open ? 'btn' : 'btn-solid'}
-		onclick={() => {
-			open = !open;
-			step = 0;
-		}}
-	>
-		{open ? 'Never mind' : 'Start a migration'}
-	</button>
-</div>
-
-{#if open}
-	<div class="card mt-4 max-w-2xl">
-		<Steps steps={visible} {step}>
+<Dialog bind:open title="Start a migration">
+	<Steps steps={visible} {step}>
 			<div class="mt-5 grid gap-4">
 				{#if stepKey === 'who'}
 					<div class="grid gap-2.5 sm:grid-cols-2">
@@ -402,9 +403,8 @@
 					</button>
 				</div>
 			</div>
-		</Steps>
-	</div>
-{/if}
+	</Steps>
+</Dialog>
 
 {#if loading}
 	<div class="mt-6 grid gap-3">
@@ -426,9 +426,10 @@
 	<div class="card mt-6 py-8 text-center">
 		<p class="title">Nothing moved yet</p>
 		<p class="sub mx-auto mt-2 max-w-md">
-			This is a one-off for when you are arriving from somewhere else. Start one above and we
-			will show you what is there before anything moves. Day to day, videos come in through
-			the API or a <a href="/app/sources/" class="link">connected bucket</a>.
+			This is a one-off for when you are arriving from somewhere else. Use
+			<b>Start a migration</b> and we will show you what is there before anything moves. Day
+			to day, videos come in through the API or a
+			<a href="/app/sources/" class="link">connected bucket</a>.
 		</p>
 	</div>
 {:else}
