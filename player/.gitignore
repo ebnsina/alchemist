@@ -1,0 +1,8 @@
+node_modules/
+dist/
+fixture/
+.playwright-cli/
+docs/
+data/
+.DS_Store
+*.log

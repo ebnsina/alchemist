@@ -1,0 +1,35 @@
+{
+  "name": "@alchemist/player",
+  "version": "1.0.0",
+  "description": "Video player and JS SDK for Alchemist. Bangladesh-first: data saver, Bangla UI, low-end Android.",
+  "type": "module",
+  "license": "MIT",
+  "author": "ebnsina <ebnsina.me@gmail.com>",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/sdk/index.d.ts",
+      "import": "./dist/sdk/alchemist-player.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build --config vite.sdk.config.ts && tsc -p tsconfig.build.json && vite build",
+    "preview": "vite preview --port 5180",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts",
+    "icons": "node scripts/build-icons.mjs"
+  },
+  "dependencies": {
+    "shaka-player": "^5.2.10"
+  },
+  "devDependencies": {
+    "@hugeicons/core-free-icons": "^4.3.3",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.0"
+  }
+}
