@@ -247,8 +247,10 @@
 		}
 	];
 
+	// Nothing here sorts: the invite list is whatever the API returned, and a header
+	// that reordered only the rows on screen would lie about the ones it did not.
 	const inviteColumns: ColumnDef<any, Invite>[] = [
-		{ accessorKey: 'email', header: 'Email' },
+		{ accessorKey: 'email', header: 'Email', enableSorting: false },
 		{
 			accessorKey: 'role',
 			header: 'Invited as',
