@@ -106,6 +106,7 @@ export type Asset = {
 	id: string;
 	state: string;
 	error_code: string | null;
+	title: string | null;
 	duration_sec: number | null;
 	source_bytes: number | null;
 	height: number | null;
@@ -119,8 +120,40 @@ export type ApiKey = {
 };
 export type UsageLine = { kind: string; quantity: number; unit: string };
 
-export const listAssets = () => call<{ assets: Asset[] }>('/v1/assets');
-export const listKeys = () => call<{ keys: ApiKey[] }>('/v1/keys');
+// Every list endpoint takes the same five and answers with a total, so one helper
+// builds the query for all of them and no page invents its own parameter names.
+export type ListQuery = {
+	limit?: number;
+	offset?: number;
+	q?: string;
+	sort?: string;
+	order?: 'asc' | 'desc';
+	filters?: Record<string, string | string[] | undefined>;
+};
+
+export const listParams = (l: ListQuery = {}) => {
+	const p = new URLSearchParams();
+	if (l.limit != null) p.set('limit', String(l.limit));
+	if (l.offset) p.set('offset', String(l.offset));
+	if (l.q?.trim()) p.set('q', l.q.trim());
+	if (l.sort) p.set('sort', l.sort);
+	if (l.order) p.set('order', l.order);
+	for (const [k, v] of Object.entries(l.filters ?? {})) {
+		if (v == null || v === '') continue;
+		for (const one of Array.isArray(v) ? v : [v]) p.append(k, one);
+	}
+	const s = p.toString();
+	return s ? `?${s}` : '';
+};
+
+export const listAssets = (l: ListQuery = {}) =>
+	call<{ assets: Asset[]; total: number }>(`/v1/assets${listParams(l)}`);
+export const patchAsset = (id: string, title: string) =>
+	call<Asset>(`/v1/assets/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) });
+export const listKeys = (l: ListQuery = {}) =>
+	call<{ keys: ApiKey[]; total: number }>(`/v1/keys${listParams(l)}`);
+export const renameKey = (id: string, name: string) =>
+	call<ApiKey>(`/v1/keys/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) });
 export const createKey = (name: string) =>
 	call<{ id: string; name: string; api_key: string }>('/v1/keys', {
 		method: 'POST',
@@ -239,7 +272,8 @@ export type Invite = {
 	expires_at: string;
 };
 
-export const listMembers = () => call<{ members: Member[]; invites: Invite[] }>('/v1/members');
+export const listMembers = (l: ListQuery = {}) =>
+	call<{ members: Member[]; invites: Invite[]; total: number }>(`/v1/members${listParams(l)}`);
 export const inviteMember = (email: string, role: string) =>
 	call<{ id: string; email: string; role: string; token: string; expires_at: string }>(
 		'/v1/members/invites',
@@ -283,7 +317,13 @@ export const putLogo = (file: File) =>
 export type Webhook = { id: string; url: string; events: string[]; active: boolean };
 export const WEBHOOK_EVENTS = ['asset.ready', 'asset.failed', 'rendition.ready'] as const;
 
-export const listWebhooks = () => call<{ webhooks: Webhook[] }>('/v1/webhooks');
+export const listWebhooks = (l: ListQuery = {}) =>
+	call<{ webhooks: Webhook[]; total: number }>(`/v1/webhooks${listParams(l)}`);
+export const getWebhook = (id: string) => call<Webhook>(`/v1/webhooks/${id}`);
+export const patchWebhook = (id: string, body: { url?: string; active?: boolean }) =>
+	call<Webhook>(`/v1/webhooks/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const deleteWebhook = (id: string) =>
+	call<void>(`/v1/webhooks/${id}`, { method: 'DELETE' });
 export const createWebhook = (url: string, events: string[]) =>
 	call<{ id: string; url: string; secret: string }>('/v1/webhooks', {
 		method: 'POST',
@@ -308,7 +348,12 @@ export type NewBucketSource = {
 	secret_access_key: string;
 };
 
-export const listBucketSources = () => call<{ bucket_sources: BucketSource[] }>('/v1/bucket-sources');
+export const listBucketSources = (l: ListQuery = {}) =>
+	call<{ bucket_sources: BucketSource[]; total: number }>(`/v1/bucket-sources${listParams(l)}`);
+export const patchBucketSource = (id: string, body: { active?: boolean }) =>
+	call<BucketSource>(`/v1/bucket-sources/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const deleteBucketSource = (id: string) =>
+	call<void>(`/v1/bucket-sources/${id}`, { method: 'DELETE' });
 export const connectBucket = (body: NewBucketSource) =>
 	call<{ id: string }>('/v1/bucket-sources', { method: 'POST', body: JSON.stringify(body) });
 
@@ -363,7 +408,8 @@ export type MigrationItem = {
 
 export const listMigrationProviders = () =>
 	call<{ providers: MigrationProvider[] }>('/v1/migration-providers');
-export const listMigrations = () => call<{ migrations: Migration[] }>('/v1/migrations');
+export const listMigrations = (l: ListQuery = {}) =>
+	call<{ migrations: Migration[]; total: number }>(`/v1/migrations${listParams(l)}`);
 export const listMigrationItems = (id: string) =>
 	call<{ items: MigrationItem[] }>(`/v1/migrations/${id}/items`);
 export const startMigration = (provider: string, secret: string, config: Record<string, string>) =>
@@ -442,7 +488,10 @@ export type LiveStream = {
 	created_at: string;
 };
 
-export const listLiveStreams = () => call<{ live_streams: LiveStream[] }>('/v1/live-streams');
+export const listLiveStreams = (l: ListQuery = {}) =>
+	call<{ live_streams: LiveStream[]; total: number }>(`/v1/live-streams${listParams(l)}`);
+export const renameLiveStream = (id: string, name: string) =>
+	call<LiveStream>(`/v1/live-streams/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) });
 export const getLiveStream = (id: string) => call<LiveStream>(`/v1/live-streams/${id}`);
 
 // The key comes back on this one call and is never returned again, exactly like an
