@@ -29,6 +29,16 @@ const pollInterval = time.Second
 // waiting is one idle worker slot.
 const WaitForEncoder = 30 * time.Minute
 
+// ReconnectGrace is how long a broadcast that has already been on air waits for its
+// encoder to come back before it is declared over.
+//
+// From this side a dropped uplink and a presenter closing OBS are the same event: the
+// process exits. Ending on the first exit meant a few seconds of bad mobile signal --
+// the normal condition on the networks this is built for -- ended the class, released
+// the stream, converted a truncated recording, and left the link the teacher had
+// already handed out playing a stub.
+const ReconnectGrace = 90 * time.Second
+
 // retryInterval is how often the transcoder re-checks whether a publisher has
 // arrived. Two seconds is under one segment, so nothing is missed at the start.
 const retryInterval = 2 * time.Second
@@ -95,25 +105,42 @@ func (w *Worker) Run(ctx context.Context, sessionID, tenantID string) error {
 	pull := pullURL(w.PullBase, streamID)
 	prefix := Prefix(tenantID, assetID)
 	published := map[string]bool{}
+	// Before the first segment this is how long to wait for anybody at all; after it,
+	// how long to wait for the encoder that was here to come back.
 	waitUntil := time.Now().Add(WaitForEncoder)
+	wasLive := false
 
 	for {
-		ended, err := w.runIngest(ctx, a, pull, rung, dir, prefix, published, assetID, streamID)
+		added, err := w.runIngest(ctx, a, pull, rung, dir, prefix, published,
+			assetID, streamID, wasLive)
 		if err != nil {
 			return w.failLive(ctx, a, assetID, streamID, "ingest_failed")
 		}
-		if ended {
-			return w.endLive(ctx, a, assetID, streamID)
+		if added > 0 {
+			wasLive = true
+			// The encoder was publishing right up to the exit, so this is either the
+			// end of the broadcast or a dropped uplink. They are indistinguishable
+			// from here; the window decides.
+			waitUntil = time.Now().Add(ReconnectGrace)
 		}
-		// Stopped before anything was sent. There is no recording to keep, so this is
-		// an ending rather than a broadcast: a stable code, and the segments -- there
-		// are none -- are swept like any other failure.
+
+		// A stop is unambiguous, so it does not wait out the window. A broadcast that
+		// was on air ends with its recording; one that never started has nothing to
+		// keep and its (absent) segments are swept like any other failure.
 		if w.stopRequested(ctx, a) {
+			if wasLive {
+				w.closePlaylist(ctx, dir, prefix, published)
+				return w.endLive(ctx, a, assetID, streamID)
+			}
 			return w.failLive(ctx, a, assetID, streamID, "stopped")
 		}
-		// Nothing published yet: nobody has connected. Keep waiting until the stream
-		// is abandoned rather than failing a broadcast that starts five minutes late.
+
 		if time.Now().After(waitUntil) {
+			if wasLive {
+				w.closePlaylist(ctx, dir, prefix, published)
+				return w.endLive(ctx, a, assetID, streamID)
+			}
+			// Nobody ever connected, rather than a broadcast that ended.
 			return w.failLive(ctx, a, assetID, streamID, "no_encoder")
 		}
 		select {
@@ -131,19 +158,22 @@ type session struct {
 	TenantID string
 }
 
-// runIngest reads one connection to completion. It reports ended=true when video was
-// seen, which is a broadcast that finished; ended=false means nobody was publishing
-// and the caller should wait and try again.
+// runIngest reads one connection to completion and reports how many segments it
+// published. Zero means nobody was publishing and the caller should wait and try
+// again; more than zero means the encoder was here, which is either the end of the
+// broadcast or a drop it may come back from.
 func (w *Worker) runIngest(ctx context.Context, a session, pull string, rung media.Rung,
-	dir, prefix string, published map[string]bool, assetID, streamID string) (bool, error) {
+	dir, prefix string, published map[string]bool, assetID, streamID string,
+	resuming bool) (int, error) {
 	// Its own context so a stop can end ffmpeg without cancelling the publish of the
 	// segments it already wrote -- those go out on the parent, after it exits.
 	runCtx, stopFFmpeg := context.WithCancel(ctx)
 	defer stopFFmpeg()
 
-	cmd := segmentCommand(runCtx, pull, rung, dir)
+	before := len(published)
+	cmd := segmentCommand(runCtx, pull, rung, dir, resuming)
 	if err := cmd.Start(); err != nil {
-		return false, err
+		return 0, err
 	}
 
 	done := make(chan error, 1)
@@ -155,20 +185,19 @@ func (w *Worker) runIngest(ctx context.Context, a session, pull string, rung med
 	for {
 		select {
 		case <-done:
-			// Publish whatever the last tick missed before declaring the broadcast
-			// over, or the final segments are lost even though they were encoded.
+			// Publish whatever the last tick missed before the process is gone, or the
+			// final segments are lost even though they were encoded.
 			_, _ = w.publishSegments(ctx, dir, prefix, published)
-			// And the playlist unconditionally: the ENDLIST ffmpeg appends on its way
-			// out is how a viewer learns the broadcast is over, and it can arrive with
-			// no new segment beside it, which publishSegments would skip.
+			// And the playlist unconditionally: it can change with no new segment
+			// beside it, which publishSegments would skip. ENDLIST is stripped,
+			// because the encoder exiting is not yet proof the broadcast is over --
+			// publishing it here ends the stream for every viewer during a reconnect
+			// the presenter has not even noticed. endLive writes the final one.
 			if body, err := os.ReadFile(filepath.Join(dir, PlaylistName)); err == nil && len(published) > 0 {
 				_ = w.Store.Put(ctx, prefix+"/"+PlaylistName,
-					bytes.NewReader(body), "application/vnd.apple.mpegurl")
+					bytes.NewReader(openPlaylist(body)), "application/vnd.apple.mpegurl")
 			}
-			// An encoder that hangs up is how a broadcast normally ends, so an exit
-			// after we saw video is success. An exit with nothing published is simply
-			// nobody there yet.
-			return len(published) > 0, nil
+			return len(published) - before, nil
 		case <-ticker.C:
 			added, err := w.publishSegments(ctx, dir, prefix, published)
 			if err == nil && added > 0 {
@@ -291,11 +320,11 @@ func (w *Worker) endLive(ctx context.Context, a session, assetID, streamID strin
 			a.ID); err != nil {
 			return err
 		}
-		// The port is released here and nowhere else, so a finished broadcast never
-		// holds one.
+		// One port serves every stream -- the ingest server dispatches on the path --
+		// so there is no per-stream port to release here.
 		_, err := tx.Exec(ctx,
-			`update live_streams set state = 'ended', ingest_port = null,
-			        updated_at = now() where id = $1`, streamID)
+			`update live_streams set state = 'ended', updated_at = now() where id = $1`,
+			streamID)
 		return err
 	}); err != nil {
 		return err
@@ -318,8 +347,8 @@ func (w *Worker) failLive(ctx context.Context, a session, assetID, streamID, cod
 			return err
 		}
 		_, err := tx.Exec(ctx,
-			`update live_streams set state = 'ended', ingest_port = null,
-			        updated_at = now() where id = $1`, streamID)
+			`update live_streams set state = 'ended', updated_at = now() where id = $1`,
+			streamID)
 		return err
 	})
 	_ = w.Assets.MarkFailed(ctx, a.TenantID, assetID, code)
@@ -344,18 +373,121 @@ func (w *Worker) emitLive(ctx context.Context, tenantID, event, assetID, streamI
 	_ = w.Events.Emit(ctx, tenantID, event, data)
 }
 
-// liveRung picks the lowest eager rung in the tenant's profile.
+// LiveMaxHeight caps the single rung a broadcast is encoded at.
 //
-// One rung, and the cheapest one, because realtime encoding is roughly a core per
-// rung and the whole BD phase-1 encode budget is about three cores: a full live
-// ladder on CPU consumes it. The ladder comes back with the GPU pool.
+// One rung, because realtime encoding is roughly a core per rung and the whole BD
+// phase-1 encode budget is about three cores: a full live ladder on CPU consumes it.
+// The ladder comes back with more machines.
+//
+// But the cheapest rung is not the right one. Taking the lowest eager rung put every
+// broadcast out at 144p and 180 kbps -- unreadable for the whiteboard and slides that
+// are most of what this is used for -- while costing very nearly the same core as
+// 360p, because the core goes on realtime encoding at all rather than on the pixel
+// count. So: the best rung that still fits one core, not the cheapest one in the
+// profile.
+const LiveMaxHeight = 360
+
+// liveRung picks the highest eager rung a single realtime core can carry.
 func liveRung(rungs []media.Rung) (media.Rung, bool) {
 	var best media.Rung
 	found := false
+	for _, r := range media.Eager(rungs) {
+		if r.Height > LiveMaxHeight {
+			continue
+		}
+		if !found || r.Height > best.Height {
+			best, found = r, true
+		}
+	}
+	if found {
+		return best, true
+	}
+	// Every eager rung is above the cap. Better a broadcast at the smallest thing the
+	// profile has than no broadcast at all.
 	for _, r := range media.Eager(rungs) {
 		if !found || r.Height < best.Height {
 			best, found = r, true
 		}
 	}
 	return best, found
+}
+
+// endList is what tells a player the broadcast is over and there is nothing more to
+// poll for.
+const endList = "#EXT-X-ENDLIST"
+
+// openPlaylist is the playlist as a viewer should see it while the broadcast may still
+// continue. ffmpeg writes ENDLIST whenever its process exits, which includes an
+// encoder that merely dropped: publishing that ends the stream for everyone watching,
+// and a player that has seen ENDLIST does not come back when the segments resume.
+func openPlaylist(body []byte) []byte {
+	out := bytes.ReplaceAll(body, []byte(endList+"\n"), nil)
+	return bytes.ReplaceAll(out, []byte(endList), nil)
+}
+
+// closePlaylist publishes the final playlist, ENDLIST and all. Called once, when the
+// broadcast is actually over, so viewers stop polling and the recording is what they
+// seek within.
+func (w *Worker) closePlaylist(ctx context.Context, dir, prefix string, published map[string]bool) {
+	if len(published) == 0 {
+		return
+	}
+	body, err := os.ReadFile(filepath.Join(dir, PlaylistName))
+	if err != nil {
+		return
+	}
+	if !bytes.Contains(body, []byte(endList)) {
+		body = append(bytes.TrimRight(body, "\n"), []byte("\n"+endList+"\n")...)
+	}
+	_ = w.Store.Put(ctx, prefix+"/"+PlaylistName,
+		bytes.NewReader(body), "application/vnd.apple.mpegurl")
+}
+
+// PlaylistRuns groups the media files by encoder connection, in playlist order, each
+// group led by the init segment it needs.
+//
+// A reconnect restarts the encoder's timestamps at zero, and ffmpeg marks that with
+// EXT-X-DISCONTINUITY. Appending the bytes of both runs into one file therefore
+// produces a fragmented MP4 whose timeline goes backwards: ffprobe reports only the
+// first run's duration and the mezzanine silently contains only the first run. Ten
+// seconds of test broadcast across one reconnect came back as six. So the recording is
+// assembled per run and joined with the concat demuxer, which is built for exactly
+// this and recovers the full duration.
+func PlaylistRuns(body []byte) [][]string {
+	var runs [][]string
+	var cur []string
+	initName := ""
+
+	flush := func() {
+		// A group holding nothing but its init segment is a connection that produced
+		// no media, which is not a run.
+		if len(cur) > 1 {
+			runs = append(runs, cur)
+		}
+		cur = nil
+	}
+
+	for _, line := range strings.Split(string(body), "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, `#EXT-X-MAP:URI="`):
+			name, _, _ := strings.Cut(strings.TrimPrefix(line, `#EXT-X-MAP:URI="`), `"`)
+			initName = name
+			if len(cur) == 0 {
+				cur = []string{name}
+			}
+		case line == "#EXT-X-DISCONTINUITY":
+			flush()
+			cur = []string{initName}
+		case line == "" || strings.HasPrefix(line, "#"):
+			continue
+		default:
+			if len(cur) == 0 && initName != "" {
+				cur = []string{initName}
+			}
+			cur = append(cur, line)
+		}
+	}
+	flush()
+	return runs
 }

@@ -207,10 +207,14 @@ func (s *Server) retryAsset(w http.ResponseWriter, r *http.Request) {
 }
 
 type playbackURLs struct {
-	HLS        string `json:"hls"`
-	DASH       string `json:"dash"`
-	Poster     string `json:"poster"`
-	Thumbnails string `json:"thumbnails"`
+	HLS string `json:"hls"`
+	// Omitted, not empty, while a broadcast is on air: live writes a playlist and its
+	// segments and nothing else, so a DASH manifest, a poster and a scrubbing index
+	// are three URLs that 404. Advertising them is the failure this platform has had
+	// before -- the API reporting something playable that every request refuses.
+	DASH       string `json:"dash,omitempty"`
+	Poster     string `json:"poster,omitempty"`
+	Thumbnails string `json:"thumbnails,omitempty"`
 	// Encrypted media is packaged cenc, and HLS has no cenc -- its fMP4 encryption is
 	// the SAMPLE-AES family. So an encrypted asset plays over DASH, and `preferred`
 	// says which URL to hand a player without the caller having to know that.
@@ -349,17 +353,29 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 		if label != "" {
 			q += "&wm=" + label
 		}
-		preferred := "hls"
-		if encrypted {
-			preferred = "dash"
-		}
+		// A broadcast, or a recording still converting, is served out of the live
+		// prefix: one playlist, an init segment and the media segments. Nothing else
+		// exists there yet.
+		//
+		// live_ended matters most. The conversion writes the content key before it
+		// writes any media, so `encrypted` flips true while the prefix is still live/
+		// -- and preferring DASH on that basis pointed the player at a manifest that
+		// was not there, for the whole conversion, on a link the customer had already
+		// handed out.
+		broadcast := resp.State == "live" || resp.State == "live_ended"
+
 		resp.Playback = &playbackURLs{
-			HLS:        fmt.Sprintf("%s/master.m3u8?%s", base, q),
-			DASH:       fmt.Sprintf("%s/manifest.mpd?%s", base, q),
-			Poster:     fmt.Sprintf("%s/poster.jpg?%s", base, q),
-			Thumbnails: fmt.Sprintf("%s/sprite.vtt?%s", base, q),
-			Encrypted:  encrypted,
-			Preferred:  preferred,
+			HLS:       fmt.Sprintf("%s/master.m3u8?%s", base, q),
+			Encrypted: encrypted && !broadcast,
+			Preferred: "hls",
+		}
+		if !broadcast {
+			resp.Playback.DASH = fmt.Sprintf("%s/manifest.mpd?%s", base, q)
+			resp.Playback.Poster = fmt.Sprintf("%s/poster.jpg?%s", base, q)
+			resp.Playback.Thumbnails = fmt.Sprintf("%s/sprite.vtt?%s", base, q)
+			if encrypted {
+				resp.Playback.Preferred = "dash"
+			}
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)

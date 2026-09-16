@@ -1166,11 +1166,17 @@ paths:
       description: |
         Removes the stream and its sessions. Anything already broadcast stays as its
         own asset and is deleted through the asset.
+
+        Refused with `stream_on_air` while the stream is armed or live. Sessions
+        cascade from the stream, so deleting one mid-broadcast takes away the only row
+        that knows which segments to reclaim, and they are paid for forever. Stop it,
+        then delete it.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "204": { description: Deleted }
         "404": { description: stream_not_found }
+        "409": { description: stream_on_air }
 
   /v1/live-streams/{id}/key:
     post:
@@ -1194,9 +1200,17 @@ paths:
     post:
       summary: Go on air
       description: |
-        Takes an ingest port, creates the video the broadcast will be watched at, and
-        waits for your encoder. Point OBS or your hardware encoder at the
-        `ingest_url` that comes back.
+        Creates the video the broadcast will be watched at and waits for your encoder.
+        One ingest port serves every stream; the ingest server dispatches on the path
+        and authorises the (key, path) pair before it accepts a publisher.
+
+        For SRT and RTMP the response carries `ingest_server` and `ingest_stream_key`
+        — the two fields an encoder's settings screen actually has. OBS joins them
+        with a slash, so pasting one combined URL publishes to a path nothing
+        authorised. `ingest_url` is the same address as one string, for a client that
+        would rather have it that way. Where `ingest_stream_key` holds
+        `YOUR_STREAM_KEY`, substitute the key you were given when the stream was
+        created; only its hash is stored, so it cannot be filled in for you.
 
         A `camera` stream comes back with a WHIP endpoint as `ingest_url` and a
         `publish_token` beside it, because a browser is the encoder and has no key to

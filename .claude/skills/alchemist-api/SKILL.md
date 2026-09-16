@@ -158,6 +158,24 @@ default:
 }
 ```
 
+## Live, briefly
+
+`POST /v1/live-streams/{id}/start` arms a stream and answers with `ingest_server` and
+`ingest_stream_key` — the two fields an encoder's settings screen has. Do not join them
+yourself; OBS joins them with a slash and a pre-joined URL publishes to a path nothing
+authorised. A `camera` stream answers with a WHIP `ingest_url` and a `publish_token`
+instead.
+
+While a broadcast is on air, and through the window where it has ended but the
+recording has not converted, the asset's `playback` carries **only** `hls`. There is no
+DASH manifest, poster or scrubbing index under the live prefix; they appear when the
+recording becomes an ordinary asset. Do not construct those URLs yourself for a `live`
+or `live_ended` asset — they will 404.
+
+An encoder that drops has `ReconnectGrace` to come back before the broadcast is
+declared over, so a brief `live.failed`-looking silence is not the end of the stream.
+Deleting a stream while it is armed or live is refused with `stream_on_air`.
+
 ## Subtitles
 
 Sidecar WebVTT, one track per language, uploaded against a video that is already

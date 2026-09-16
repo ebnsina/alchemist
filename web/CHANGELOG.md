@@ -3,6 +3,15 @@
 ## Unreleased
 
 ### Added
+- **A stream's encoder settings now show a Stream Key you can actually paste.** The
+  field was always there and always empty, with the key buried in the server address
+  as a placeholder, so nobody following the page could get OBS connected. Server and
+  Stream Key are now the two halves an encoder asks for. SRT and camera streams carry
+  everything in one address and still say to leave the key empty, and now say why.
+
+### Changed
+- **Deleting a stream that is on air is refused** rather than silently taking the
+  broadcast down and stranding its segments. Stop it, then delete it.
 - **Subtitles.** A video's page takes a WebVTT file per language, names it as viewers
   will see it in the player's menu, and lists what is already there. Uploading a
   language you already have replaces it; removing one asks first and says the video

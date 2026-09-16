@@ -383,10 +383,12 @@ func (m *Module) startStream(w http.ResponseWriter, r *http.Request) {
 		out["publish_token"] = publishToken
 	} else {
 		// OBS and most encoders split this into two fields and join them with a
-		// slash. Handing over one URL gets the key appended a second time, which
-		// publishes to a path nothing authorised -- so the two halves are named.
-		out["ingest_server"] = publishURL(protocol, m.ingestHost, streamID)
-		out["ingest_stream_key"] = ""
+		// slash. Handing over one URL gets the path appended a second time, which
+		// publishes to something nothing authorised -- so the two halves are named,
+		// and the key half actually carries the key field rather than an empty string.
+		server, key := publishParts(protocol, m.ingestHost, streamID)
+		out["ingest_server"] = server
+		out["ingest_stream_key"] = key
 	}
 	httpx.JSON(w, http.StatusAccepted, out)
 }
@@ -449,16 +451,40 @@ func (m *Module) stopStream(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// deleteStream removes a stream that is not on air.
+//
+// Refused while armed or live, because live_sessions cascades from live_streams: the
+// row the reaper walks to find a broadcast's segments would go with it, and the
+// segments under live/{tenant}/{asset}/ would be left with nothing that knows to
+// delete them -- paid for, forever. The broadcast is stopped first, then deleted.
 func (m *Module) deleteStream(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpx.Tenant(r)
 
 	var tag int64
+	var onAir bool
 	err := m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(r.Context(),
+			`select state in ('armed', 'live') from live_streams where id = $1`,
+			chi.URLParam(r, "id")).Scan(&onAir); err != nil {
+			return err
+		}
+		if onAir {
+			return nil
+		}
 		ct, err := tx.Exec(r.Context(), `delete from live_streams where id = $1`,
 			chi.URLParam(r, "id"))
 		tag = ct.RowsAffected()
 		return err
 	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		httpx.ErrorFor(w, r, http.StatusNotFound, "stream_not_found", "We couldn't find that stream.")
+		return
+	}
+	if onAir {
+		httpx.ErrorFor(w, r, http.StatusConflict, "stream_on_air",
+			"That stream is on air or waiting for an encoder. Stop it first, then delete it.")
+		return
+	}
 	if err != nil {
 		httpx.ErrorFor(w, r, http.StatusInternalServerError, "internal_error",
 			"Something went wrong on our side.")

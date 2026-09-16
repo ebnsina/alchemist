@@ -206,6 +206,28 @@ These were established by measurement and are expensive to rediscover.
 - **River's default `UniqueOpts.ByState` includes `Completed`,** and completed jobs are
   retained 24h. A recurring job left on the default runs once per day, not once per
   interval. Bucket sync lists its states explicitly for this reason.
+- **An encoder exiting is not proof a broadcast is over.** A dropped uplink and a
+  presenter closing OBS are the same event from the worker's side, so a broadcast that
+  has been on air waits `ReconnectGrace` for the encoder to come back. ffmpeg resumes
+  into the existing playlist with `-hls_flags append_list` — verified against 9.0.1;
+  `discont_start` adds a second DISCONTINUITY at the top of the playlist where there
+  is none, and `-start_number` makes it skip to a number neither side expects. ENDLIST
+  is stripped from every playlist published before the end, because a player that has
+  seen it does not come back when the segments resume.
+- **A recording is assembled per encoder connection, never as one byte append.** A
+  reconnect restarts timestamps at zero, so appending across the DISCONTINUITY makes a
+  file whose timeline runs backwards and everything downstream believes the shorter
+  duration: a ten-second test broadcast with one reconnect produced a six-second
+  mezzanine, with no error anywhere. `PlaylistRuns` groups the segments and the concat
+  demuxer joins them.
+- **Live advertises HLS and nothing else.** The live prefix holds a playlist, an init
+  segment and media segments — no MPD, no poster, no scrubbing index. It matters most
+  in `live_ended`: the conversion writes the content key before it writes any media, so
+  `encrypted` flips true while the prefix is still `live/`, and preferring DASH on that
+  basis points the player at a manifest that is not there for the whole conversion.
+- **One realtime rung, but not the cheapest one.** A core goes on encoding in realtime
+  at all, not on the pixel count, so 144p and 360p cost nearly the same and 144p is
+  unreadable for the slides and whiteboards this is used for. `LiveMaxHeight` caps it.
 - **Live cannot call `media.Package()`.** `Package()` shells out once with
   `CombinedOutput()` over complete files and writes one byte-range CMAF file per
   rendition. A live packager never exits, cannot read a file still being written, and

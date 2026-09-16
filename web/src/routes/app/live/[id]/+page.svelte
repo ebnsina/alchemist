@@ -21,6 +21,7 @@
 	let loading = $state(true);
 	let error = $state('');
 	let ingest = $state('');
+	let ingestKey = $state('');
 	// Shown once, then gone from memory as well as from the screen.
 	let freshKey = $state('');
 	let replacing = $state(false);
@@ -80,7 +81,9 @@
 
 	async function start() {
 		try {
-			ingest = (await startLiveStream(id)).ingest_url;
+			const armed = await startLiveStream(id);
+			ingest = armed.ingest_server || armed.ingest_url;
+			ingestKey = armed.ingest_stream_key ?? '';
 			await load();
 		} catch (e) {
 			error = said(e);
@@ -432,19 +435,38 @@
 					<span class="vh">{copied === 'url' ? 'Copied' : 'Copy'}</span>
 				</button>
 			</div>
-			<p class="sub mt-2">
-				Swap <code class="font-mono">YOUR_STREAM_KEY</code> for your key. We only keep a
-				fingerprint of it, so we cannot fill it in for you.
-			</p>
-
 			<p class="label mt-5">Stream Key</p>
-			<div class="mt-2 rounded-xl border border-sunk bg-bg px-3 py-2">
-				<code class="font-mono text-xs text-dim">Leave this empty</code>
-			</div>
-			<p class="sub mt-2">
-				Your key is already in the server address above. Putting it here as well sends it
-				twice and nothing will connect.
-			</p>
+			{#if ingestKey}
+				<div class="mt-2 flex items-center gap-2 rounded-xl border border-sunk bg-bg px-3 py-2">
+					<code class="truncate font-mono text-xs">{ingestKey}</code>
+					<button
+						type="button"
+						class="ml-auto flex flex-none items-center gap-1.5 text-xs text-ink"
+						title="Copy the stream key"
+						onclick={() => copy(ingestKey, 'key')}
+					>
+						<HugeiconsIcon
+							icon={copied === 'key' ? Tick02Icon : Copy01Icon}
+							size={14}
+							strokeWidth={2}
+						/>
+						<span class="vh">{copied === 'key' ? 'Copied' : 'Copy'}</span>
+					</button>
+				</div>
+				<p class="sub mt-2">
+					Swap <code class="font-mono">YOUR_STREAM_KEY</code> for the key you were given
+					when this stream was created. We keep only a fingerprint of it, so we cannot
+					fill it in for you — if you no longer have it, replace the key below.
+				</p>
+			{:else}
+				<div class="mt-2 rounded-xl border border-sunk bg-bg px-3 py-2">
+					<code class="font-mono text-xs text-dim">Leave this empty</code>
+				</div>
+				<p class="sub mt-2">
+					This connection carries everything in the address above, including where your
+					key goes. Putting anything here sends it twice and nothing will connect.
+				</p>
+			{/if}
 		{:else if stream.state === 'armed' || stream.state === 'live'}
 			<!-- The address is minted once per broadcast and never returned again, so
 			     pressing Start here only ever answered "already waiting for an encoder". -->
