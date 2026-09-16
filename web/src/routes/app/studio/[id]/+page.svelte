@@ -125,7 +125,7 @@
 	async function load() {
 		error = '';
 		try {
-			const [a, e] = await Promise.all([getAsset(id), listEdits(id)]);
+			const [a, e] = await Promise.all([getAsset(id), listEdits({ filters: { asset_id: id } })]);
 			asset = a;
 			edits = e.edits;
 			getBranding()

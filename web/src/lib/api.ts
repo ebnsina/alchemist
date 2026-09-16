@@ -41,7 +41,20 @@ const MESSAGES: Record<string, string> = {
 	invalid_protocol: 'Pick your camera, SRT or RTMP.',
 	stream_not_found: 'We could not find that stream.',
 	stream_busy: 'That stream is already waiting for an encoder.',
-	not_broadcasting: 'That stream is not on air, so there is nothing to stop.'
+	not_broadcasting: 'That stream is not on air, so there is nothing to stop.',
+	key_not_found: 'We could not find that key. Reload the page.',
+	webhook_not_found: 'We could not find that endpoint. Reload the page.',
+	bucket_not_found: 'We could not find that bucket. Reload the page.',
+	bucket_in_use:
+		'Videos from this bucket are still being made. Wait for them to finish, then disconnect it.',
+	// A refused list is a mistake in this dashboard, not in anything the customer did,
+	// so all five say the same thing: the list you were shown is not the one you asked for.
+	invalid_limit: 'We asked for that list the wrong way. Reload the page.',
+	invalid_offset: 'We asked for that list the wrong way. Reload the page.',
+	invalid_sort: 'We asked for that list the wrong way. Reload the page.',
+	invalid_order: 'We asked for that list the wrong way. Reload the page.',
+	invalid_filter: 'We asked for that list the wrong way. Reload the page.',
+	invalid_title: 'That name is too long. Keep it under 200 characters.'
 };
 
 export class ApiError extends Error {
@@ -468,8 +481,8 @@ export type Edit = {
 	created_at: string;
 };
 
-export const listEdits = (assetId?: string) =>
-	call<{ edits: Edit[] }>('/v1/edits' + (assetId ? `?asset_id=${assetId}` : ''));
+export const listEdits = (l: ListQuery = {}) =>
+	call<{ edits: Edit[]; total: number }>(`/v1/edits${listParams(l)}`);
 export const createEdit = (assetId: string, ops: EditOps) =>
 	call<{ id: string; state: string }>('/v1/edits', {
 		method: 'POST',

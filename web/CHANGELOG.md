@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+- **Recordings is a real table.** Same five columns as Videos — name, state, length,
+  size, added — paged, searched and sorted by the server with `state=live_ended`
+  pinned, and a row menu for Watch, Rename, Edit in Studio and Delete. The old
+  `AssetList` component had one page left to serve and is gone.
+
 ### Added
 - **Stop a broadcast.** Until now a stream ended only when the encoder disconnected or
   the engine timed it out after thirty minutes. The stream page now has a Stop control

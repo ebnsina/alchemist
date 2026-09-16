@@ -34,7 +34,7 @@ src/routes/+layout.svelte     skip link + Footer; the dashboard opts out of chro
 src/routes/+page.svelte       the landing page, all of it, in one file
 src/routes/{login,signup,contact,404}/
 src/routes/app/               the dashboard: overview, keys, upload, videos, docs
-src/lib/components/           Logo, Footer, Player, ConversionFlow, AssetList, …
+src/lib/components/           Logo, Footer, Player, ConversionFlow, DataTable, …
 src/lib/site.ts               origin, contact address, sitemap routes
 static/fonts/                 Archivo, Clash Display, Geist Mono — one woff2 each
 ```
