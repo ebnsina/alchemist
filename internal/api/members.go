@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/ebnsina/alchemist/internal/platform/httpx"
 	"github.com/ebnsina/alchemist/internal/platform/passwd"
 )
 
@@ -67,14 +68,34 @@ func (s *Server) listMembers(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 	userID, _ := r.Context().Value(userKey).(string)
 
+	page, ok := httpx.ParseList(w, r, []string{"created_at", "email", "role"}, "created_at")
+	if !ok {
+		return
+	}
+	role := r.URL.Query().Get("role")
+	if role != "" && !knownRoles[role] {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_filter",
+			"Filter by role owner, admin or member.")
+		return
+	}
+
+	// Pending invites are a short list beside the team and are not paged: a page of
+	// members with only some of the invites is harder to read, not easier.
+	const where = `from users
+	  where ($1::text = '' or email::text ilike '%' || $1::text || '%')
+	    and ($2::text = '' or role = $2::text)`
+
 	members := []member{}
 	invites := []invite{}
+	var total int
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(r.Context(),
 			`select id::text, email::text, role,
 			        to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
 			        to_char(last_login_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-			   from users order by created_at`)
+			   `+where+`
+			  order by `+page.OrderBy()+` limit $3 offset $4`,
+			page.Q, role, page.Limit, page.Offset)
 		if err != nil {
 			return err
 		}
@@ -89,6 +110,10 @@ func (s *Server) listMembers(w http.ResponseWriter, r *http.Request) {
 		}
 		rows.Close()
 		if err := rows.Err(); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(r.Context(), `select count(*) `+where, page.Q, role).
+			Scan(&total); err != nil {
 			return err
 		}
 
@@ -117,7 +142,9 @@ func (s *Server) listMembers(w http.ResponseWriter, r *http.Request) {
 			"Something went wrong on our side.")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"members": members, "invites": invites})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"members": members, "invites": invites, "total": total,
+	})
 }
 
 type createInviteRequest struct {

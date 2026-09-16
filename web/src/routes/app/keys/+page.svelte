@@ -127,13 +127,14 @@
 	</div>
 	<button
 		type="button"
+		aria-label="Make a key"
 		class="btn-solid flex-none"
 		onclick={() => {
 			step = 0;
 			open = true;
 		}}
 	>
-		Make a key
+		Add new
 	</button>
 </header>
 
@@ -168,7 +169,7 @@
 {/if}
 
 <Dialog bind:open title="Make a key">
-	<form onsubmit={mint}>
+	<form id="key-form" onsubmit={mint}>
 		<Steps {steps} {step}>
 		<div class="mt-5">
 			{#if step === 0}
@@ -204,36 +205,37 @@
 				<p class="mt-3 text-sm text-red" role="alert">{error}</p>
 			{/if}
 
-			<div class="mt-6 flex items-center gap-2">
-				{#if step > 0 && !busy}
-					<button
-						type="button"
-						class="btn flex-none"
-						onclick={() => (step = 0)}
-						aria-label="Back"
-					>
-						<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
-					</button>
-				{/if}
-				<button
-					type="submit"
-					class="btn-solid flex-1"
-					disabled={busy || (step === 0 && !name.trim())}
-					aria-disabled={busy || (step === 0 && !name.trim())}
-				>
-					{#if busy}
-						Making it…
-					{:else if step === 0}
-						Next
-						<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
-					{:else}
-						Make the key
-					{/if}
-				</button>
-			</div>
 		</div>
 		</Steps>
 	</form>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			{#if step > 0 && !busy}
+				<button type="button" class="btn" onclick={() => (step = 0)}>
+					<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					Back
+				</button>
+			{/if}
+			<!-- The form attribute keeps this bound to a form it is no longer inside. -->
+			<button
+				type="submit"
+				form="key-form"
+				class="btn-solid"
+				disabled={busy || (step === 0 && !name.trim())}
+				aria-disabled={busy || (step === 0 && !name.trim())}
+			>
+				{#if busy}
+					Making it…
+				{:else if step === 0}
+					Next
+					<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+				{:else}
+					Make the key
+				{/if}
+			</button>
+		</div>
+	{/snippet}
 </Dialog>
 
 {#if error}

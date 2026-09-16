@@ -12,6 +12,27 @@ info:
     Errors always take the shape `{"error":{"code","message"}}`. Branch on `code`,
     which is stable; `message` is written for a human and may be reworded or
     translated.
+
+    ## Listing
+
+    Every list endpoint takes the same parameters and answers the same shape.
+
+    - `limit` — 1 to 100, default 25.
+    - `offset` — 0 or more, default 0.
+    - `q` — free text, case-insensitive, matched against whatever names the row to a
+      person. Each endpoint says which fields those are.
+    - `sort` — one of a fixed set per endpoint; anything else is refused.
+    - `order` — `asc` or `desc`, default `desc`.
+
+    The response carries the collection under its own name plus `total`: how many
+    rows match the filters, ignoring `limit` and `offset`, so a table can say
+    "1-25 of 340".
+
+    A `limit` over 100, a negative `offset`, an unlisted `sort`, an `order` that is
+    not `asc` or `desc`, and a malformed filter are each a `400` —
+    `invalid_limit`, `invalid_offset`, `invalid_sort`, `invalid_order`,
+    `invalid_filter`. None of them is silently clamped or ignored: a page quietly
+    different from the one asked for is worse than a refusal you can see.
 servers:
   - url: https://api.alchemist.example
 paths:
@@ -222,16 +243,47 @@ paths:
       description: |
         Returns a presigned target. Upload the file there with `PUT`, then call
         `/v1/assets/{id}/complete`. Bytes never pass through this API.
+
+        The body is optional. `title` names the video; with no title, `filename` is
+        used with its extension dropped. With neither, the video stays unnamed and
+        lists show the short id — nothing is invented on your behalf.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, maxLength: 200 }
+                filename: { type: string, description: The file's own name, used when title is absent }
       responses:
+        "400": { description: invalid_title }
         "201": { description: Upload target created }
         "429": { description: Concurrency or monthly quota reached }
 
   /v1/assets:
     get:
-      summary: Recent assets for the tenant
-      description: Newest first. `limit` up to 100, default 25.
+      summary: Your videos
+      description: |
+        `q` matches the title and the start of the id, so pasting either finds the
+        video. `state` may be repeated to ask for several at once.
+
+        `title` is null for a video nobody has named; show the first characters of
+        the id instead.
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, duration_sec, source_bytes, state], default: created_at }
+        - name: state
+          in: query
+          description: Repeat for several states.
+          schema: { type: array, items: { type: string } }
       responses:
-        "200": { description: Assets with state, duration and size }
+        "200": { description: Assets with title, state, duration and size, plus total }
+        "400": { description: invalid_limit, invalid_offset, invalid_sort or invalid_order }
         "401": { description: Missing or invalid credentials }
     post:
       summary: Import a video from a URL
@@ -248,9 +300,15 @@ paths:
               required: [url]
               properties:
                 url: { type: string, format: uri }
+                title:
+                  type: string
+                  maxLength: 200
+                  description: |
+                    Optional. Without it the last path segment of the URL is used,
+                    percent-decoded and without its extension.
       responses:
         "202": { description: Import queued }
-        "400": { description: missing_url or invalid_url }
+        "400": { description: missing_url, invalid_url or invalid_title }
         "429": { description: Quota reached }
 
   /v1/assets/{id}:
@@ -299,6 +357,29 @@ paths:
         "200": { description: Asset state and playback URLs }
         "400": { description: invalid_viewer }
         "404": { description: asset_not_found }
+    patch:
+      summary: Rename a video
+      description: |
+        `title` is the only thing about a video you choose; everything else is
+        produced by the pipeline. Send `null`, or omit it, to clear the name — the
+        video goes back to showing its short id rather than becoming "Untitled".
+
+        Nothing in flight is affected: the name is a label and no encode, manifest
+        or playback URL reads it.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, maxLength: 200, nullable: true }
+      responses:
+        "200": { description: The video's id, title and state }
+        "400": { description: invalid_title or invalid_request }
+        "404": { description: asset_not_found — including another tenant's video, which RLS makes invisible rather than forbidden }
     delete:
       summary: Delete a video
       description: |
@@ -325,9 +406,22 @@ paths:
       summary: List this tenant's API keys
       description: |
         Names and dates only. Keys are stored hashed, so an existing key cannot be
-        shown again — a lost key is replaced, not recovered.
+        shown again — a lost key is replaced, not recovered. `q` matches the name.
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, name], default: created_at }
+        - name: revoked
+          in: query
+          description: true for revoked keys only, false for live ones.
+          schema: { type: boolean }
       responses:
-        "200": { description: Keys, newest first }
+        "200": { description: Keys and total }
+        "400": { description: invalid_limit, invalid_offset, invalid_sort, invalid_order or invalid_filter }
         "401": { description: Missing or invalid credentials }
     post:
       summary: Mint another API key
@@ -337,6 +431,26 @@ paths:
         "401": { description: Missing or invalid credentials }
 
   /v1/keys/{id}:
+    patch:
+      summary: Rename an API key
+      description: |
+        The secret is untouched, so code already holding this key keeps working. The
+        name only tells one key from another. Revoking is `DELETE`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 60 }
+      responses:
+        "200": { description: The key's id and new name }
+        "400": { description: invalid_request }
+        "404": { description: key_not_found }
     delete:
       summary: Revoke an API key
       parameters:
@@ -374,8 +488,22 @@ paths:
   /v1/webhooks:
     get:
       summary: List webhook endpoints
+      description: '`q` matches the URL.'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, url], default: created_at }
+        - name: active
+          in: query
+          description: true for live endpoints only, false for paused ones.
+          schema: { type: boolean }
       responses:
-        "200": { description: Endpoints }
+        "200": { description: Endpoints and total }
+        "400": { description: invalid_limit, invalid_offset, invalid_sort, invalid_order or invalid_filter }
     post:
       summary: Register a webhook endpoint
       description: |
@@ -405,11 +533,68 @@ paths:
         "201": { description: Endpoint created; secret shown once }
         "400": { description: invalid_url or unknown_event }
 
+  /v1/webhooks/{id}:
+    get:
+      summary: One webhook endpoint
+      description: |
+        Never the signing secret — it was shown once when the endpoint was created
+        and only your side still holds a copy.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: URL, events and whether it is active }
+        "404": { description: webhook_not_found }
+    patch:
+      summary: Change or pause a webhook endpoint
+      description: |
+        `active: false` is the pause: nothing is delivered while it is off, including
+        events that happen meanwhile — they are not queued up for later. The signing
+        secret is untouched, so resuming verifies with the secret you already have.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string, format: uri, description: Must be https }
+                active: { type: boolean }
+      responses:
+        "200": { description: The endpoint as it now stands }
+        "400": { description: invalid_url or invalid_request }
+        "404": { description: webhook_not_found }
+    delete:
+      summary: Remove a webhook endpoint
+      description: |
+        Deliveries stop for good, including any already queued: a delivery reads the
+        endpoint just before it posts and finds nothing. Its delivery history goes
+        with it — pause with `active: false` instead to keep the record.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Removed }
+        "404": { description: webhook_not_found }
+
   /v1/bucket-sources:
     get:
       summary: List connected buckets
+      description: '`q` matches the bucket name and the prefix.'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, bucket], default: created_at }
+        - name: state
+          in: query
+          schema: { type: string, enum: [active, paused] }
       responses:
-        "200": { description: Sources with sync status and import counts }
+        "200": { description: Sources with sync status, import counts and total }
+        "400": { description: invalid_limit, invalid_offset, invalid_sort, invalid_order or invalid_filter }
     post:
       summary: Connect a customer-owned bucket
       description: |
@@ -437,6 +622,54 @@ paths:
       responses:
         "201": { description: Connected; first scan queued }
         "400": { description: invalid_url or invalid_request }
+
+  /v1/bucket-sources/{id}:
+    get:
+      summary: One connected bucket
+      description: Never the access keys; the secret is wrapped and is not readable here.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Bucket, prefix, sync status and import count }
+        "404": { description: bucket_not_found }
+    patch:
+      summary: Pause or resume a bucket
+      description: |
+        `active: false` stops the next scan. Videos already imported are ordinary
+        assets and are untouched, and an import already running finishes.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [active]
+              properties:
+                active: { type: boolean }
+      responses:
+        "200": { description: The source as it now stands }
+        "400": { description: invalid_request }
+        "404": { description: bucket_not_found }
+    delete:
+      summary: Disconnect a bucket
+      description: |
+        Refused with `409 bucket_in_use` while a video from this bucket is still
+        being processed: the encoder reads the source object back through these
+        credentials, so removing them mid-flight would leave the video stuck short of
+        ready with nothing to explain it. Wait for those to finish, or pause instead.
+
+        Otherwise the connection, its stored credentials and its record of which
+        objects were taken all go. Videos already imported are yours and are kept;
+        nothing in your bucket is touched. Reconnecting the same bucket imports it
+        again from the start.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Disconnected }
+        "404": { description: bucket_not_found }
+        "409": { description: bucket_in_use }
 
   /v1/auth/invite:
     get:
@@ -477,8 +710,23 @@ paths:
       description: |
         Session only. An API key is a machine credential and gets 403 `session_required`
         on every endpoint under `/v1/members`.
+
+        `q` matches the email address. Paging applies to the team; pending invites
+        are a short list and always come back whole, so `total` counts members only.
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, email, role], default: created_at }
+        - name: role
+          in: query
+          schema: { type: string, enum: [owner, admin, member] }
       responses:
-        "200": { description: Members and pending invites }
+        "200": { description: Members, pending invites, and a total of members }
+        "400": { description: invalid_limit, invalid_offset, invalid_sort, invalid_order or invalid_filter }
         "403": { description: session_required }
 
   /v1/members/invites:
@@ -573,8 +821,24 @@ paths:
         `total` is how many videos we found on the far side, `handled` how many of
         them we have finished with, so progress reads as a proportion rather than a
         bare number. `preview_done` says the list is complete and waiting on you.
+
+        `q` matches the provider name. `total` on the response is how many migrations
+        match — not to be confused with each migration's own `total`, which counts
+        the videos in it.
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, state], default: created_at }
+        - name: state
+          in: query
+          schema: { type: string }
       responses:
-        "200": { description: Sources with total, handled, imported and skipped counts }
+        "200": { description: Sources with their counts, and a total of migrations }
+        "400": { description: invalid_limit, invalid_offset, invalid_sort or invalid_order }
     post:
       summary: Migrate a library in from another video host
       description: |
@@ -722,8 +986,26 @@ paths:
 
         Live is a separate product. A tenant who has not bought it gets
         `live_not_enabled` from every endpoint here, whatever the deployment supports.
+
+        `q` matches the name and the start of the id. `state` may be repeated.
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, name, state], default: created_at }
+        - name: state
+          in: query
+          description: Repeat for several states.
+          schema: { type: array, items: { type: string } }
+        - name: protocol
+          in: query
+          schema: { type: string, enum: [camera, srt, rtmp] }
       responses:
-        "200": { description: Up to 200 streams, newest first }
+        "200": { description: Streams and total }
+        "400": { description: invalid_limit, invalid_offset, invalid_sort or invalid_order }
         "403": { description: live_not_enabled }
     post:
       summary: Create a live stream
@@ -760,6 +1042,29 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "200": { description: State, and the asset the latest broadcast is watched at }
+        "404": { description: stream_not_found }
+    patch:
+      summary: Rename a live stream
+      description: |
+        Allowed at any time, including while the stream is armed or on air. Nothing
+        in flight reads the name: the encoder is authorised by its key and the
+        broadcast is watched at its own asset, so a rename is a label change and
+        refusing one mid-class would only leave the dashboard showing the wrong name.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 120 }
+      responses:
+        "200": { description: The stream as it now stands }
+        "400": { description: invalid_request }
+        "403": { description: live_not_enabled }
         "404": { description: stream_not_found }
     delete:
       summary: Delete a live stream
@@ -850,12 +1155,26 @@ paths:
 
   /v1/edits:
     get:
-      summary: Edits you have made, newest first
+      summary: Edits you have made
+      description: |
+        `q` matches the start of the source video's id; `asset_id` is the exact-match
+        version of the same thing, and the two can be combined.
       parameters:
         - { name: asset_id, in: query, schema: { type: string, format: uuid },
             description: Only edits of this video. }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, state], default: created_at }
+        - name: state
+          in: query
+          schema: { type: string, enum: [queued, rendering, done, failed] }
       responses:
-        "200": { description: Up to 200 edits with their state and what they did }
+        "200": { description: Edits with their state and what they did, plus total }
+        "400": { description: invalid_limit, invalid_offset, invalid_sort or invalid_order }
     post:
       summary: Cut, crop, reframe or resize a video
       description: |
@@ -1238,6 +1557,24 @@ paths:
         "403": { description: Refused }
 
 components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+    Offset:
+      name: offset
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    Q:
+      name: q
+      in: query
+      description: Free-text search. See the endpoint for which fields it matches.
+      schema: { type: string }
+    Order:
+      name: order
+      in: query
+      schema: { type: string, enum: [asc, desc], default: desc }
   securitySchemes:
     apiKey:
       type: http

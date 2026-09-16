@@ -85,9 +85,9 @@
 		</p>
 	</div>
 	{#if editable.length > 0}
-		<button type="button" class="btn-solid flex-none" onclick={() => (picking = true)}>
+		<button type="button" aria-label="Pick a video to edit" class="btn-solid flex-none" onclick={() => (picking = true)}>
 			<HugeiconsIcon icon={Scissor01Icon} size={15} strokeWidth={2} />
-			Edit a video
+			Add new
 		</button>
 	{/if}
 </header>
@@ -148,7 +148,7 @@
 		<div class="card mt-4 py-8 text-center">
 			<p class="title">Nothing made yet</p>
 			<p class="sub mx-auto mt-2 max-w-sm">
-				Use <b>Edit a video</b> to pick one of your {editable.length} finished videos and cut
+				Use <b>Add new</b> to pick one of your {editable.length} finished videos and cut
 				it down. The original is never touched.
 			</p>
 		</div>

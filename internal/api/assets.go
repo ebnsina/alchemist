@@ -2,10 +2,14 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -25,6 +29,25 @@ type createUploadResponse struct {
 func (s *Server) createUpload(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 
+	// Optional: a name for the video, or the file's own name to derive one from.
+	// An upload with neither stays unnamed rather than being given a placeholder.
+	var req struct {
+		Title    *string `json:"title"`
+		Filename string  `json:"filename"`
+	}
+	_ = json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req)
+	title, ok := cleanTitle(req.Title)
+	if !ok {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_title",
+			"That name is too long. Keep it under 200 characters.")
+		return
+	}
+	if title == nil {
+		if t := titleFromPath(req.Filename); t != "" && len(t) <= 200 {
+			title = &t
+		}
+	}
+
 	if msg, err := s.checkIngestQuota(r.Context(), tenantID); err != nil {
 		if errors.Is(err, errQuotaExceeded) {
 			writeErrFor(w, r, http.StatusTooManyRequests, "quota_exceeded", msg)
@@ -38,9 +61,9 @@ func (s *Server) createUpload(w http.ResponseWriter, r *http.Request) {
 	var assetID, profile string
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(r.Context(),
-			`insert into assets (tenant_id, state, ladder_profile)
-			 select $1, 'uploading', ladder_profile from tenants where id = $1
-			 returning id::text, ladder_profile`, tenantID).Scan(&assetID, &profile)
+			`insert into assets (tenant_id, state, ladder_profile, title)
+			 select $1, 'uploading', ladder_profile, $2 from tenants where id = $1
+			 returning id::text, ladder_profile`, tenantID, title).Scan(&assetID, &profile)
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
@@ -128,6 +151,7 @@ type rendition struct {
 
 type assetResponse struct {
 	ID          string        `json:"id"`
+	Title       *string       `json:"title"`
 	State       string        `json:"state"`
 	ErrorCode   *string       `json:"error_code,omitempty"`
 	DurationSec *float64      `json:"duration_seconds,omitempty"`
@@ -147,6 +171,23 @@ var bindable = regexp.MustCompile(`^[A-Za-z0-9._~@-]+$`)
 
 func bindingOK(v string, max int) bool {
 	return v == "" || (len(v) <= max && bindable.MatchString(v))
+}
+
+// titleFromPath turns a file name or a URL path into something a person reads:
+// percent-decoded, last segment only, without its extension. Empty when there is
+// nothing usable, which leaves the video unnamed rather than called "/" or ".mp4".
+func titleFromPath(p string) string {
+	if decoded, err := url.PathUnescape(p); err == nil {
+		p = decoded
+	}
+	base := path.Base(strings.TrimRight(p, "/"))
+	if base == "." || base == "/" {
+		return ""
+	}
+	if ext := path.Ext(base); ext != "" && ext != base {
+		base = strings.TrimSuffix(base, ext)
+	}
+	return strings.TrimSpace(base)
 }
 
 func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
@@ -171,12 +212,12 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		var created time.Time
 		if err := tx.QueryRow(r.Context(),
-			`select a.id::text, a.state::text, a.error_code, a.duration_sec, a.width,
+			`select a.id::text, a.title, a.state::text, a.error_code, a.duration_sec, a.width,
 			        a.height, a.source_bytes, a.created_at,
 			        exists (select 1 from content_keys k
 			                 where k.asset_id = coalesce(a.deduplicated_from, a.id))
 			   from assets a where a.id = $1`, assetID).
-			Scan(&resp.ID, &resp.State, &resp.ErrorCode, &resp.DurationSec,
+			Scan(&resp.ID, &resp.Title, &resp.State, &resp.ErrorCode, &resp.DurationSec,
 				&resp.Width, &resp.Height, &resp.SourceBytes, &created, &encrypted); err != nil {
 			return err
 		}

@@ -137,13 +137,14 @@
 	</div>
 	<button
 		type="button"
+		aria-label="Add an endpoint"
 		class="btn-solid flex-none"
 		onclick={() => {
 			step = 0;
 			open = true;
 		}}
 	>
-		Add an endpoint
+		Add new
 	</button>
 </header>
 
@@ -176,7 +177,7 @@
 {/if}
 
 <Dialog bind:open title="Add an endpoint">
-	<form onsubmit={add}>
+	<form id="webhook-form" onsubmit={add}>
 		<Steps {steps} {step}>
 		<div class="mt-5">
 			{#if step === 0}
@@ -235,36 +236,31 @@
 				<p class="mt-3 text-sm text-red" role="alert">{error}</p>
 			{/if}
 
-			<div class="mt-6 flex items-center gap-2">
-				{#if step > 0 && !busy}
-					<button
-						type="button"
-						class="btn flex-none"
-						onclick={() => (step -= 1)}
-						aria-label="Back"
-					>
-						<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
-					</button>
-				{/if}
-				<button
-					type="submit"
-					class="btn-solid flex-1"
-					disabled={busy || !filled}
-					aria-disabled={busy || !filled}
-				>
-					{#if busy}
-						Adding…
-					{:else if step < steps.length - 1}
-						Next
-						<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
-					{:else}
-						Add the endpoint
-					{/if}
-				</button>
-			</div>
 		</div>
 		</Steps>
 	</form>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			{#if step > 0 && !busy}
+				<button type="button" class="btn" onclick={() => (step -= 1)}>
+					<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					Back
+				</button>
+			{/if}
+			<!-- The form attribute keeps this bound to a form it is no longer inside. -->
+			<button type="submit" form="webhook-form" class="btn-solid" disabled={busy || !filled} aria-disabled={busy || !filled}>
+				{#if busy}
+					Adding…
+				{:else if step < steps.length - 1}
+					Next
+					<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+				{:else}
+					Add the endpoint
+				{/if}
+			</button>
+		</div>
+	{/snippet}
 </Dialog>
 
 <h2 class="mt-10 text-lg font-semibold tracking-tight">Your endpoints</h2>
@@ -275,7 +271,7 @@
 {:else if hooks.length === 0}
 	<p class="sub mt-4">
 		None yet. Without one, your code has to ask us whether a video is ready — use
-		<b>Add an endpoint</b> and we will tell you instead.
+		<b>Add new</b> and we will tell you instead.
 	</p>
 {:else}
 	<ul class="mt-4 divide-y divide-sunk border-y border-sunk">

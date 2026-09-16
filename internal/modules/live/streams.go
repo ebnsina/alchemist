@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -130,11 +131,26 @@ func (m *Module) createStream(w http.ResponseWriter, r *http.Request) {
 func (m *Module) listStreams(w http.ResponseWriter, r *http.Request) {
 	tenantID := httpx.Tenant(r)
 
+	page, ok := httpx.ParseList(w, r, []string{"created_at", "name", "state"}, "created_at")
+	if !ok {
+		return
+	}
+	states := r.URL.Query()["state"]
+	protocol := r.URL.Query().Get("protocol")
+
+	const where = `from live_streams
+	  where ($1::text = '' or name ilike '%' || $1::text || '%'
+	                       or id::text like lower($1::text) || '%')
+	    and (coalesce(cardinality($2::text[]), 0) = 0 or state = any($2::text[]))
+	    and ($3::text = '' or protocol = $3::text)`
+
 	out := []stream{}
+	var total int
 	err := m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(r.Context(),
-			`select id::text, name, protocol, state, created_at
-			   from live_streams order by created_at desc limit 200`)
+			`select id::text, name, protocol, state, created_at `+where+
+				` order by `+page.OrderBy()+` limit $4 offset $5`,
+			page.Q, states, protocol, page.Limit, page.Offset)
 		if err != nil {
 			return err
 		}
@@ -146,14 +162,62 @@ func (m *Module) listStreams(w http.ResponseWriter, r *http.Request) {
 			}
 			out = append(out, l)
 		}
-		return rows.Err()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		return tx.QueryRow(r.Context(), `select count(*) `+where,
+			page.Q, states, protocol).Scan(&total)
 	})
 	if err != nil {
 		httpx.ErrorFor(w, r, http.StatusInternalServerError, "internal_error",
 			"Something went wrong on our side.")
 		return
 	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"live_streams": out})
+	httpx.JSON(w, http.StatusOK, map[string]any{"live_streams": out, "total": total})
+}
+
+// patchStream renames a stream, at any time, including mid broadcast.
+//
+// Nothing in flight reads the name: the encoder is authorised by the key hash and
+// the broadcast is watched at its own asset, so a rename is a label change and
+// refusing one during a live class would only make the dashboard lie.
+func (m *Module) patchStream(w http.ResponseWriter, r *http.Request) {
+	tenantID := httpx.Tenant(r)
+
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		httpx.ErrorFor(w, r, http.StatusBadRequest, "invalid_request",
+			"Send a JSON body with a name for the stream.")
+		return
+	}
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" || len(req.Name) > 120 {
+		httpx.ErrorFor(w, r, http.StatusBadRequest, "invalid_request",
+			"Give the stream a name of up to 120 characters.")
+		return
+	}
+
+	var l stream
+	err := m.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(r.Context(),
+			`update live_streams set name = $2 where id = $1
+			 returning id::text, name, protocol, state, created_at`,
+			chi.URLParam(r, "id"), req.Name).
+			Scan(&l.ID, &l.Name, &l.Protocol, &l.State, &l.CreatedAt)
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		httpx.ErrorFor(w, r, http.StatusNotFound, "stream_not_found",
+			"We couldn't find that stream.")
+		return
+	}
+	if err != nil {
+		httpx.ErrorFor(w, r, http.StatusInternalServerError, "internal_error",
+			"Something went wrong on our side.")
+		return
+	}
+	httpx.JSON(w, http.StatusOK, l)
 }
 
 func (m *Module) getStream(w http.ResponseWriter, r *http.Request) {

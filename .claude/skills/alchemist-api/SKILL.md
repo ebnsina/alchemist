@@ -64,8 +64,10 @@ Ladder profiles: `bd-mobile` (144p-720p, mobile-first), `bd-ott` (adds 1080p),
 ## Uploading
 
 ```bash
-# 1. ask for a target
-curl -X POST -H "Authorization: Bearer $KEY" $ALCHEMIST/v1/uploads
+# 1. ask for a target. The body is optional: title names the video, filename is
+#    used instead when there is no title.
+curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
+  -d '{"title":"Physics 101, lecture 4"}' $ALCHEMIST/v1/uploads
 # -> {"asset_id":"...","upload_url":"https://...","expires_in_seconds":21600}
 
 # 2. bytes go straight to storage, not through the API
@@ -84,6 +86,15 @@ that fails with `source_unreadable` several minutes later.
 curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
   -d '{"url":"https://example.com/lecture.mp4"}' $ALCHEMIST/v1/assets
 ```
+
+With no `title`, the import is named after the last segment of the URL — `lecture`
+here. Rename later with `PATCH /v1/assets/{id}`, and treat a null title as "unnamed":
+show the first characters of the id, never a made-up "Untitled".
+
+Lists page: `GET /v1/assets?limit=25&offset=0&q=physics&state=ready&sort=created_at&order=desc`
+answers `{"assets":[...],"total":340}`. `total` ignores limit and offset, so it is
+what a "1-25 of 340" line reads. A `limit` over 100, a negative `offset` or an
+unlisted `sort` is a `400`, not a silently different page.
 
 The URL is fetched server-side and re-validated on every redirect. Addresses inside
 private, loopback or link-local ranges are refused with `source_url_not_allowed` —

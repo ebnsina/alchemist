@@ -3,13 +3,15 @@ package api
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/ebnsina/alchemist/internal/platform/httpx"
 )
 
 // What the customer's own dashboard needs and an integration does not: a list of
@@ -75,6 +77,7 @@ func (s *Server) requireSession(next http.Handler) http.Handler {
 
 type assetRow struct {
 	ID        string   `json:"id"`
+	Title     *string  `json:"title"`
 	State     string   `json:"state"`
 	ErrorCode *string  `json:"error_code"`
 	Duration  *float64 `json:"duration_sec"`
@@ -86,20 +89,30 @@ type assetRow struct {
 func (s *Server) listAssets(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 
-	limit := 25
-	if v := r.URL.Query().Get("limit"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 100 {
-			limit = n
-		}
+	page, ok := httpx.ParseList(w, r,
+		[]string{"created_at", "duration_sec", "source_bytes", "state"}, "created_at")
+	if !ok {
+		return
 	}
+	states := r.URL.Query()["state"]
+
+	// The page and the count read the same predicate, so a filter can never be
+	// applied to one and forgotten on the other.
+	const where = `from assets
+	  where ($1::text = '' or title ilike '%' || $1::text || '%'
+	                       or id::text like lower($1::text) || '%')
+	    and (coalesce(cardinality($2::text[]), 0) = 0 or state::text = any($2::text[]))`
 
 	out := []assetRow{}
+	var total int
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		// No tenant predicate: row-level security is the boundary, and writing one
 		// here would suggest it is not.
 		rows, err := tx.Query(r.Context(),
-			`select id::text, state::text, error_code, duration_sec, source_bytes, height, created_at
-			   from assets order by created_at desc limit $1`, limit)
+			`select id::text, title, state::text, error_code, duration_sec, source_bytes,
+			        height, created_at `+where+
+				` order by `+page.OrderBy()+` limit $3 offset $4`,
+			page.Q, states, page.Limit, page.Offset)
 		if err != nil {
 			return err
 		}
@@ -107,21 +120,83 @@ func (s *Server) listAssets(w http.ResponseWriter, r *http.Request) {
 		for rows.Next() {
 			var a assetRow
 			var created time.Time
-			if err := rows.Scan(&a.ID, &a.State, &a.ErrorCode, &a.Duration, &a.SizeBytes,
-				&a.Height, &created); err != nil {
+			if err := rows.Scan(&a.ID, &a.Title, &a.State, &a.ErrorCode, &a.Duration,
+				&a.SizeBytes, &a.Height, &created); err != nil {
 				return err
 			}
 			a.CreatedAt = created.UTC().Format(time.RFC3339)
 			out = append(out, a)
 		}
-		return rows.Err()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		return tx.QueryRow(r.Context(), `select count(*) `+where, page.Q, states).Scan(&total)
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
 			"Something went wrong on our side.")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"assets": out})
+	writeJSON(w, http.StatusOK, map[string]any{"assets": out, "total": total})
+}
+
+// patchAsset names a video. Title is the only field: everything else about an asset
+// is produced by the pipeline, not chosen.
+func (s *Server) patchAsset(w http.ResponseWriter, r *http.Request) {
+	tenantID, _ := r.Context().Value(tenantKey).(string)
+
+	var req struct {
+		Title *string `json:"title"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_request",
+			"Send a JSON body with a \"title\".")
+		return
+	}
+	title, ok := cleanTitle(req.Title)
+	if !ok {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_title",
+			"That name is too long. Keep it under 200 characters.")
+		return
+	}
+
+	var out assetRow
+	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		// RLS scopes the update, so another tenant's id matches nothing and the
+		// handler answers 404 -- the same answer as an id that never existed.
+		return tx.QueryRow(r.Context(),
+			`update assets set title = $2, updated_at = now() where id = $1
+			 returning id::text, title, state::text`, chi.URLParam(r, "id"), title).
+			Scan(&out.ID, &out.Title, &out.State)
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeErrFor(w, r, http.StatusNotFound, "asset_not_found", "We couldn't find that video.")
+		return
+	}
+	if err != nil {
+		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
+			"Something went wrong on our side.")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id": out.ID, "title": out.Title, "state": out.State,
+	})
+}
+
+// cleanTitle trims a supplied name. ok is false only when it is too long to store;
+// absent and empty both mean unnamed, which renders as the short id.
+func cleanTitle(v *string) (*string, bool) {
+	if v == nil {
+		return nil, true
+	}
+	t := strings.TrimSpace(*v)
+	switch {
+	case len(t) > 200:
+		return nil, false
+	case t == "":
+		return nil, true
+	}
+	return &t, true
 }
 
 type keyRow struct {
@@ -134,10 +209,26 @@ type keyRow struct {
 func (s *Server) listKeys(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 
+	page, ok := httpx.ParseList(w, r, []string{"created_at", "name"}, "created_at")
+	if !ok {
+		return
+	}
+	revoked, ok := httpx.Flag(w, r, "revoked")
+	if !ok {
+		return
+	}
+
+	const where = `from api_keys
+	  where ($1::text = '' or name ilike '%' || $1::text || '%')
+	    and ($2::bool is null or (revoked_at is not null) = $2::bool)`
+
 	out := []keyRow{}
+	var total int
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(r.Context(),
-			`select id::text, name, created_at, revoked_at from api_keys order by created_at desc`)
+			`select id::text, name, created_at, revoked_at `+where+
+				` order by `+page.OrderBy()+` limit $3 offset $4`,
+			page.Q, revoked, page.Limit, page.Offset)
 		if err != nil {
 			return err
 		}
@@ -156,7 +247,10 @@ func (s *Server) listKeys(w http.ResponseWriter, r *http.Request) {
 			}
 			out = append(out, k)
 		}
-		return rows.Err()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		return tx.QueryRow(r.Context(), `select count(*) `+where, page.Q, revoked).Scan(&total)
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
@@ -164,7 +258,45 @@ func (s *Server) listKeys(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Never the key itself: only its hash is stored, so there is nothing to return.
-	writeJSON(w, http.StatusOK, map[string]any{"keys": out})
+	writeJSON(w, http.StatusOK, map[string]any{"keys": out, "total": total})
+}
+
+// patchKey renames a key. The secret is untouched, so code holding it keeps working:
+// the name is only how a person tells one key from another.
+func (s *Server) patchKey(w http.ResponseWriter, r *http.Request) {
+	tenantID, _ := r.Context().Value(tenantKey).(string)
+
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_request",
+			"Send a JSON body with a \"name\".")
+		return
+	}
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" || len(req.Name) > 60 {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_request",
+			"Give the key a name of up to 60 characters.")
+		return
+	}
+
+	var k keyRow
+	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(r.Context(),
+			`update api_keys set name = $2 where id = $1 returning id::text, name`,
+			chi.URLParam(r, "id"), req.Name).Scan(&k.ID, &k.Name)
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeErrFor(w, r, http.StatusNotFound, "key_not_found", "We couldn't find that key.")
+		return
+	}
+	if err != nil {
+		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
+			"Something went wrong on our side.")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"id": k.ID, "name": k.Name})
 }
 
 func (s *Server) createKey(w http.ResponseWriter, r *http.Request) {

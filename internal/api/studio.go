@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/ebnsina/alchemist/internal/pipeline"
+	"github.com/ebnsina/alchemist/internal/platform/httpx"
 	"github.com/ebnsina/alchemist/internal/platform/media"
 )
 
@@ -99,14 +100,26 @@ func (s *Server) listEdits(w http.ResponseWriter, r *http.Request) {
 		Ops           media.Edit `json:"ops"`
 		CreatedAt     string     `json:"created_at"`
 	}
+	page, ok := httpx.ParseList(w, r, []string{"created_at", "state"}, "created_at")
+	if !ok {
+		return
+	}
+	state := r.URL.Query().Get("state")
+
+	const where = `from edits
+	  where ($1::text = '' or source_asset_id = $1::uuid)
+	    and ($2::text = '' or source_asset_id::text like lower($2::text) || '%')
+	    and ($3::text = '' or state = $3::text)`
+
 	items := []item{}
+	var total int
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(r.Context(),
 			`select id::text, source_asset_id::text, output_asset_id::text, state,
 			        error_code, ops, to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-			   from edits
-			  where ($1 = '' or source_asset_id = $1::uuid)
-			  order by created_at desc limit 200`, assetID)
+			   `+where+`
+			  order by `+page.OrderBy()+` limit $4 offset $5`,
+			assetID, page.Q, state, page.Limit, page.Offset)
 		if err != nil {
 			return err
 		}
@@ -121,14 +134,18 @@ func (s *Server) listEdits(w http.ResponseWriter, r *http.Request) {
 			_ = json.Unmarshal(raw, &it.Ops)
 			items = append(items, it)
 		}
-		return rows.Err()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		return tx.QueryRow(r.Context(), `select count(*) `+where,
+			assetID, page.Q, state).Scan(&total)
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
 			"Something went wrong on our side.")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"edits": items})
+	writeJSON(w, http.StatusOK, map[string]any{"edits": items, "total": total})
 }
 
 func (s *Server) deleteEdit(w http.ResponseWriter, r *http.Request) {

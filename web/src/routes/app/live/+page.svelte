@@ -200,25 +200,21 @@
 	{#if !unsold}
 		<button
 			type="button"
+			aria-label="Make a stream"
 			class="btn-solid flex-none"
 			onclick={() => {
 				step = 1;
 				open = true;
 			}}
 		>
-			Make a stream
+			Add new
 		</button>
 	{/if}
 </header>
 
 <Dialog bind:open title="Make a stream">
-	<form onsubmit={make}>
-		<div class="flex items-baseline justify-between gap-3">
-			<p class="label">Step {step} of {steps.length}</p>
-			{#if step > 1}
-				<button type="button" class="label hover:text-ink" onclick={() => (step -= 1)}>Back</button>
-			{/if}
-		</div>
+	<form id="stream-form" onsubmit={make}>
+		<p class="label">Step {step} of {steps.length}</p>
 
 		{#if at === 'name'}
 			<h3 class="mt-4">What is this stream for?</h3>
@@ -233,14 +229,6 @@
 				maxlength="60"
 				required
 			/>
-			<button
-				type="button"
-				class="btn-solid mt-5"
-				disabled={!name.trim()}
-				onclick={() => (step = 2)}
-			>
-				Next
-			</button>
 		{:else if at === 'source'}
 			<h3 class="mt-4">Where will the picture come from?</h3>
 			<p class="sub mt-1">
@@ -265,7 +253,6 @@
 					</label>
 				{/each}
 			</div>
-			<button type="button" class="btn-solid mt-5" onclick={() => (step = 3)}>Next</button>
 		{:else if at === 'protocol'}
 			<h3 class="mt-4">How will your encoder send it?</h3>
 			<p class="sub mt-1">
@@ -290,7 +277,6 @@
 					</label>
 				{/each}
 			</div>
-			<button type="button" class="btn-solid mt-5" onclick={() => (step = 4)}>Next</button>
 		{:else}
 			<h3 class="mt-4">Ready to make it?</h3>
 			<p class="sub mt-1">
@@ -317,9 +303,29 @@
 			{#if error}
 				<p class="mt-4 text-sm text-red" role="alert">{error}</p>
 			{/if}
-			<button type="submit" class="btn-solid mt-5">Make a stream</button>
 		{/if}
 	</form>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			{#if step > 1}
+				<button type="button" class="btn" onclick={() => (step -= 1)}>Back</button>
+			{/if}
+			{#if at === 'confirm'}
+				<!-- The form attribute keeps this bound to a form it is no longer inside. -->
+				<button type="submit" form="stream-form" class="btn-solid">Make a stream</button>
+			{:else}
+				<button
+					type="button"
+					class="btn-solid"
+					disabled={at === 'name' && !name.trim()}
+					onclick={() => (step += 1)}
+				>
+					Next
+				</button>
+			{/if}
+		</div>
+	{/snippet}
 </Dialog>
 
 {#if fresh}
@@ -409,7 +415,7 @@
 	<div class="card mt-6 py-8 text-center">
 		<p class="title">No streams yet</p>
 		<p class="sub mx-auto mt-2 max-w-sm">
-			Use <b>Make a stream</b>. The camera in this browser, or an encoder pointed at the
+			Use <b>Add new</b>. The camera in this browser, or an encoder pointed at the
 			address we give you. Either way the broadcast is kept as an ordinary video afterwards.
 		</p>
 	</div>

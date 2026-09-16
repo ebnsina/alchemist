@@ -124,13 +124,14 @@
 	</div>
 	<button
 		type="button"
+		aria-label="Connect a bucket"
 		class="btn-solid flex-none"
 		onclick={() => {
 			step = 0;
 			open = true;
 		}}
 	>
-		Connect a bucket
+		Add new
 	</button>
 </header>
 
@@ -216,31 +217,35 @@
 					<p class="text-sm text-red" role="alert">{error}</p>
 				{/if}
 
-				<div class="flex items-center gap-2">
-					{#if step > 0 && !busy}
-						<button type="button" class="btn flex-none" onclick={back} aria-label="Back">
-							<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
-						</button>
-					{/if}
-					<button
-						type="button"
-						class="btn-solid flex-1"
-						onclick={next}
-						disabled={busy || !filled}
-						aria-disabled={busy || !filled}
-					>
-						{#if busy}
-							Connecting…
-						{:else if step < steps.length - 1}
-							Next
-							<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
-						{:else}
-							Connect and scan
-						{/if}
-					</button>
-				</div>
 			</div>
 	</Steps>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			{#if step > 0 && !busy}
+				<button type="button" class="btn" onclick={back}>
+					<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					Back
+				</button>
+			{/if}
+			<button
+				type="button"
+				class="btn-solid"
+				onclick={next}
+				disabled={busy || !filled}
+				aria-disabled={busy || !filled}
+			>
+				{#if busy}
+					Connecting…
+				{:else if step < steps.length - 1}
+					Next
+					<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+				{:else}
+					Connect and scan
+				{/if}
+			</button>
+		</div>
+	{/snippet}
 </Dialog>
 
 {#if loading}
@@ -251,7 +256,7 @@
 	<div class="card mt-6 py-8 text-center">
 		<p class="title">No bucket connected</p>
 		<p class="sub mx-auto mt-2 max-w-md">
-			Use <b>Connect a bucket</b> if your videos already live in S3-compatible storage
+			Use <b>Add new</b> if your videos already live in S3-compatible storage
 			of your own. Otherwise there is nothing to do here — send videos through
 			<a href="/app/upload/" class="link">Upload</a> or the API instead.
 		</p>

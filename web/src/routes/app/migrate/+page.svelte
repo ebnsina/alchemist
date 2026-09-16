@@ -241,13 +241,14 @@
 	</div>
 	<button
 		type="button"
+		aria-label="Start a migration"
 		class="btn-solid flex-none"
 		onclick={() => {
 			step = 0;
 			open = true;
 		}}
 	>
-		Start a migration
+		Add new
 	</button>
 </header>
 
@@ -256,6 +257,9 @@
 {/if}
 
 <Dialog bind:open title="Start a migration">
+	{#if error}
+		<p class="mb-4 text-sm text-red" role="alert">{error}</p>
+	{/if}
 	<Steps steps={visible} {step}>
 			<div class="mt-5 grid gap-4">
 				{#if stepKey === 'who'}
@@ -379,31 +383,35 @@
 					</p>
 				{/if}
 
-				<div class="flex items-center gap-2">
-					{#if step > 0 && busy !== 'new'}
-						<button type="button" class="btn flex-none" onclick={back} aria-label="Back">
-							<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
-						</button>
-					{/if}
-					<button
-						type="button"
-						class="btn-solid flex-1"
-						onclick={next}
-						disabled={busy === 'new' || !filled}
-						aria-disabled={busy === 'new' || !filled}
-					>
-						{#if busy === 'new'}
-							Having a look…
-						{:else if step < visible.length - 1}
-							Next
-							<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
-						{:else}
-							Show me what is there
-						{/if}
-					</button>
-				</div>
 			</div>
 	</Steps>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			{#if step > 0 && busy !== 'new'}
+				<button type="button" class="btn" onclick={back}>
+					<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					Back
+				</button>
+			{/if}
+			<button
+				type="button"
+				class="btn-solid"
+				onclick={next}
+				disabled={busy === 'new' || !filled}
+				aria-disabled={busy === 'new' || !filled}
+			>
+				{#if busy === 'new'}
+					Having a look…
+				{:else if step < visible.length - 1}
+					Next
+					<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+				{:else}
+					Show me what is there
+				{/if}
+			</button>
+		</div>
+	{/snippet}
 </Dialog>
 
 {#if loading}
@@ -427,7 +435,7 @@
 		<p class="title">Nothing moved yet</p>
 		<p class="sub mx-auto mt-2 max-w-md">
 			This is a one-off for when you are arriving from somewhere else. Use
-			<b>Start a migration</b> and we will show you what is there before anything moves. Day
+			<b>Add new</b> and we will show you what is there before anything moves. Day
 			to day, videos come in through the API or a
 			<a href="/app/sources/" class="link">connected bucket</a>.
 		</p>
