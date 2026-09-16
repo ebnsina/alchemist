@@ -2,15 +2,28 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { Copy01Icon, Tick02Icon, Delete02Icon } from '@hugeicons/core-free-icons';
+	import {
+		Copy01Icon,
+		Tick02Icon,
+		Delete02Icon,
+		ViewIcon,
+		PlayIcon,
+		PencilEdit02Icon,
+		LinkSquare02Icon
+	} from '@hugeicons/core-free-icons';
+	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
 	import Seo from '$lib/Seo.svelte';
 	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
+	import Confirm from '$lib/components/Confirm.svelte';
+	import DataTable from '$lib/components/DataTable.svelte';
+	import RowMenu from '$lib/components/RowMenu.svelte';
 	import Badge, { type Tone } from '$lib/components/Badge.svelte';
 	import {
 		listLiveStreams,
 		getLiveStream,
 		createLiveStream,
+		renameLiveStream,
 		startLiveStream,
 		deleteLiveStream,
 		getAsset,
@@ -20,6 +33,7 @@
 	} from '$lib/api';
 
 	let streams = $state<LiveStream[]>([]);
+	let total = $state(0);
 	let loading = $state(true);
 	let error = $state('');
 	let name = $state('');
@@ -44,9 +58,38 @@
 	let watching = $state<{ id: string; name: string; asset: AssetDetail } | null>(null);
 	let copied = $state('');
 	let viewer = $state<HTMLElement | null>(null);
-	let confirming = $state('');
 	let unsold = $state(false);
 	let justMade = $state('');
+
+	let page = $state(0);
+	let size = $state(10);
+	let sorting = $state<{ id: string; desc: boolean }[]>([{ id: 'created_at', desc: true }]);
+	let q = $state('');
+	let onlyState = $state('');
+	let onlyProtocol = $state('');
+
+	// Each dialog owns a plain boolean: passing !!row unbound means Escape closes it
+	// and the next render opens it straight back up.
+	let renameOpen = $state(false);
+	let removeOpen = $state(false);
+	let renaming = $state<LiveStream | null>(null);
+	let removing = $state<LiveStream | null>(null);
+	let newName = $state('');
+	let busyRow = $state(false);
+
+	const STATE_FILTERS = [
+		{ value: '', label: 'Every stream' },
+		{ value: 'idle', label: 'Idle' },
+		{ value: 'armed', label: 'Waiting' },
+		{ value: 'live', label: 'On air' },
+		{ value: 'ended', label: 'Ended' }
+	];
+	const SOURCE_FILTERS = [
+		{ value: '', label: 'Any source' },
+		{ value: 'camera', label: 'This browser' },
+		{ value: 'srt', label: 'SRT encoder' },
+		{ value: 'rtmp', label: 'RTMP encoder' }
+	];
 
 	const UNKNOWN = { chip: 'Unknown', tone: 'idle' as const, means: 'We do not recognize the state this stream is in. Reload the page.' };
 	const STATE: Record<LiveStream['state'], { chip: string; tone: Tone; means: string }> = {
@@ -65,9 +108,22 @@
 
 	const said = (e: unknown) => (e instanceof ApiError ? e.message : 'Something went wrong.');
 
+	// One read of every control the table owns, so a change to any of them refetches
+	// exactly once rather than each firing its own request.
+	const query = $derived({
+		limit: size,
+		offset: page * size,
+		q,
+		sort: sorting[0]?.id ?? 'created_at',
+		order: (sorting[0]?.desc ?? true ? 'desc' : 'asc') as 'asc' | 'desc',
+		filters: { state: onlyState || undefined, protocol: onlyProtocol || undefined }
+	});
+
 	async function load() {
 		try {
-			streams = (await listLiveStreams()).live_streams;
+			const r = await listLiveStreams(query);
+			streams = r.live_streams;
+			total = r.total;
 			error = '';
 		} catch (e) {
 			// Live is sold apart from the VOD engine, so a 403 here is a plan, not a fault.
@@ -79,6 +135,7 @@
 	}
 
 	$effect(() => {
+		query;
 		load();
 	});
 
@@ -131,16 +188,37 @@
 		}
 	}
 
-	async function remove(s: LiveStream) {
+	async function remove() {
+		const s = removing;
+		if (!s) return;
 		error = '';
+		busyRow = true;
 		try {
 			await deleteLiveStream(s.id);
-			confirming = '';
+			removeOpen = false;
 			if (armed?.id === s.id) armed = null;
 			if (watching?.id === s.id) watching = null;
 			await load();
 		} catch (err) {
 			error = said(err);
+		} finally {
+			busyRow = false;
+		}
+	}
+
+	async function rename(e: SubmitEvent) {
+		e.preventDefault();
+		if (!renaming) return;
+		error = '';
+		busyRow = true;
+		try {
+			await renameLiveStream(renaming.id, newName.trim());
+			renameOpen = false;
+			await load();
+		} catch (err) {
+			error = said(err);
+		} finally {
+			busyRow = false;
 		}
 	}
 
@@ -186,6 +264,76 @@
 	// published to them until an encoder connects — so the stream's own state decides.
 	const onAir = $derived(streams.find((s) => s.id === watching?.id)?.state === 'live');
 
+	const columns: ColumnDef<any, LiveStream>[] = [
+		{ accessorKey: 'name', header: 'Stream' },
+		{
+			accessorKey: 'state',
+			header: 'State',
+			cell: (c) => {
+				const st = STATE[c.getValue() as LiveStream['state']] ?? UNKNOWN;
+				return renderComponent(Badge, { label: st.chip, tone: st.tone });
+			}
+		},
+		{
+			accessorKey: 'protocol',
+			header: 'Source',
+			enableSorting: false,
+			cell: (c) => SOURCE[c.getValue() as LiveStream['protocol']] ?? 'A stream'
+		},
+		{ accessorKey: 'created_at', header: 'Made', cell: (c) => when(String(c.getValue())) },
+		{
+			id: 'actions',
+			header: '',
+			enableSorting: false,
+			cell: (c) => {
+				const s = c.row.original as LiveStream;
+				const off = s.state === 'idle' || s.state === 'ended';
+				return renderComponent(RowMenu, {
+					label: `Actions for ${s.name}`,
+					actions: [
+						{ label: 'Open', icon: ViewIcon, href: `/app/live/${s.id}/` },
+						{
+							label: 'Rename',
+							icon: PencilEdit02Icon,
+							onclick: () => {
+								renaming = s;
+								newName = s.name;
+								renameOpen = true;
+							}
+						},
+						// The camera is asked for on the stream's own page, at the moment it is
+						// needed. Arming from here would hand out a slot nothing is holding.
+						{
+							label: 'Start',
+							icon: LinkSquare02Icon,
+							disabled: s.protocol === 'camera' || !off,
+							why:
+								s.protocol === 'camera'
+									? 'Open this stream to go live from your camera'
+									: 'This stream is already waiting for an encoder',
+							onclick: () => start(s)
+						},
+						{
+							label: 'Watch',
+							icon: PlayIcon,
+							disabled: off,
+							why: 'Nothing is going out yet',
+							onclick: () => watch(s)
+						},
+						{
+							label: 'Delete',
+							icon: Delete02Icon,
+							danger: true,
+							onclick: () => {
+								removing = s;
+								removeOpen = true;
+							}
+						}
+					]
+				});
+			}
+		}
+	];
 </script>
 
 <Seo title="Live streams — Alchemist" description="Create a stream, point your encoder at it, and watch it go out." />
@@ -408,70 +556,105 @@
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
 {/if}
 
-{#if loading}
-	<div class="mt-6 grid gap-3">
-		{#each [0, 1, 2] as i (i)}<div class="sk h-20"></div>{/each}
-	</div>
-{:else if streams.length === 0}
-	<div class="card mt-6 py-8 text-center">
-		<p class="title">No streams yet</p>
-		<p class="sub mx-auto mt-2 max-w-sm">
-			Use <b>Add new</b>. The camera in this browser, or an encoder pointed at the
-			address we give you. Either way the broadcast is kept as an ordinary video afterwards.
-		</p>
-	</div>
-{:else}
-	<ul class="mt-6 grid gap-3">
-		{#each streams as s (s.id)}
-			<li class="card flex flex-wrap items-center gap-3 p-4">
-				<a href="/app/live/{s.id}/" class="min-w-0 flex-1 hover:opacity-80">
-					<p class="truncate text-sm font-semibold">{s.name}</p>
-					<p class="mt-0.5 text-xs text-dim">
-						{SOURCE[s.protocol] ?? 'A stream'} · made {when(s.created_at)} · {(STATE[s.state] ?? UNKNOWN).means}
-					</p>
-				</a>
-				<Badge label={(STATE[s.state] ?? UNKNOWN).chip} tone={(STATE[s.state] ?? UNKNOWN).tone} />
-				{#if s.protocol === 'camera' && s.state !== 'live'}
-					<!-- The camera is asked for on the stream's own page, at the moment it is
-					     needed. Arming from here would hand out a key nothing is holding. -->
-					<a href="/app/live/{s.id}/" class="btn btn-sm">Go live</a>
-				{:else if s.state === 'idle' || s.state === 'ended'}
-					<button type="button" class="btn btn-sm" onclick={() => start(s)}>Start</button>
-				{:else}
-					<button type="button" class="btn btn-sm" onclick={() => watch(s)}>Watch</button>
-				{/if}
-				<button
-					type="button"
-					class="flex items-center gap-1.5 text-xs text-dim transition-colors hover:text-red"
-					onclick={() => (confirming = confirming === s.id ? '' : s.id)}
+<div class="mt-6">
+	<DataTable
+		{columns}
+		rows={streams}
+		{total}
+		{loading}
+		bind:page
+		bind:size
+		bind:sorting
+		bind:q
+		searchLabel="Search by name or ID"
+	>
+		{#snippet toolbar()}
+			<label class="flex items-center gap-2">
+				<span class="vh">Show</span>
+				<select
+					class="select w-40"
+					value={onlyState}
+					onchange={(e) => {
+						onlyState = e.currentTarget.value;
+						page = 0;
+					}}
 				>
-					<HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.8} />
-					Delete
-				</button>
-				{#if confirming === s.id}
-					<!-- Deleting was one click and no warning, on the row above a stream key
-					     that cannot be issued again. -->
-					<div class="w-full rounded-md border border-sunk p-4">
-						<p class="text-sm">Delete “{s.name}”?</p>
-						<p class="sub mt-1.5">
-							The stream and its key are gone for good, and an encoder still pointed here
-							stops being accepted. Recordings of broadcasts it already made stay in your
-							library.
-						</p>
-						<div class="mt-3 flex flex-wrap gap-2">
-							<button type="button" class="btn btn-sm" onclick={() => remove(s)}>
-								Yes, delete it
-							</button>
-							<button type="button" class="btn btn-sm" onclick={() => (confirming = '')}>
-								Keep it
-							</button>
-						</div>
-					</div>
+					{#each STATE_FILTERS as f (f.value)}<option value={f.value}>{f.label}</option>{/each}
+				</select>
+			</label>
+			<label class="flex items-center gap-2">
+				<span class="vh">Coming from</span>
+				<select
+					class="select w-40"
+					value={onlyProtocol}
+					onchange={(e) => {
+						onlyProtocol = e.currentTarget.value;
+						page = 0;
+					}}
+				>
+					{#each SOURCE_FILTERS as f (f.value)}<option value={f.value}>{f.label}</option>{/each}
+				</select>
+			</label>
+		{/snippet}
+
+		{#snippet empty()}
+			<p class="title">No streams here</p>
+			<p class="sub mx-auto mt-2 max-w-sm">
+				{#if q || onlyState || onlyProtocol}
+					No stream matches that. Clear the search, or pick Every stream above.
+				{:else}
+					Use <b>Add new</b>. The camera in this browser, or an encoder pointed at the
+					address we give you. Either way the broadcast is kept as an ordinary video
+					afterwards.
 				{/if}
-			</li>
-		{/each}
-	</ul>
-{/if}
+			</p>
+		{/snippet}
+	</DataTable>
+</div>
+
+<Dialog
+	bind:open={renameOpen}
+	title="Rename this stream"
+	hint="A name only you see. It does not change the stream key."
+>
+	<form id="stream-rename-form" onsubmit={rename}>
+		<label class="block">
+			<span class="vh">Name</span>
+			<input bind:value={newName} class="field" type="text" maxlength="60" required />
+		</label>
+	</form>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			<button type="button" class="btn" onclick={() => (renameOpen = false)}>Cancel</button>
+			<button
+				type="submit"
+				form="stream-rename-form"
+				class="btn-solid"
+				disabled={busyRow || !newName.trim()}
+			>
+				{busyRow ? 'Saving…' : 'Save the name'}
+			</button>
+		</div>
+	{/snippet}
+</Dialog>
+
+<!-- Deleting was one click and no warning, on the row above a stream key that cannot
+     be issued again. -->
+<Confirm
+	bind:open={removeOpen}
+	title="Delete this stream?"
+	confirm="Yes, delete it"
+	destructive
+	busy={busyRow}
+	onconfirm={remove}
+>
+	<p class="text-sm">{removing?.name ?? ''}</p>
+	<p class="sub mt-2">
+		The stream and its key are gone for good, and an encoder still pointed here stops being
+		accepted. Recordings of broadcasts it already made stay in your library.
+	</p>
+</Confirm>
 
 {/if}
 

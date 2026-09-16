@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Changed
+- **Live streams is a real table** — name, state, source, made — with a state filter and
+  a source filter, and a row menu for Open, Rename, Start, Watch and Delete. Renaming a
+  stream was in the API and had no control anywhere in the dashboard, and deleting one
+  now asks first. The stream key panel, the ingest address panel and the embedded player
+  below the list are unchanged.
 - **Team is two tables.** People — email, role, joined, last signed in — paged, searched
   and sorted by the server, with a row menu for changing a role and removing somebody.
   Your own row still offers neither and still says why. Pending invites keep their own
