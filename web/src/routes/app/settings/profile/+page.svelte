@@ -37,8 +37,7 @@
 
 <Seo title="Your profile — Alchemist" description="The account you are signed in with." />
 
-<h1 class="text-2xl font-semibold tracking-tight">Your profile</h1>
-<p class="sub mt-1 max-w-xl">The account you are signed in with, and what it can do here.</p>
+<p class="sub max-w-xl">The account you are signed in with, and what it can do here.</p>
 
 {#if error}
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
@@ -85,7 +84,7 @@
 		</dl>
 		<p class="sub mt-4">
 			Everyone here shares one organization. <a href="/app/team/" class="link">Team</a> is where
-			you add people to it, and <a href="/app/settings/" class="link">Branding</a> is what your
+			you add people to it, and <a href="/app/settings/branding/" class="link">Branding</a> is what your
 			viewers see.
 		</p>
 	</div>

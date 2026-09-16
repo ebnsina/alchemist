@@ -41,8 +41,7 @@
 
 <Seo title="Encoding — Alchemist" description="Which sizes we make from every video you send." />
 
-<h1 class="text-2xl font-semibold tracking-tight">Encoding</h1>
-<p class="sub mt-1 max-w-xl">
+<p class="sub max-w-xl">
 	Which sizes we make, and how hard we squeeze them. Changing this affects the next video you
 	send — everything already encoded stays exactly as it is, because re-making a whole library on
 	a settings change would be a surprise that costs real money.

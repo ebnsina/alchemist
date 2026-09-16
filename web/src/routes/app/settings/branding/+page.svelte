@@ -76,8 +76,7 @@
 
 <Seo title="Branding — Alchemist" description="The name and logo your viewers see." />
 
-<h1 class="text-2xl font-semibold tracking-tight">Branding</h1>
-<p class="sub mt-1 max-w-xl">
+<p class="sub max-w-xl">
 	What your viewers see when they watch something of yours. Your logo is public by design —
 	it is shown to people who have no account with us.
 </p>
