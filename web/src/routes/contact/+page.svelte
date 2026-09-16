@@ -91,7 +91,7 @@
 			</div>
 
 			<label class="block">
-				<span class="mb-1.5 block text-xs text-dim">Organisation <span class="text-dim">(optional)</span></span>
+				<span class="mb-1.5 block text-xs text-dim">Organization <span class="text-dim">(optional)</span></span>
 				<input bind:value={org} class="field" type="text" name="organization" autocomplete="organization" />
 			</label>
 

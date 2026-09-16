@@ -2,22 +2,24 @@
 // partially_ready is playable: the low sizes finish first and the rest are made on
 // first play, so "in progress" would tell people to wait for something that may
 // never happen on content nobody watches.
-export const ASSET_STATE: Record<string, { chip: string; done?: boolean; bad?: boolean }> = {
-	created: { chip: 'Waiting' },
-	uploading: { chip: 'Sending' },
-	uploaded: { chip: 'Queued' },
-	probing: { chip: 'Probing' },
-	mezzanine: { chip: 'Prep' },
-	analyzing: { chip: 'Prep' },
-	encoding: { chip: 'Encoding' },
-	packaging: { chip: 'Packing' },
+import type { Tone } from '$lib/components/Badge.svelte';
+
+export const ASSET_STATE: Record<string, { chip: string; tone: Tone; done?: boolean }> = {
+	created: { chip: 'Waiting', tone: 'idle' },
+	uploading: { chip: 'Sending', tone: 'busy' },
+	uploaded: { chip: 'Queued', tone: 'idle' },
+	probing: { chip: 'Probing', tone: 'busy' },
+	mezzanine: { chip: 'Prep', tone: 'busy' },
+	analyzing: { chip: 'Prep', tone: 'busy' },
+	encoding: { chip: 'Encoding', tone: 'busy' },
+	packaging: { chip: 'Packing', tone: 'busy' },
 	// Armed is not on air. Until a frame arrives there is nothing to watch.
-	live_armed: { chip: 'Waiting' },
-	live: { chip: 'On air' },
-	live_ended: { chip: 'Recorded', done: true },
-	partially_ready: { chip: 'Ready', done: true },
-	ready: { chip: 'Ready', done: true },
-	failed: { chip: 'Failed', bad: true }
+	live_armed: { chip: 'Waiting', tone: 'idle' },
+	live: { chip: 'On air', tone: 'good' },
+	live_ended: { chip: 'Recorded', tone: 'good', done: true },
+	partially_ready: { chip: 'Ready', tone: 'good', done: true },
+	ready: { chip: 'Ready', tone: 'good', done: true },
+	failed: { chip: 'Failed', tone: 'bad' }
 };
 
 export const bytes = (n: number | null | undefined) =>

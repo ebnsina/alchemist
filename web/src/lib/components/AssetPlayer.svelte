@@ -6,7 +6,7 @@
 
 	// The real player, the same bundle a customer embeds. Using it here means an
 	// encrypted asset previews properly -- it carries the DASH build and the Clear Key
-	// licence path, which the dashboard's own hls.js never could.
+	// license path, which the dashboard's own hls.js never could.
 	// live is the asset state, not shaka's guess: the live playlist is EXT-X-PLAYLIST-TYPE:EVENT
 	// so a viewer can seek back to the start, and shaka reads EVENT as a growing VOD.
 	let {

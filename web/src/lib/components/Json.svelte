@@ -52,9 +52,9 @@
 		font-size: 0.8125rem;
 		line-height: 1.7;
 	}
-	/* Syntax colour inside the system, and no new hues: keys carry weight, values
+	/* Syntax color inside the system, and no new hues: keys carry weight, values
 	   carry the one accent, and the punctuation between them recedes. Every one of
-	   these four is a defined token — the previous set named colours that did not
+	   these four is a defined token — the previous set named colors that did not
 	   exist anywhere, so the highlighting rendered as flat inherited text. */
 	.tok--key {
 		color: var(--color-ink);

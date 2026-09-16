@@ -427,7 +427,7 @@
 		}
 	}
 
-	/* Depth is the surface colour against paper plus the hairline. No shadow here:
+	/* Depth is the surface color against paper plus the hairline. No shadow here:
 	   this is static content, and the system has one shadow, for things that float. */
 	.panel {
 		display: flex;

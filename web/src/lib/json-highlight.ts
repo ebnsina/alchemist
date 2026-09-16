@@ -1,4 +1,4 @@
-// A JSON highlighter, because pulling in a syntax-highlighting library to colour
+// A JSON highlighter, because pulling in a syntax-highlighting library to color
 // four token types would be more bytes than the dashboard itself.
 //
 // Returns tokens rather than HTML: the component renders them, so nothing here has

@@ -72,7 +72,7 @@
 	</div>
 
 	<div class="card mt-4">
-		<p class="title">Organisation</p>
+		<p class="title">Organization</p>
 		<dl class="mt-4 grid gap-4 sm:grid-cols-2">
 			<div class="min-w-0">
 				<dt class="label">Name</dt>
@@ -84,7 +84,7 @@
 			</div>
 		</dl>
 		<p class="sub mt-4">
-			Everyone here shares one organisation. <a href="/app/team/" class="link">Team</a> is where
+			Everyone here shares one organization. <a href="/app/team/" class="link">Team</a> is where
 			you add people to it, and <a href="/app/settings/" class="link">Branding</a> is what your
 			viewers see.
 		</p>

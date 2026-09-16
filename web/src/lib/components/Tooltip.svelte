@@ -3,7 +3,7 @@
 	import type { IconSvgElement } from '@hugeicons/svelte';
 
 	// An icon button that says what it does on hover and on focus. title= would do the
-	// first but not the second, and it cannot be styled — a grey OS tooltip in the
+	// first but not the second, and it cannot be styled — a gray OS tooltip in the
 	// middle of this is exactly the native-element problem everywhere else.
 	let {
 		icon,

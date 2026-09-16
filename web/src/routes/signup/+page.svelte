@@ -92,7 +92,7 @@
 
 <Seo
 	title="Start free — Alchemist"
-	description="Create your organisation and start putting video online. 100 free videos a month, no card needed."
+	description="Create your organization and start putting video online. 100 free videos a month, no card needed."
 />
 
 <AuthShell title={done ? 'You are in' : 'Start free'}>
@@ -170,7 +170,7 @@
 				>
 					{#if step === 0}
 						<label class="block">
-							<span class="vh">Organisation name</span>
+							<span class="vh">Organization name</span>
 							<input
 								bind:this={field}
 								bind:value={org}

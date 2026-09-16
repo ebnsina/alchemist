@@ -4,7 +4,7 @@ import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
 // codes to sentences a person can act on. Raw server text never reaches the page.
 const MESSAGES: Record<string, string> = {
 	invalid_request: 'Something in that form did not come through. Try again.',
-	invalid_org: 'Tell us what to call your organisation.',
+	invalid_org: 'Tell us what to call your organization.',
 	invalid_email: 'That email address does not look right.',
 	weak_password: 'Use at least 10 characters.',
 	email_taken: 'There is already an account with that email.',
@@ -430,11 +430,11 @@ export const deleteMigration = (id: string) =>
 export type EditOverlay = {
 	kind: 'text' | 'image';
 	text?: string;
-	colour?: string;
+	color?: string;
 	shadow?: boolean;
 	/** Names what to put on, never where it is. 'logo' is this account's own logo. */
 	source?: 'logo';
-	at?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'centre' | 'free';
+	at?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' | 'free';
 	/** Top-left as fractions of the frame. Read only when `at` is 'free'. */
 	x?: number;
 	y?: number;

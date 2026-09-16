@@ -13,6 +13,7 @@
 	import AssetRow from '$lib/components/AssetRow.svelte';
 	import RowMenu from '$lib/components/RowMenu.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
+	import Badge from '$lib/components/Badge.svelte';
 	import Confirm from '$lib/components/Confirm.svelte';
 	import { ASSET_STATE, assetName, bytes, clock, when } from '$lib/assets';
 	import {
@@ -29,7 +30,7 @@
 	let error = $state('');
 
 	let page = $state(0);
-	let size = $state(25);
+	let size = $state(10);
 	let sorting = $state<{ id: string; desc: boolean }[]>([{ id: 'created_at', desc: true }]);
 	let q = $state('');
 	let only = $state('');
@@ -129,7 +130,13 @@
 		{
 			accessorKey: 'state',
 			header: 'State',
-			cell: (c) => ASSET_STATE[String(c.getValue())]?.chip ?? String(c.getValue())
+			cell: (c) => {
+				const st = ASSET_STATE[String(c.getValue())];
+				return renderComponent(Badge, {
+					label: st?.chip ?? String(c.getValue()),
+					tone: st?.tone ?? 'idle'
+				});
+			}
 		},
 		{ accessorKey: 'duration_sec', header: 'Length', cell: (c) => clock(c.getValue() as number) },
 		{ accessorKey: 'source_bytes', header: 'Size', cell: (c) => bytes(c.getValue() as number) },
@@ -202,7 +209,7 @@
 		bind:size
 		bind:sorting
 		bind:q
-		searchLabel="Search by name"
+		searchLabel="Search by name or ID"
 	>
 		{#snippet toolbar()}
 			<label class="flex items-center gap-2">

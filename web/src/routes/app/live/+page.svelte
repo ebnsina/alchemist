@@ -6,6 +6,7 @@
 	import Seo from '$lib/Seo.svelte';
 	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
+	import Badge, { type Tone } from '$lib/components/Badge.svelte';
 	import {
 		listLiveStreams,
 		getLiveStream,
@@ -47,13 +48,13 @@
 	let unsold = $state(false);
 	let justMade = $state('');
 
-	const UNKNOWN = { chip: 'Unknown', means: 'We do not recognise the state this stream is in. Reload the page.' };
-	const STATE: Record<LiveStream['state'], { chip: string; means: string }> = {
-		idle: { chip: 'Idle', means: 'Made, never started. Open it to go on air.' },
-		armed: { chip: 'Waiting', means: 'Holding a slot for your encoder. It goes on air the moment one connects.' },
-		live: { chip: 'On air', means: 'Going out now. Viewers can watch it.' },
+	const UNKNOWN = { chip: 'Unknown', tone: 'idle' as const, means: 'We do not recognize the state this stream is in. Reload the page.' };
+	const STATE: Record<LiveStream['state'], { chip: string; tone: Tone; means: string }> = {
+		idle: { chip: 'Idle', tone: 'idle', means: 'Made, never started. Open it to go on air.' },
+		armed: { chip: 'Waiting', tone: 'busy', means: 'Holding a slot for your encoder. It goes on air the moment one connects.' },
+		live: { chip: 'On air', tone: 'good', means: 'Going out now. Viewers can watch it.' },
 		// Nothing went out means nothing was kept, and that stream ends here too.
-		ended: { chip: 'Ended', means: 'Finished. If anything went out, it is under Recordings.' }
+		ended: { chip: 'Ended', tone: 'good', means: 'Finished. If anything went out, it is under Recordings.' }
 	};
 
 	const SOURCE: Record<LiveStream['protocol'], string> = {
@@ -429,7 +430,7 @@
 						{SOURCE[s.protocol] ?? 'A stream'} · made {when(s.created_at)} · {(STATE[s.state] ?? UNKNOWN).means}
 					</p>
 				</a>
-				<span class="chip {s.state === 'live' ? 'chip-on' : ''}">{(STATE[s.state] ?? UNKNOWN).chip}</span>
+				<Badge label={(STATE[s.state] ?? UNKNOWN).chip} tone={(STATE[s.state] ?? UNKNOWN).tone} />
 				{#if s.protocol === 'camera' && s.state !== 'live'}
 					<!-- The camera is asked for on the stream's own page, at the moment it is
 					     needed. Arming from here would hand out a key nothing is holding. -->

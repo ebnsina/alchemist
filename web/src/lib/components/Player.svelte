@@ -67,7 +67,7 @@
 			// handing the stream to a player that will never start.
 			const native = el.canPlayType('application/vnd.apple.mpegurl') === 'probably';
 
-			// Media Source Extensions cannot decrypt SAMPLE-AES without a licence
+			// Media Source Extensions cannot decrypt SAMPLE-AES without a license
 			// server. Read the manifest and say so, rather than attaching a player that
 			// silently never starts.
 			let sampleAes = false;
@@ -90,7 +90,7 @@
 			if (sampleAes) {
 				blocked = true;
 				note =
-					'This video is encrypted. Safari plays it as it is; Chrome and Firefox need a licence server, which is not wired up yet.';
+					'This video is encrypted. Safari plays it as it is; Chrome and Firefox need a license server, which is not wired up yet.';
 				return;
 			}
 

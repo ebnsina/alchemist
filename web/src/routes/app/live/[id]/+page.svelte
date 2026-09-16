@@ -414,7 +414,7 @@
 		<h2 class="text-lg font-semibold tracking-tight">Where your encoder connects</h2>
 		{#if ingest}
 			<!-- OBS joins Server and Stream Key with a slash, so one pasted URL gets the
-			     key appended twice and lands on a path nothing authorised. -->
+			     key appended twice and lands on a path nothing authorized. -->
 			<p class="label mt-4">Server</p>
 			<div class="mt-2 flex items-center gap-2 rounded-xl border border-sunk bg-bg px-3 py-2">
 				<code class="truncate font-mono text-xs">{ingest}</code>

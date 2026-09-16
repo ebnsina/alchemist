@@ -69,7 +69,7 @@
 		null,
 		{ id: 'top-right', label: 'Top right' },
 		null,
-		{ id: 'centre', label: 'Middle' },
+		{ id: 'center', label: 'Middle' },
 		null,
 		{ id: 'bottom-left', label: 'Bottom left' },
 		null,
@@ -79,7 +79,7 @@
 	function addText() {
 		overlays = [
 			...overlays,
-			{ kind: 'text', text: 'Your text', colour: '#ffffff', shadow: true, at: 'bottom-left', scale: 0.06, opacity: 1 }
+			{ kind: 'text', text: 'Your text', color: '#ffffff', shadow: true, at: 'bottom-left', scale: 0.06, opacity: 1 }
 		];
 		selected = overlays.length - 1;
 	}
@@ -108,10 +108,10 @@
 		}
 		const m = (o.margin ?? 0.04) * 100;
 		const at = o.at ?? 'bottom-right';
-		const v = at.startsWith('top') ? `top:${m}%` : at === 'centre' ? 'top:50%' : `bottom:${m}%`;
-		const h = at.endsWith('left') ? `left:${m}%` : at === 'centre' ? 'left:50%' : `right:${m}%`;
-		const centre = at === 'centre' ? 'transform:translate(-50%,-50%);' : '';
-		return `${v};${h};${centre}opacity:${o.opacity ?? 1}`;
+		const v = at.startsWith('top') ? `top:${m}%` : at === 'center' ? 'top:50%' : `bottom:${m}%`;
+		const h = at.endsWith('left') ? `left:${m}%` : at === 'center' ? 'left:50%' : `right:${m}%`;
+		const center = at === 'center' ? 'transform:translate(-50%,-50%);' : '';
+		return `${v};${h};${center}opacity:${o.opacity ?? 1}`;
 	}
 
 	const SHAPES = [
@@ -507,11 +507,11 @@
 						</label>
 						<div class="mt-3 flex items-center gap-3">
 							<label class="flex items-center gap-2">
-								<span class="mono">Colour</span>
+								<span class="mono">Color</span>
 								<input
 									type="color"
-									value={picked.colour ?? '#ffffff'}
-									oninput={(e) => patch(selected!, { colour: e.currentTarget.value })}
+									value={picked.color ?? '#ffffff'}
+									oninput={(e) => patch(selected!, { color: e.currentTarget.value })}
 								/>
 							</label>
 							<label class="mono flex items-center gap-2">
@@ -683,7 +683,7 @@
 							{#if o.kind === 'text'}
 								<span
 									class="ov__text"
-									style="color:{o.colour ?? '#ffffff'}; font-size:{(o.scale ?? 0.06) * 100}cqw;
+									style="color:{o.color ?? '#ffffff'}; font-size:{(o.scale ?? 0.06) * 100}cqw;
 										{o.shadow ? 'text-shadow:0 2px 4px rgba(0,0,0,.6);' : ''}"
 								>{o.text || 'Your text'}</span>
 							{:else if brand?.logo_url}

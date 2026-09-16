@@ -149,7 +149,7 @@
 
   /* The outline follows each element's own radius; forcing one here made a rounded
      field snap square the moment it took focus. */
-  /* The platform scrollbar is a chunky grey slab that belongs to no theme. This is
+  /* The platform scrollbar is a chunky gray slab that belongs to no theme. This is
      the same bar in the page's own palette, and it keeps its space reserved so
      content does not shift when one appears. */
   * {
@@ -405,7 +405,7 @@
    reads as a ring rather than a thicker border. */
 /* A select is a field with the platform's arrow removed and ours drawn in, so it sits
    on the same baseline and takes the same focus ring as every other control. The
-   native list stays native: replacing it costs keyboard behaviour on every platform
+   native list stays native: replacing it costs keyboard behavior on every platform
    and buys a dropdown that has to be reimplemented for each one. */
 @utility select {
   @apply field;
@@ -618,8 +618,8 @@
     background: var(--color-on-brand);
   }
 
-  /* The colour well: the swatch is the control, so the browser's chrome around it
-     goes and the colour fills the whole thing. */
+  /* The color well: the swatch is the control, so the browser's chrome around it
+     goes and the color fills the whole thing. */
   input[type="color"] {
     appearance: none;
     height: 28px;
@@ -681,7 +681,7 @@
     cursor: pointer;
   }
 
-  /* A search field's clear button, which Safari draws as a grey blob. */
+  /* A search field's clear button, which Safari draws as a gray blob. */
   input[type="search"]::-webkit-search-cancel-button {
     appearance: none;
     height: 12px;
