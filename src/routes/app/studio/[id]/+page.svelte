@@ -299,6 +299,8 @@
 		if (media) media.currentTime = t;
 	}
 
+	let made = $state(false);
+
 	async function apply() {
 		error = '';
 		busy = true;
@@ -313,6 +315,7 @@
 				mute: mute || undefined
 			});
 			reset();
+			made = true;
 			await load();
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong.';
@@ -396,6 +399,15 @@
 
 <Seo title="Studio — Alchemist" description="Cut, crop and reshape a video." />
 
+{#if !loading && !asset}
+	<!-- No toolbar, no Make it: the editor chrome over a video we could not load
+	     offered an action whose only possible answer was the same error again. -->
+	<div class="card mt-6 py-8 text-center">
+		<p class="title">We could not open that video</p>
+		<p class="sub mx-auto mt-2 max-w-sm">{error || 'We could not find that video.'}</p>
+		<a href="/app/studio/" class="btn-solid mt-5">Back to Studio</a>
+	</div>
+{:else}
 <header class="flex flex-wrap items-center justify-between gap-4">
 	<div class="min-w-0">
 		<div class="flex items-center gap-2.5">
@@ -428,14 +440,21 @@
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
 {/if}
 
+{#if made}
+	<!-- Pressing Make it only cleared the controls; the new video lands in a list a
+	     page further down, so nothing on screen said it had worked. -->
+	<p class="mt-4 text-sm" role="status">
+		On its way. It appears under <a href="#made" class="link">What you have made</a> below, and
+		opens as an ordinary video when it is finished.
+	</p>
+{/if}
+
 {#if loading}
 	<div class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
 		<div class="sk aspect-video w-full"></div>
 		<div class="sk h-72"></div>
 	</div>
-{:else if !asset}
-	<p class="sub mt-6">We could not find that video.</p>
-{:else if !asset.playback}
+{:else if !asset?.playback}
 	<div class="card mt-6">
 		<p class="title">Not ready to edit yet</p>
 		<p class="sub mt-2">
@@ -604,7 +623,7 @@
 			<Tooltip icon={TextIcon} label="Add text" onclick={addText} />
 			<Tooltip
 				icon={ImageAdd02Icon}
-				label={brand?.logo_url ? 'Add your logo' : 'Upload a logo first'}
+				label={brand?.logo_url ? 'Add your logo' : 'No logo yet — add one under Branding'}
 				disabled={!brand?.logo_url}
 				onclick={addLogo}
 			/>
@@ -637,8 +656,8 @@
 
 		<div class="editor__stage">
 			<Player
-				hls={asset.playback.hls}
-				poster={asset.playback.poster}
+				hls={asset.playback!.hls}
+				poster={asset.playback!.poster}
 				bind:currentTime={current}
 				bind:playable
 				bind:element={media}
@@ -725,7 +744,7 @@
 		</div>
 	</div>
 
-	<h2 class="mt-10 text-lg font-semibold tracking-tight">What you have made</h2>
+	<h2 id="made" class="mt-10 text-lg font-semibold tracking-tight">What you have made</h2>
 	{#if edits.length === 0}
 		<p class="sub mt-3">Nothing yet. Anything you make from this video shows up here.</p>
 	{:else}
@@ -762,6 +781,7 @@
 			video itself.
 		</p>
 	{/if}
+{/if}
 {/if}
 
 <style>

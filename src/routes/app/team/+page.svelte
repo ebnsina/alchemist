@@ -1,7 +1,18 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { Copy01Icon, Tick02Icon, Delete02Icon, UserAdd01Icon } from '@hugeicons/core-free-icons';
+	import {
+		Copy01Icon,
+		Tick02Icon,
+		Delete02Icon,
+		UserAdd01Icon,
+		Mail01Icon,
+		SecurityIcon,
+		ArrowLeft01Icon,
+		ArrowRight01Icon
+	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
+	import Steps from '$lib/components/Steps.svelte';
+	import Check from '$lib/components/Check.svelte';
 	import {
 		listMembers,
 		inviteMember,
@@ -21,7 +32,41 @@
 	let role = $state('member');
 	let busy = $state(false);
 	let fresh = $state<{ email: string; link: string } | null>(null);
+	let linkCard = $state<HTMLElement | null>(null);
 	let copied = $state(false);
+	let confirming = $state('');
+	let step = $state(0);
+
+	// Who, then what they may do, then a link to hand over. Choosing a role in the
+	// same breath as typing an address is how people invite an owner by accident.
+	const steps = [
+		{
+			key: 'who',
+			icon: Mail01Icon,
+			title: 'Who are you inviting?',
+			hint: 'The address they will sign in with.'
+		},
+		{
+			key: 'role',
+			icon: SecurityIcon,
+			title: 'What may they do?',
+			hint: 'You can change this afterwards, from the list below.'
+		},
+		{
+			key: 'send',
+			icon: UserAdd01Icon,
+			title: 'Ready to invite them?',
+			hint: 'You get a link to pass on. We do not send the email yet.'
+		}
+	];
+
+	const ROLES = [
+		{ id: 'member', label: 'Member', hint: 'Upload, edit and read everything. Cannot change the team.' },
+		{ id: 'admin', label: 'Admin', hint: 'Everything a member can, plus inviting and removing people.' },
+		{ id: 'owner', label: 'Owner', hint: 'Full control, including other owners. Only an owner may add one.' }
+	];
+
+	const filled = $derived([email.trim().length > 0, role !== '', true][step]);
 
 	async function load() {
 		error = '';
@@ -44,12 +89,21 @@
 	// sends the request and shows the answer rather than deciding in advance.
 	async function invite(e: SubmitEvent) {
 		e.preventDefault();
+		if (!filled) return;
+		if (step < steps.length - 1) {
+			step += 1;
+			return;
+		}
 		error = '';
 		busy = true;
 		try {
 			const r = await inviteMember(email.trim(), role);
+			step = 0;
 			fresh = { email: r.email, link: `${location.origin}/invite/?token=${r.token}` };
 			email = '';
+			// The link works once and is never shown again, so it gets the attention
+			// rather than the form it came from.
+			queueMicrotask(() => linkCard?.focus());
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
@@ -62,6 +116,7 @@
 		error = '';
 		try {
 			await fn();
+			confirming = '';
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
@@ -100,7 +155,7 @@
 {/if}
 
 {#if fresh}
-	<div class="card mt-6">
+	<div class="card mt-6" tabindex="-1" bind:this={linkCard}>
 		<p class="title">Invite ready for {fresh.email}</p>
 		<p class="sub mt-2">
 			We do not send the email yet, so pass this link on yourself. It works once, and only for
@@ -121,26 +176,84 @@
 	</div>
 {/if}
 
-<form class="card mt-6" onsubmit={invite}>
-	<p class="title">Invite someone</p>
-	<div class="mt-4 flex flex-wrap items-end gap-3">
-		<label class="min-w-56 flex-1">
-			<span class="label mb-1.5 block">Their email</span>
-			<input bind:value={email} class="field" type="email" placeholder="name@example.com" required />
-		</label>
-		<label class="w-44">
-			<span class="label mb-1.5 block">Role</span>
-			<select bind:value={role} class="select">
-				<option value="member">Member — can use it</option>
-				<option value="admin">Admin — can manage the team</option>
-				<option value="owner">Owner — full control</option>
-			</select>
-		</label>
-		<button type="submit" class="btn-solid" disabled={busy || !email.trim()}>
-			<HugeiconsIcon icon={UserAdd01Icon} size={15} strokeWidth={2} />
-			{busy ? 'Inviting…' : 'Invite'}
-		</button>
-	</div>
+<form class="card mt-6 max-w-2xl" onsubmit={invite}>
+	<Steps {steps} {step}>
+		<div class="mt-5">
+			{#if step === 0}
+				<label class="block">
+					<span class="vh">Their email</span>
+					<input
+						bind:value={email}
+						class="field"
+						type="email"
+						placeholder="name@example.com"
+						required
+					/>
+				</label>
+			{:else if step === 1}
+				<fieldset>
+					<legend class="vh">Role</legend>
+					<div class="grid gap-2.5">
+						{#each ROLES as r (r.id)}
+							<Check
+								type="radio"
+								card
+								name="role"
+								value={r.id}
+								bind:group={role}
+								label={r.label}
+								hint={r.hint}
+							/>
+						{/each}
+					</div>
+				</fieldset>
+			{:else}
+				<dl class="grid gap-3 rounded-md border border-sunk p-4">
+					<div class="flex items-baseline justify-between gap-4">
+						<dt class="label">Inviting</dt>
+						<dd class="truncate text-sm font-medium">{email}</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-4">
+						<dt class="label">As</dt>
+						<dd class="text-sm">{ROLES.find((r) => r.id === role)?.label ?? role}</dd>
+					</div>
+				</dl>
+				<p class="sub mt-3">
+					Nothing is emailed. You get a link to pass on yourself, good once and for seven
+					days, and you can withdraw it until they use it.
+				</p>
+			{/if}
+
+			<div class="mt-6 flex items-center gap-2">
+				{#if step > 0 && !busy}
+					<button
+						type="button"
+						class="btn flex-none"
+						onclick={() => (step -= 1)}
+						aria-label="Back"
+					>
+						<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2.2} />
+					</button>
+				{/if}
+				<button
+					type="submit"
+					class="btn-solid flex-1"
+					disabled={busy || !filled}
+					aria-disabled={busy || !filled}
+				>
+					{#if busy}
+						Inviting…
+					{:else if step < steps.length - 1}
+						Next
+						<HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2.2} />
+					{:else}
+						<HugeiconsIcon icon={UserAdd01Icon} size={15} strokeWidth={2} />
+						Make the invite link
+					{/if}
+				</button>
+			</div>
+		</div>
+	</Steps>
 </form>
 
 <h2 class="mt-10 text-lg font-semibold tracking-tight">People</h2>
@@ -164,24 +277,53 @@
 						{m.last_login_at ? `last signed in ${when(m.last_login_at)}` : 'has not signed in yet'}
 					</p>
 				</div>
-				<select
-					class="select w-40"
-					value={m.role}
-					onchange={(e) => act(() => setMemberRole(m.id, e.currentTarget.value))}
-					aria-label="Role for {m.email}"
-				>
-					<option value="member">Member</option>
-					<option value="admin">Admin</option>
-					<option value="owner">Owner</option>
-				</select>
-				<button
-					type="button"
-					class="icon-btn"
-					onclick={() => act(() => removeMember(m.id))}
-					aria-label="Remove {m.email}"
-				>
-					<HugeiconsIcon icon={Delete02Icon} size={16} strokeWidth={1.8} />
-				</button>
+				{#if m.you}
+					<!-- Both controls only ever refused on your own row: the API will not let
+					     anyone remove themselves or leave the account without an owner. -->
+					<span class="chip w-40 justify-center">{m.role}</span>
+					<span class="sub flex-none">Another owner has to change this</span>
+				{:else}
+					<select
+						class="select w-40"
+						value={m.role}
+						onchange={(e) => act(() => setMemberRole(m.id, e.currentTarget.value))}
+						aria-label="Role for {m.email}"
+					>
+						<option value="member">Member</option>
+						<option value="admin">Admin</option>
+						<option value="owner">Owner</option>
+					</select>
+					<button
+						type="button"
+						class="icon-btn"
+						onclick={() => (confirming = confirming === m.id ? '' : m.id)}
+						aria-label="Remove {m.email}"
+					>
+						<HugeiconsIcon icon={Delete02Icon} size={16} strokeWidth={1.8} />
+					</button>
+				{/if}
+				{#if confirming === m.id}
+					<div class="w-full rounded-md border border-sunk p-4">
+						<p class="text-sm">Remove {m.email}?</p>
+						<p class="sub mt-1.5">
+							They lose access to this account immediately and any invite link they used is
+							spent. Videos and keys are the account's, so nothing of theirs is deleted. You
+							can invite them again afterwards.
+						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							<button
+								type="button"
+								class="btn btn-sm"
+								onclick={() => act(() => removeMember(m.id))}
+							>
+								Yes, remove them
+							</button>
+							<button type="button" class="btn btn-sm" onclick={() => (confirming = '')}>
+								Keep them
+							</button>
+						</div>
+					</div>
+				{/if}
 			</li>
 		{/each}
 	</ul>

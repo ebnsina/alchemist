@@ -9,6 +9,45 @@
   broadcast tells the engine and closes the connection and the camera together.
 
 ### Fixed
+- **The API reference is in the repository.** `docs` in `.gitignore` had no leading
+  slash, so git ignored any directory of that name at any depth — including
+  `src/routes/app/docs/`, the reference the sidebar has linked to all along. A fresh
+  clone built a dashboard whose Docs link went nowhere.
+- **The trail no longer misnames the page it is on.** The videos list called itself
+  "Video" and linked "Dashboard" at itself; Recordings called itself "Streams", because
+  the first sidebar entry whose address prefixed the URL won and `/app/live/` prefixes
+  `/app/live/recordings/`. A stream's own page is titled with the stream's name instead
+  of eight characters of its id.
+- **An armed stream stopped offering a button that could only fail.** The ingest address
+  is minted once per broadcast and never returned again, so "Start this stream" on a
+  stream already waiting answered "that stream is already waiting for an encoder" — in
+  red, at the foot of the page, three panels below the button that caused it. The page
+  now says the address cannot be shown again and points at the only way to get a fresh
+  one, and every error on that page appears beside the controls rather than at the end.
+- **An armed broadcast stops pretending to measure a file that has not arrived.** Its
+  four figures shimmered for ever. A size made on demand no longer reads as stalled at
+  0%, and anything under ten megabytes no longer prints as "0 MB".
+- **A video, stream or edit that will not load offers a way back** instead of a red
+  sentence and nothing else. Studio drew its whole toolbar and a Make it button over a
+  video it had failed to open.
+- **One-time secrets take the attention.** Minting an API key cleared the name field, so
+  the browser put the cursor back in the form while the key sat above it, on screen for
+  the only time it ever will be. API keys, webhook signing secrets and invite links now
+  behave like stream keys: the panel takes focus when it appears.
+- **Destructive actions ask first.** Switching off an API key, removing a colleague and
+  deleting a live stream each happened on one click. Each now asks in place and says what
+  is lost. Your own row in Team no longer offers a role menu and a remove button that the
+  API refuses every time.
+- **Making a camera stream says so.** There is no key to show for one, so the wizard
+  emptied itself and nothing on screen acknowledged the stream existed. Watching a stream
+  scrolls the player into view rather than opening it below the fold.
+- **A migration preview that would not load** shimmered for ever and asked again every
+  five seconds. It says so once and offers to try again.
+- **The API reference stopped describing a response the engine does not send.** The usage
+  example promised storage and delivery lines that are not metered yet, POST badges
+  painted a colour that is not a token in this palette, and the closing line pointed at a
+  specification with nothing to open.
+
 - **A live broadcast keeps playing.** The watch panel and the video page poll the asset
   while a stream is on air, and every poll returns a freshly signed playback URL. The
   player was rebuilt on each one, so a broadcast played for a few seconds, jumped back
@@ -26,6 +65,12 @@
   picture is actually going out.
 
 ### Changed
+- **Making a key, adding a webhook and inviting somebody are step-by-step now,** like
+  upload, connecting a bucket, moving a library and making a stream. Each ends on a
+  screen saying what is about to happen, and the role menu became three cards with a
+  sentence each.
+- **Empty pages name the next step.** Connected buckets and Move a library ended on a
+  sentence with nowhere to go.
 - **Served by `adapter-node` instead of `adapter-static`.** A provider key cannot
   live in page script and a static build has no server to keep one in. Everything
   that can still be static still is: the marketing pages and the dashboard shell

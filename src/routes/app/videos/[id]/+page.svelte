@@ -135,12 +135,18 @@
 	const mbps = (bps: number) =>
 		new Intl.NumberFormat('en', { maximumFractionDigits: 2 }).format(bps / 1_000_000) + ' Mbps';
 
+	// Anything under ten megabytes rounded to "0 MB", which reads as nothing made — on
+	// the one figure that is the whole point of the product.
 	const size = (bytes: number | null | undefined) =>
 		bytes == null
 			? '—'
 			: bytes >= 1_000_000_000
 				? new Intl.NumberFormat('en', { style: 'unit', unit: 'gigabyte', maximumFractionDigits: 1 }).format(bytes / 1_000_000_000)
-				: new Intl.NumberFormat('en', { style: 'unit', unit: 'megabyte', maximumFractionDigits: 0 }).format(bytes / 1_000_000);
+				: new Intl.NumberFormat('en', {
+						style: 'unit',
+						unit: 'megabyte',
+						maximumFractionDigits: bytes >= 10_000_000 ? 0 : 1
+					}).format(bytes / 1_000_000);
 
 	const length = (secs: number | undefined) => {
 		if (secs == null) return '—';
@@ -174,34 +180,37 @@
 		// it as pending leaves a skeleton spinning forever on every video ingested
 		// before we started recording sizes.
 		const settled = ['ready', 'partially_ready', 'failed', 'live_ended'].includes(asset.state);
-		const never = 'Not recorded for this video';
+		// An armed broadcast has no file yet and may never get one. Left as pending, its
+		// four figures shimmered for ever on a stream nobody ever connected to.
+		const armed = asset.state === 'live_armed';
+		const never = armed ? 'Nothing has been broadcast yet' : 'Not recorded for this video';
 		return [
 			{
 				k: 'Length',
 				v: probed ? length(asset.duration_seconds) : '',
 				why: 'How long it plays for',
-				pending: settled ? '' : 'Measuring it now',
+				pending: settled || armed ? '' : 'Measuring it now',
 				absent: failed ? 'We never got far enough to read it' : never
 			},
 			{
 				k: 'Recorded at',
 				v: asset.width && asset.height ? `${asset.width}\u00d7${asset.height}` : '',
 				why: 'The size it came in at',
-				pending: settled ? '' : 'Reading the file',
+				pending: settled || armed ? '' : 'Reading the file',
 				absent: failed ? 'We could not read the file' : never
 			},
 			{
 				k: 'They sent',
 				v: asset.source_bytes ? size(asset.source_bytes) : '',
 				why: 'What the original weighed',
-				pending: settled ? '' : 'Still arriving',
+				pending: settled || armed ? '' : 'Still arriving',
 				absent: failed ? 'Nothing reached us' : never
 			},
 			{
 				k: 'Smallest we made',
 				v: smallest ? size(smallest.bytes) : '',
 				why: saving ? `${saving}% lighter than the original` : 'The lightest size a viewer gets',
-				pending: settled ? '' : 'Nothing finished yet',
+				pending: settled || armed ? '' : 'Nothing finished yet',
 				absent: failed ? 'No size was ever made' : never
 			}
 		];
@@ -229,7 +238,11 @@
 		</div>
 	</div>
 {:else if error}
-	<p class="mt-6 text-sm text-red" role="alert">{error}</p>
+	<div class="card mt-6 py-8 text-center">
+		<p class="title">We could not open that video</p>
+		<p class="sub mx-auto mt-2 max-w-sm">{error}</p>
+		<a href="/app/videos/" class="btn-solid mt-5">Back to your videos</a>
+	</div>
 {:else if asset}
 	<header class="mt-4 flex flex-wrap items-start justify-between gap-4">
 		<div class="min-w-0">
@@ -322,8 +335,10 @@
 									{#if r.bytes} · {size(r.bytes)}{/if}
 								</p>
 							</div>
+							<!-- 0% beside a size made on demand read as stalled; it has not started
+							     because nobody has asked for it. -->
 							<span class="tabular-nums text-sm {r.state === 'ready' ? 'text-ink' : 'text-dim'}">
-								{r.state === 'ready' ? 'Ready' : `${done}%`}
+								{r.state === 'ready' ? 'Ready' : r.lazy ? 'On demand' : `${done}%`}
 							</span>
 						</div>
 						<div class="mt-3 h-1.5 overflow-hidden rounded-full bg-sunk">

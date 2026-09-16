@@ -242,10 +242,14 @@
 		{#each [0, 1] as i (i)}<div class="sk h-16"></div>{/each}
 	</div>
 {:else if sources.length === 0}
-	<p class="sub mt-6">
-		Nothing connected. Uploading through the API works just as well — this is for when the
-		files are already somewhere of your own.
-	</p>
+	<div class="card mt-6 py-8 text-center">
+		<p class="title">No bucket connected</p>
+		<p class="sub mx-auto mt-2 max-w-md">
+			Use <b>Connect a bucket</b> above if your videos already live in S3-compatible storage
+			of your own. Otherwise there is nothing to do here — send videos through
+			<a href="/app/upload/" class="link">Upload</a> or the API instead.
+		</p>
+	</div>
 {:else}
 	<ul class="mt-6 divide-y divide-sunk border-y border-sunk">
 		{#each sources as s (s.id)}
