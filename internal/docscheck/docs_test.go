@@ -10,7 +10,7 @@ import (
 
 // Every path a doc mentions in backticks, plus every relative markdown link.
 var (
-	backtickPath = regexp.MustCompile("`((?:internal|cmd|deploy|docs|test)/[A-Za-z0-9_./-]+|[A-Za-z0-9_-]+\\.(?:go|sql|js|conf|service|sh|py|yml))`")
+	backtickPath = regexp.MustCompile("`((?:internal|cmd|deploy|docs|test|web|player|src|scripts)/[A-Za-z0-9_./-]+|[A-Za-z0-9_-]+\\.(?:go|sql|js|conf|service|sh|py|yml))`")
 	mdLink       = regexp.MustCompile(`\]\(([^)h][^)]*)\)`)
 )
 
@@ -41,6 +41,11 @@ func TestDocsReferenceRealPaths(t *testing.T) {
 		// llms.txt is markdown despite the extension, and it is the file an agent
 		// integrating against this reads first, so a dead link there is the most
 		// expensive kind.
+		// A changelog records what a release did, so a "Removed" entry naming a file
+		// that no longer exists is correct rather than rotten.
+		if d.Name() == "CHANGELOG.md" {
+			return nil
+		}
 		if strings.HasSuffix(path, ".md") || d.Name() == "llms.txt" {
 			docs = append(docs, path)
 		}

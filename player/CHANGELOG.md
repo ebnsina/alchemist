@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Moved into the Alchemist repository as the `player/` workspace, with its history.
+  The dashboard used to depend on it as `file:../alchemist-player`, a path leaving its
+  own repository, so a clone of the dashboard alone could not install. Nothing about
+  the published package changes: same name, same entry points, same versioning.
+
+- vite 8, TypeScript 6 and `@types/node` 26, to match the web workspace. Two copies of
+  vite in one install put two structurally identical `ViteHotContext` types in scope
+  and `svelte-check` refuses them.
+
 - A `live` option on the player. The LIVE badge never appeared during a broadcast:
   the live playlist is `#EXT-X-PLAYLIST-TYPE:EVENT` so a viewer can seek back to its
   start, and shaka reads EVENT as a growing VOD, so its `isLive()` stayed false for

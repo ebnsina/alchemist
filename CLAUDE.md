@@ -4,8 +4,11 @@ Multi-tenant video transcoding and delivery. Bangladesh first, international lat
 Go + PostgreSQL + River + SeaweedFS + ffmpeg + shaka-packager, self-hosted on bare
 metal. No managed transcoding service, no PaaS.
 
-**Scope: this repo is the transcode and delivery engine only.** The player and the
-customer dashboard are separate repositories — see `internal/modules/README.md`.
+**Scope: one repository, three workspaces.** The engine is Go at the root; `player/`
+and `web/` are npm workspaces. They were three repositories until the relative
+dependency between two of them made a lone clone unbuildable — see `player/` and
+`web/` below, and `internal/modules/README.md` for how a Go module would be pulled
+out if one ever needs to be.
 
 ## Keeping docs true
 
@@ -45,6 +48,8 @@ Prose still needs judgement. After changing behaviour, check:
 | Live ingest, ports, segments | `docs/06-live.md`, `deploy/README.md` |
 | Asset states, URL TTLs, headers | `llms.txt` (claims are not test-enforced) |
 | Costs, volumes, BD assumptions | `docs/03-cost-model.md`, `docs/05-bangladesh.md` |
+| Dashboard routes, copy, components | `web/CLAUDE.md`, `web/DESIGN.md`, `web/CHANGELOG.md` |
+| Player behaviour, SDK surface | `player/README.md`, `player/CHANGELOG.md` |
 
 `docs/` and `data/` are gitignored — they are working references, not published.
 

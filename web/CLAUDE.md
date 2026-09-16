@@ -1,17 +1,21 @@
 # Alchemist web
 
 Marketing site and customer dashboard for Alchemist, a video infrastructure API.
-SvelteKit 2 + Svelte 5 (runes) + TypeScript + Tailwind CSS v4, static output through
-`adapter-static`.
+SvelteKit 2 + Svelte 5 (runes) + TypeScript + Tailwind CSS v4, served by
+`adapter-node`. One npm workspace of the Alchemist repository; the engine is Go at
+the root and the player is `player/`, which this depends on as a workspace.
 
 `DESIGN.md` is the design reference and `src/app.css` is its implementation — read
 both before changing anything visual, and keep them in agreement.
 
 ## Commands
 
+Run them here, or from the repository root with `-w alchemist-web`. The single
+`npm install` lives at the root and installs this and the player together.
+
 ```sh
 npm run dev                      # :5173
-npm run build                    # static output in build/
+npm run build                    # build/ — a Node server plus prerendered pages
 npm run check                    # svelte-check — must stay at 0 errors
 npm run verify                   # serves build/ and checks it; run after build
 npm run preview -- --port 4321   # then: npm run check:contrast
@@ -19,7 +23,7 @@ npm run preview -- --port 4321   # then: npm run check:contrast
 
 `verify` and `check:contrast` are the gate. Both must pass before anything ships.
 
-## Rules specific to this repo
+## Rules specific to this workspace
 
 - **No new dependencies without asking.** `gsap` was carried for months without a
   single import. Reach for CSS, then a platform feature, then what is installed.

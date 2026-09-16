@@ -9,8 +9,12 @@ now. Everything that can still be static still is: the marketing pages and the
 dashboard shell prerender at build time and are served as files. Only `/api/*` runs
 per request.
 
+One `npm install` at the repository root installs this and the player together; there
+is no install to run in here. Every command below works from this directory, or from
+the root with `-w alchemist-web`.
+
 ```sh
-npm install
+npm install        # at the repository root, once, for both workspaces
 npm run dev        # local development on :5173
 npm run build      # build/ — a Node server plus prerendered pages
 node build/index.js            # run it: PORT and ORIGIN come from the environment

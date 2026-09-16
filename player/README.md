@@ -283,7 +283,7 @@ location = /v1/embed.html { expires 5m; }
 ### Against a real Alchemist
 
 ```bash
-npm install
+npm install            # at the repository root, once, for both workspaces
 npm run dev            # http://localhost:5180/v1/
 ```
 

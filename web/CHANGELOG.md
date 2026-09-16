@@ -8,6 +8,11 @@
   behind a confirm step, for both an encoder stream and a camera one; stopping a camera
   broadcast tells the engine and closes the connection and the camera together.
 
+### Changed
+- **Moved into the Alchemist repository as the `web/` workspace**, with its history.
+  The player is now a workspace dependency rather than `file:../alchemist-player`, so
+  a clone builds on its own. `npm install` runs once at the repository root.
+
 ### Fixed
 - **The API reference is in the repository.** `docs` in `.gitignore` had no leading
   slash, so git ignored any directory of that name at any depth — including
