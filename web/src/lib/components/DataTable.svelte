@@ -28,10 +28,11 @@
 		total,
 		loading = false,
 		page = $bindable(0),
-		size = $bindable(25),
+		size = $bindable(10),
 		sorting = $bindable([]),
 		q = $bindable(''),
 		searchLabel = 'Search',
+		toolbar,
 		empty
 	}: {
 		// Loose in the feature set: every caller declares plain columns and the table
@@ -45,6 +46,7 @@
 		sorting?: SortingState;
 		q?: string;
 		searchLabel?: string;
+		toolbar?: import('svelte').Snippet;
 		empty?: import('svelte').Snippet;
 	} = $props();
 
@@ -107,15 +109,9 @@
 		<span class="vh">{searchLabel}</span>
 		<input bind:value={typed} type="search" placeholder={searchLabel} />
 	</label>
-	<p class="label" aria-live="polite">
-		{#if loading && total === 0}
-			Loading
-		{:else if total === 0}
-			Nothing here
-		{:else}
-			{num(from)}–{num(to)} of {num(total)}
-		{/if}
-	</p>
+	{#if toolbar}
+		<div class="flex flex-none flex-wrap items-center gap-2">{@render toolbar()}</div>
+	{/if}
 </div>
 
 <div class="card mt-4 overflow-x-auto p-0">
@@ -173,26 +169,54 @@
 	</table>
 </div>
 
-{#if pages > 1}
-	<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-		<p class="label">Page {num(page + 1)} of {num(pages)}</p>
+<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+	<label class="flex items-center gap-2">
+		<span class="label">Rows</span>
+		<select
+			class="select w-20"
+			value={size}
+			onchange={(e) => {
+				size = Number(e.currentTarget.value);
+				// The row you were looking at is on a different page now; start at the top.
+				page = 0;
+			}}
+		>
+			{#each [10, 25, 50, 100] as n (n)}<option value={n}>{n}</option>{/each}
+		</select>
+	</label>
+
+	<div class="flex flex-wrap items-center gap-3">
+		<p class="label" aria-live="polite">
+			{#if loading && total === 0}
+				Loading
+			{:else if total === 0}
+				Nothing here
+			{:else}
+				{num(from)}–{num(to)} of {num(total)}
+			{/if}
+		</p>
 		<div class="flex items-center gap-2">
-			<button type="button" class="btn btn-sm" disabled={page === 0} onclick={() => (page -= 1)}>
-				<HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={2.2} />
-				Back
+			<button
+				type="button"
+				class="icon-btn"
+				aria-label="Previous page"
+				disabled={page === 0}
+				onclick={() => (page -= 1)}
+			>
+				<HugeiconsIcon icon={ArrowLeft01Icon} size={15} strokeWidth={2.2} />
 			</button>
 			<button
 				type="button"
-				class="btn btn-sm"
+				class="icon-btn"
+				aria-label="Next page"
 				disabled={page + 1 >= pages}
 				onclick={() => (page += 1)}
 			>
-				Next
-				<HugeiconsIcon icon={ArrowRight01Icon} size={14} strokeWidth={2.2} />
+				<HugeiconsIcon icon={ArrowRight01Icon} size={15} strokeWidth={2.2} />
 			</button>
 		</div>
 	</div>
-{/if}
+</div>
 
 <style>
 	.dt-search {

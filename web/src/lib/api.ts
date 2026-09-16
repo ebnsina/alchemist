@@ -148,6 +148,7 @@ export const listParams = (l: ListQuery = {}) => {
 
 export const listAssets = (l: ListQuery = {}) =>
 	call<{ assets: Asset[]; total: number }>(`/v1/assets${listParams(l)}`);
+export const deleteAsset = (id: string) => call<void>(`/v1/assets/${id}`, { method: 'DELETE' });
 export const patchAsset = (id: string, title: string) =>
 	call<Asset>(`/v1/assets/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) });
 export const listKeys = (l: ListQuery = {}) =>
