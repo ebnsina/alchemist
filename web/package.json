@@ -35,6 +35,6 @@
     "@tanstack/ai-openai": "^0.22.6",
     "@tanstack/ai-svelte": "^0.21.1",
     "hls.js": "^1.7.3",
-    "@alchemist/player": "file:../alchemist-player"
+    "@alchemist/player": "*"
   }
 }

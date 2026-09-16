@@ -73,14 +73,20 @@ Their links are checked by `internal/docscheck`; their claims are not. When asse
 states, URL TTLs, header names, error codes or the lazy-rung threshold change, update
 both by hand — a wrong statement here propagates into someone else's code.
 
-## Related repositories
+## Workspaces
 
-| Repo | What |
+| Path | What |
 |---|---|
-| `~/Sites/alchemist-player` | Embed + JS SDK. Versioned static bundle; embeds pin a major version, so a player change must never require a backend deploy or break live iframes. |
+| `player/` | Embed + JS SDK, published as `@alchemist/player`. Versioned static bundle; embeds pin a major version, so a player change must never require a backend deploy or break live iframes. |
+| `web/` | Marketing site and customer dashboard (SvelteKit, adapter-node). Talks to the engine only through the public API. |
+
+npm workspaces from the root: `npm install` once, `npm run build` builds the player
+then the web. `web` depends on `@alchemist/player` as a workspace, so a player change
+is picked up without publishing. Both share one vite and one TypeScript — two copies
+make svelte-check fail on types that are structurally identical.
 
 The player integrates only through the public API and signed playback URLs. If its
-signing or beacon payload ever diverges from this repo, playback 403s in production
+signing or beacon payload ever diverges from the engine, playback 403s in production
 while looking fine locally — the same failure mode `internal/platform/signing/parity_test.go` guards for the edge.
 
 ## Architecture

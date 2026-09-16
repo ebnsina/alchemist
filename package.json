@@ -1,0 +1,13 @@
+{
+  "name": "alchemist",
+  "private": true,
+  "workspaces": [
+    "player",
+    "web"
+  ],
+  "scripts": {
+    "build": "npm run build -w @alchemist/player && npm run build -w alchemist-web",
+    "check": "npm run check -w alchemist-web",
+    "verify": "npm run verify -w alchemist-web"
+  }
+}
