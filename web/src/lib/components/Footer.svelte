@@ -7,6 +7,8 @@
 			links: [
 				{ href: '/#how', en: 'How it works' },
 				{ href: '/#features', en: 'What you get' },
+				{ href: '/#live', en: 'Live' },
+				{ href: '/#studio', en: 'After the upload' },
 				{ href: '/#pricing', en: 'Pricing' },
 				{ href: '/#faq', en: 'Questions' }
 			]
