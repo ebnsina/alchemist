@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Changed
+- **Team is two tables.** People — email, role, joined, last signed in — paged, searched
+  and sorted by the server, with a row menu for changing a role and removing somebody.
+  Your own row still offers neither and still says why. Pending invites keep their own
+  table below; the API always returns them whole, so that one searches and pages the
+  list it already has.
 - **Studio's "What you have made" is a table** — what we made, which video it came from,
   state and when — paged and sorted by the server instead of showing the newest ten and
   hiding the rest, with a row menu that opens the new video once it is finished and

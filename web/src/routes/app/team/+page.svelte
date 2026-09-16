@@ -5,14 +5,20 @@
 		Tick02Icon,
 		Delete02Icon,
 		UserAdd01Icon,
+		UserRemove01Icon,
 		Mail01Icon,
 		SecurityIcon,
 		ArrowLeft01Icon,
 		ArrowRight01Icon
 	} from '@hugeicons/core-free-icons';
+	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
 	import Seo from '$lib/Seo.svelte';
 	import Steps from '$lib/components/Steps.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
+	import Confirm from '$lib/components/Confirm.svelte';
+	import DataTable from '$lib/components/DataTable.svelte';
+	import RowMenu from '$lib/components/RowMenu.svelte';
+	import Badge from '$lib/components/Badge.svelte';
 	import Check from '$lib/components/Check.svelte';
 	import {
 		listMembers,
@@ -27,6 +33,7 @@
 
 	let members: Member[] = $state([]);
 	let invites: Invite[] = $state([]);
+	let total = $state(0);
 	let loading = $state(true);
 	let error = $state('');
 	let email = $state('');
@@ -35,9 +42,36 @@
 	let fresh = $state<{ email: string; link: string } | null>(null);
 	let linkCard = $state<HTMLElement | null>(null);
 	let copied = $state(false);
-	let confirming = $state('');
 	let step = $state(0);
 	let open = $state(false);
+
+	let page = $state(0);
+	let size = $state(10);
+	let sorting = $state<{ id: string; desc: boolean }[]>([{ id: 'created_at', desc: true }]);
+	let q = $state('');
+
+	// Each dialog owns a plain boolean: passing !!row unbound means Escape closes it
+	// and the next render opens it straight back up.
+	let roleOpen = $state(false);
+	let removeOpen = $state(false);
+	let withdrawOpen = $state(false);
+	let changing = $state<Member | null>(null);
+	let removing = $state<Member | null>(null);
+	let withdrawing = $state<Invite | null>(null);
+	let newRole = $state('member');
+	let busyRow = $state(false);
+
+	// Pending invites always come back whole — the endpoint's total counts members only —
+	// so this second table searches and pages the list it already has.
+	let invitePage = $state(0);
+	let inviteSize = $state(10);
+	let inviteQ = $state('');
+	const matching = $derived(
+		invites.filter((i) => i.email.toLowerCase().includes(inviteQ.trim().toLowerCase()))
+	);
+	const invitePageRows = $derived(
+		matching.slice(invitePage * inviteSize, invitePage * inviteSize + inviteSize)
+	);
 
 	// Who, then what they may do, then a link to hand over. Choosing a role in the
 	// same breath as typing an address is how people invite an owner by accident.
@@ -70,12 +104,23 @@
 
 	const filled = $derived([email.trim().length > 0, role !== '', true][step]);
 
+	// One read of every control the table owns, so a change to any of them refetches
+	// exactly once rather than each firing its own request.
+	const query = $derived({
+		limit: size,
+		offset: page * size,
+		q,
+		sort: sorting[0]?.id ?? 'created_at',
+		order: (sorting[0]?.desc ?? true ? 'desc' : 'asc') as 'asc' | 'desc'
+	});
+
 	async function load() {
 		error = '';
 		try {
-			const r = await listMembers();
+			const r = await listMembers(query);
 			members = r.members;
 			invites = r.invites;
+			total = r.total;
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong.';
 		} finally {
@@ -84,6 +129,7 @@
 	}
 
 	$effect(() => {
+		query;
 		load();
 	});
 
@@ -115,14 +161,17 @@
 		}
 	}
 
-	async function act(fn: () => Promise<unknown>) {
+	async function act(fn: () => Promise<unknown>, close?: () => void) {
 		error = '';
+		busyRow = true;
 		try {
 			await fn();
-			confirming = '';
+			close?.();
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
+		} finally {
+			busyRow = false;
 		}
 	}
 
@@ -143,6 +192,98 @@
 			Math.round((new Date(iso).getTime() - Date.now()) / 86400000),
 			'day'
 		);
+	const label = (r: string) => ROLES.find((x) => x.id === r)?.label ?? r;
+
+	const columns: ColumnDef<any, Member>[] = [
+		{ accessorKey: 'email', header: 'Email' },
+		{
+			accessorKey: 'role',
+			header: 'Role',
+			cell: (c) => {
+				const m = c.row.original as Member;
+				return renderComponent(Badge, { label: label(m.role), tone: m.you ? 'good' : 'idle' });
+			}
+		},
+		{ accessorKey: 'created_at', header: 'Joined', cell: (c) => when(String(c.getValue())) },
+		{
+			id: 'last_login_at',
+			header: 'Last signed in',
+			enableSorting: false,
+			cell: (c) => when((c.row.original as Member).last_login_at)
+		},
+		{
+			id: 'actions',
+			header: '',
+			enableSorting: false,
+			cell: (c) => {
+				const m = c.row.original as Member;
+				// Both controls are only ever refused on your own row: the API will not let
+				// anyone remove themselves or leave the account without an owner.
+				if (m.you) return 'You. Another owner has to change this';
+				return renderComponent(RowMenu, {
+					label: `Actions for ${m.email}`,
+					actions: [
+						{
+							label: 'Change role',
+							icon: SecurityIcon,
+							onclick: () => {
+								changing = m;
+								newRole = m.role;
+								roleOpen = true;
+							}
+						},
+						{
+							label: 'Remove',
+							icon: UserRemove01Icon,
+							danger: true,
+							onclick: () => {
+								removing = m;
+								removeOpen = true;
+							}
+						}
+					]
+				});
+			}
+		}
+	];
+
+	const inviteColumns: ColumnDef<any, Invite>[] = [
+		{ accessorKey: 'email', header: 'Email' },
+		{
+			accessorKey: 'role',
+			header: 'Invited as',
+			enableSorting: false,
+			cell: (c) => label(String(c.getValue()))
+		},
+		{
+			accessorKey: 'expires_at',
+			header: 'Expires',
+			enableSorting: false,
+			cell: (c) => until(String(c.getValue()))
+		},
+		{
+			id: 'actions',
+			header: '',
+			enableSorting: false,
+			cell: (c) => {
+				const i = c.row.original as Invite;
+				return renderComponent(RowMenu, {
+					label: `Actions for the invite to ${i.email}`,
+					actions: [
+						{
+							label: 'Withdraw',
+							icon: Delete02Icon,
+							danger: true,
+							onclick: () => {
+								withdrawing = i;
+								withdrawOpen = true;
+							}
+						}
+					]
+				});
+			}
+		}
+	];
 </script>
 
 <Seo title="Team — Alchemist" description="Who can reach this account, and what they can do." />
@@ -275,91 +416,121 @@
 </Dialog>
 
 <h2 class="mt-10 text-lg font-semibold tracking-tight">People</h2>
-{#if loading}
-	<div class="mt-4 grid gap-2">
-		{#each [0, 1, 2] as i (i)}<div class="sk h-14"></div>{/each}
-	</div>
-{:else if members.length === 0}
-	<p class="sub mt-4">Nobody here yet, which should not be possible — try reloading.</p>
-{:else}
-	<ul class="mt-4 divide-y divide-sunk border-y border-sunk">
-		{#each members as m (m.id)}
-			<li class="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
-				<div class="min-w-48 flex-1">
-					<p class="text-sm font-medium">
-						{m.email}
-						{#if m.you}<span class="chip ml-2">You</span>{/if}
-					</p>
-					<p class="mono mt-0.5">
-						Joined {when(m.created_at)} ·
-						{m.last_login_at ? `last signed in ${when(m.last_login_at)}` : 'has not signed in yet'}
-					</p>
-				</div>
-				{#if m.you}
-					<!-- Both controls only ever refused on your own row: the API will not let
-					     anyone remove themselves or leave the account without an owner. -->
-					<span class="chip w-40 justify-center">{m.role}</span>
-					<span class="sub flex-none">Another owner has to change this</span>
+
+<div class="mt-4">
+	<DataTable
+		{columns}
+		rows={members}
+		{total}
+		{loading}
+		bind:page
+		bind:size
+		bind:sorting
+		bind:q
+		searchLabel="Search by email"
+	>
+		{#snippet empty()}
+			<p class="title">Nobody here</p>
+			<p class="sub mx-auto mt-2 max-w-sm">
+				{#if q}
+					Nobody on the team matches that. Clear the search to see everyone.
 				{:else}
-					<select
-						class="select w-40"
-						value={m.role}
-						onchange={(e) => act(() => setMemberRole(m.id, e.currentTarget.value))}
-						aria-label="Role for {m.email}"
-					>
-						<option value="member">Member</option>
-						<option value="admin">Admin</option>
-						<option value="owner">Owner</option>
-					</select>
-					<button
-						type="button"
-						class="icon-btn"
-						onclick={() => (confirming = confirming === m.id ? '' : m.id)}
-						aria-label="Remove {m.email}"
-					>
-						<HugeiconsIcon icon={Delete02Icon} size={16} strokeWidth={1.8} />
-					</button>
+					Nobody here yet, which should not be possible — try reloading.
 				{/if}
-				{#if confirming === m.id}
-					<div class="w-full rounded-md border border-sunk p-4">
-						<p class="text-sm">Remove {m.email}?</p>
-						<p class="sub mt-1.5">
-							They lose access to this account immediately and any invite link they used is
-							spent. Videos and keys are the account's, so nothing of theirs is deleted. You
-							can invite them again afterwards.
-						</p>
-						<div class="mt-3 flex flex-wrap gap-2">
-							<button
-								type="button"
-								class="btn btn-sm"
-								onclick={() => act(() => removeMember(m.id))}
-							>
-								Yes, remove them
-							</button>
-							<button type="button" class="btn btn-sm" onclick={() => (confirming = '')}>
-								Keep them
-							</button>
-						</div>
-					</div>
-				{/if}
-			</li>
-		{/each}
-	</ul>
-{/if}
+			</p>
+		{/snippet}
+	</DataTable>
+</div>
 
 {#if invites.length > 0}
 	<h2 class="mt-10 text-lg font-semibold tracking-tight">Waiting to accept</h2>
-	<ul class="mt-4 divide-y divide-sunk border-y border-sunk">
-		{#each invites as i (i.id)}
-			<li class="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
-				<div class="min-w-48 flex-1">
-					<p class="text-sm font-medium">{i.email}</p>
-					<p class="mono mt-0.5">Invited as {i.role} · Expires {until(i.expires_at)}</p>
-				</div>
-				<button type="button" class="btn btn-sm" onclick={() => act(() => withdrawInvite(i.id))}>
-					Withdraw
-				</button>
-			</li>
-		{/each}
-	</ul>
+	<div class="mt-4">
+		<DataTable
+			columns={inviteColumns}
+			rows={invitePageRows}
+			total={matching.length}
+			bind:page={invitePage}
+			bind:size={inviteSize}
+			bind:q={inviteQ}
+			searchLabel="Search by email"
+		>
+			{#snippet empty()}
+				<p class="title">No invite matches that</p>
+				<p class="sub mx-auto mt-2 max-w-sm">Clear the search to see everyone invited.</p>
+			{/snippet}
+		</DataTable>
+	</div>
 {/if}
+
+<Dialog
+	bind:open={roleOpen}
+	title="What may they do?"
+	hint="Changing a role takes effect the next time they load a page."
+>
+	<fieldset>
+		<legend class="vh">Role</legend>
+		<div class="grid gap-2.5">
+			{#each ROLES as r (r.id)}
+				<Check
+					type="radio"
+					card
+					name="new-role"
+					value={r.id}
+					bind:group={newRole}
+					label={r.label}
+					hint={r.hint}
+				/>
+			{/each}
+		</div>
+	</fieldset>
+	<p class="sub mt-3">{changing?.email ?? ''}</p>
+
+	{#snippet footer()}
+		<div class="flex items-center justify-end gap-2">
+			<button type="button" class="btn" onclick={() => (roleOpen = false)}>Cancel</button>
+			<button
+				type="button"
+				class="btn-solid"
+				disabled={busyRow}
+				onclick={() =>
+					changing &&
+					act(() => setMemberRole(changing!.id, newRole), () => (roleOpen = false))}
+			>
+				{busyRow ? 'Saving…' : 'Save the role'}
+			</button>
+		</div>
+	{/snippet}
+</Dialog>
+
+<Confirm
+	bind:open={removeOpen}
+	title="Remove them from the team?"
+	confirm="Yes, remove them"
+	destructive
+	busy={busyRow}
+	onconfirm={() =>
+		removing && act(() => removeMember(removing!.id), () => (removeOpen = false))}
+>
+	<p class="text-sm">{removing?.email ?? ''}</p>
+	<p class="sub mt-2">
+		They lose access to this account immediately and any invite link they used is spent.
+		Videos and keys are the account's, so nothing of theirs is deleted. You can invite them
+		again afterwards.
+	</p>
+</Confirm>
+
+<Confirm
+	bind:open={withdrawOpen}
+	title="Withdraw this invite?"
+	confirm="Yes, withdraw it"
+	destructive
+	busy={busyRow}
+	onconfirm={() =>
+		withdrawing && act(() => withdrawInvite(withdrawing!.id), () => (withdrawOpen = false))}
+>
+	<p class="text-sm">{withdrawing?.email ?? ''}</p>
+	<p class="sub mt-2">
+		The link you passed on stops working. Nobody has used it yet — invite them again and
+		they get a fresh one.
+	</p>
+</Confirm>
