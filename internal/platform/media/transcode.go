@@ -12,7 +12,12 @@ import (
 )
 
 type TranscodeResult struct {
-	Probe      *Probe
+	Probe *Probe
+	// MezzProbe is what was actually encoded. It differs from Probe whenever the
+	// source carries a rotation matrix: ffmpeg applies it building the mezzanine, so
+	// a 1920x1080 phone clip tagged rotate:90 becomes a 1080x1920 intermediate and
+	// every dimension derived from Probe is transposed.
+	MezzProbe  *Probe
 	Rungs      []Rung
 	Chunks     int
 	Scenes     int
@@ -75,7 +80,8 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 		return nil, err
 	}
 
-	rungs = Applicable(rungs, probe.Height)
+	// Against the mezzanine, not the source: rotation is already applied here.
+	rungs = Applicable(rungs, mezzProbe.Height)
 
 	complexity := 1.0
 	if opts.PerTitle {
@@ -176,13 +182,14 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 
 	// Thumbnails come from the mezzanine, so they are unaffected by which rungs
 	// exist or by encryption.
-	thumbs, err := Thumbnails(ctx, mezz, mezzProbe.DurationSec, mezzProbe.Height, outDir)
+	thumbs, err := Thumbnails(ctx, mezz, mezzProbe.DurationSec,
+		mezzProbe.Width, mezzProbe.Height, outDir)
 	if err != nil {
 		return nil, err
 	}
 
 	res := &TranscodeResult{
-		Probe: probe, Rungs: rungs, Chunks: len(chunks), Scenes: len(scenes),
+		Probe: probe, MezzProbe: mezzProbe, Rungs: rungs, Chunks: len(chunks), Scenes: len(scenes),
 		Complexity: complexity, OutDir: outDir, Manifest: manifest, Thumbs: thumbs,
 	}
 
@@ -195,7 +202,7 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 	// everything, at a fraction of the compute.
 	if len(rungs) > 0 && rand.Float64() < opts.VMAFSample {
 		top := inputs[len(rungs)-1]
-		if rep, err := ScoreVMAF(ctx, top.Path, mezz, workDir); err == nil {
+		if rep, err := ScoreVMAF(ctx, top.Path, mezz, workDir, chunks); err == nil {
 			res.VMAF = map[string]*VMAFReport{top.Name: rep}
 		}
 	}

@@ -56,7 +56,9 @@ const MESSAGES: Record<string, string> = {
 	invalid_sort: 'We asked for that list the wrong way. Reload the page.',
 	invalid_order: 'We asked for that list the wrong way. Reload the page.',
 	invalid_filter: 'We asked for that list the wrong way. Reload the page.',
-	invalid_title: 'That name is too long. Keep it under 200 characters.'
+	invalid_title: 'That name is too long. Keep it under 200 characters.',
+	source_gone:
+		'The original file is no longer in storage, so this one has to be uploaded again.'
 };
 
 export class ApiError extends Error {
@@ -221,6 +223,10 @@ export const liveSessionDiagnostics = (id: string) =>
 export const listAssets = (l: ListQuery = {}) =>
 	call<{ assets: Asset[]; total: number }>(`/v1/assets${listParams(l)}`);
 export const deleteAsset = (id: string) => call<void>(`/v1/assets/${id}`, { method: 'DELETE' });
+// The source is still in storage — the original is only deleted after a successful
+// publish — so trying again costs the customer nothing but the wait.
+export const retryAsset = (id: string) =>
+	call<{ asset_id: string; state: string }>(`/v1/assets/${id}/retry`, { method: 'POST' });
 export const patchAsset = (id: string, title: string) =>
 	call<Asset>(`/v1/assets/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) });
 export const listKeys = (l: ListQuery = {}) =>

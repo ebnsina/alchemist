@@ -49,3 +49,15 @@ export const when = (iso: string) =>
 // A video with no title is shown by the front of its id, which is what the customer
 // sees in logs and URLs anyway.
 export const assetName = (a: { title: string | null; id: string }) => a.title || a.id.slice(0, 8);
+
+// Failures the same bytes will reproduce exactly: the file has no video track, is
+// over the limit, or the link is one we will not fetch from. Trying again spends
+// ingest quota to reach this same screen, so the control says why instead of firing.
+const UNRETRYABLE = ['no_video_stream', 'source_too_large', 'source_url_not_allowed'];
+
+// error_code is optional on the detail response and nullable on the list row, so the
+// parameter takes both rather than making one caller cast.
+export const canRetry = (a: { state: string; error_code?: string | null }) =>
+	a.state === 'failed' && !UNRETRYABLE.includes(a.error_code ?? '');
+
+export const WHY_NO_RETRY = 'The same file would fail the same way. Send a different one.';

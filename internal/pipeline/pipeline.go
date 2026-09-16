@@ -24,7 +24,12 @@ import (
 )
 
 // Queue classes are sized independently so a bulk import cannot starve playback-
-// driven work. Capability tags let GPU nodes join encode_gpu without a scheduler change.
+// driven work.
+//
+// Encoding is CPU-only and chunked, and there is no GPU plan. The queue is still
+// named encode_cpu because River stores the queue on every job row: renaming it
+// strands whatever is in flight on a queue no worker reads. It does not promise a
+// sibling queue.
 const (
 	QueueIO     = "io"
 	QueueEncode = "encode_cpu"
@@ -203,11 +208,19 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 
 	// Only the eager rungs are encoded now. The rest are recorded as pending and
 	// generated when a viewer first asks for them.
-	lazy := media.LazyRungs(rungs)
 	res, err := media.Transcode(ctx, src, dir, media.Eager(rungs), opts)
 	if err != nil {
 		return w.fail(ctx, a, errorCode(err), err)
 	}
+
+	// Filtered by what the source can actually fill, which is only knowable once the
+	// mezzanine has been probed. Taking the profile's lazy rungs unfiltered pends a
+	// 720p row on a 360p upload: the asset never leaves partially_ready, the
+	// mezzanine is retained and billed for its whole life, and the first playback
+	// queues a JIT job that upscales 360 to 720. Nothing errors anywhere.
+	lazy := media.LazyRungs(media.Applicable(rungs, res.MezzProbe.Height))
+
+	w.recordVMAF(a, res)
 
 	w.setState(ctx, a, "packaging")
 	prefix := fmt.Sprintf("cmaf/%s/%s", a.TenantID, a.AssetID)
@@ -255,13 +268,15 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 			        source_bytes = nullif($11,0)::bigint,
 			        mezzanine_bytes = nullif($12,0)::bigint, updated_at = now()
 			  where id = $1`,
-			a.AssetID, res.Probe.DurationSec, res.Probe.Width,
-			res.Probe.Height, res.Probe.FrameRate, state, mezzKey,
+			a.AssetID, res.Probe.DurationSec, res.MezzProbe.Width,
+			res.MezzProbe.Height, res.Probe.FrameRate, state, mezzKey,
 			res.Complexity, sum, skeleton, srcBytes, mezzBytes); err != nil {
 			return err
 		}
 		for _, r := range res.Rungs {
-			width := r.Height * res.Probe.Width / res.Probe.Height
+			// From the mezzanine: a rotated source probes transposed, and this width
+			// is what republish writes as the HLS RESOLUTION for the rung.
+			width := r.Height * res.MezzProbe.Width / res.MezzProbe.Height
 			if width%2 != 0 {
 				width++
 			}
@@ -719,12 +734,26 @@ func (w *TranscodeWorker) observeEncode(a TranscodeArgs) func() {
 		"wall time for a full transcode", durationBuckets, "tenant", a.TenantID)
 }
 
-// CountJob records a job outcome. Kept on the worker so every queue reports the same
-// shape, which is what makes a single alert rule cover all of them.
-func (w *TranscodeWorker) CountJob(kind, result string) {
+// vmafBuckets span the range a score can usefully fall in; deltaBuckets are the
+// adjacent-chunk difference, which should sit near zero and is the alert that matters.
+var (
+	vmafBuckets  = []float64{60, 70, 80, 85, 90, 93, 95, 97, 100}
+	deltaBuckets = []float64{0.5, 1, 2, 3, 5, 10}
+)
+
+// recordVMAF puts the sampled score somewhere it can be alerted on. Without this the
+// sample is computed -- the slowest stage in the pipeline, on 2% of assets -- and
+// dropped with the struct, so a fleet-wide quality regression has nothing to show up in.
+func (w *TranscodeWorker) recordVMAF(a TranscodeArgs, res *media.TranscodeResult) {
 	if w.Metrics == nil {
 		return
 	}
-	w.Metrics.Inc("alchemist_jobs_total", "jobs processed by kind and result", 1,
-		"kind", kind, "result", result)
+	for name, rep := range res.VMAF {
+		w.Metrics.Observe("alchemist_vmaf_mean",
+			"sampled VMAF of a rendition against its mezzanine", vmafBuckets,
+			rep.Mean, "rendition", name)
+		w.Metrics.Observe("alchemist_vmaf_chunk_delta",
+			"largest VMAF difference between adjacent chunks", deltaBuckets,
+			rep.MaxAdjDiff, "rendition", name)
+	}
 }

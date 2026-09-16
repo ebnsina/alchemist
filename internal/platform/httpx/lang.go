@@ -43,6 +43,7 @@ var bangla = map[string]string{
 	"invalid_api_key":         "এই API কী টি সঠিক নয়।",
 	"live_not_enabled":        "আপনার প্ল্যানে লাইভ স্ট্রিমিং নেই। আমাদের জানান, চালু করে দেব।",
 	"asset_not_found":         "এই ভিডিওটি খুঁজে পাওয়া যায়নি।",
+	"source_gone":             "মূল ফাইলটি আর নেই, তাই ভিডিওটি আবার আপলোড করতে হবে।",
 	"not_found":               "ফাইলটি খুঁজে পাওয়া যায়নি।",
 	"invalid_request":         "JSON বডিতে \"url\" ফিল্ডটি পাঠান।",
 	"missing_url":             "ভিডিওর লিংকটি দিন।",

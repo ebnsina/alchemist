@@ -12,6 +12,7 @@ import (
 
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivertype"
 
 	"github.com/ebnsina/alchemist/internal/adapters"
 	"github.com/ebnsina/alchemist/internal/api"
@@ -113,6 +114,7 @@ func main() {
 		},
 		Workers:      workers,
 		PeriodicJobs: pipeline.PeriodicJobs(),
+		Middleware:   []rivertype.Middleware{pipeline.JobMetrics(reg)},
 	})
 	if err != nil {
 		log.Error("river", "err", err)
@@ -131,6 +133,10 @@ func main() {
 		log.Error("river start", "err", err)
 		os.Exit(1)
 	}
+
+	// Node-local, so a goroutine here rather than a queued job: River would run the
+	// job on one node and leave every other node's disk filling.
+	go pruneWorkDir(ctx, log, cfg.WorkDir)
 
 	// Egress is the largest line on a video bill and the origin is the only place
 	// that sees the bytes, so it is metered here and folded into a daily row.
@@ -182,5 +188,34 @@ func main() {
 	}
 	if err := riverClient.Stop(shutdownCtx); err != nil {
 		log.Error("river stop", "err", err)
+	}
+}
+
+// pruneWorkDirInterval is how often abandoned working directories are swept. Nothing
+// is urgent about it -- the point is that a leak is bounded, not that it is caught
+// quickly -- and the age cutoff does the deciding.
+const pruneWorkDirInterval = time.Hour
+
+func pruneWorkDir(ctx context.Context, log *slog.Logger, dir string) {
+	prune := func() {
+		n, err := pipeline.PruneWorkDir(dir, pipeline.WorkDirTTL)
+		if err != nil {
+			log.Error("work directory prune", "dir", dir, "err", err)
+		}
+		if n > 0 {
+			log.Info("removed abandoned working directories", "count", n, "dir", dir)
+		}
+	}
+	prune()
+
+	t := time.NewTicker(pruneWorkDirInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			prune()
+		}
 	}
 }

@@ -410,6 +410,28 @@ paths:
         "202": { description: Queued for processing }
         "404": { description: No upload awaiting that id }
 
+  /v1/assets/{id}/retry:
+    post:
+      summary: Try a failed video again
+      description: |
+        Re-queues an encode that failed, without re-uploading. The source is still in
+        storage — the original is deleted only after a successful publish — so this is
+        a state reset plus a job, and the asset goes back to `uploaded`.
+
+        Rendition rows from the failed attempt are discarded, so `chunks_done` and
+        `chunks_total` start again from zero.
+
+        Only a `failed` asset can be retried; anything else is `invalid_state`. A
+        retry counts against the same ingest quota as a fresh upload.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "202": { description: Queued for processing }
+        "401": { description: Missing or invalid credentials }
+        "404": { description: asset_not_found }
+        "409": { description: invalid_state, or source_gone when the original is no longer in storage }
+        "429": { description: quota_exceeded }
+
   /v1/keys:
     get:
       summary: List this tenant's API keys

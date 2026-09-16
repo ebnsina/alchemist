@@ -124,6 +124,88 @@ func (s *Server) completeUpload(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusAccepted, map[string]string{"asset_id": assetID, "state": "uploaded"})
 }
 
+// retryAsset re-queues an encode that failed.
+//
+// A failed asset used to be terminal: the only way forward was to upload the file
+// again, which for a 3 GB lecture on a BD connection is an hour the customer already
+// spent. Nothing is re-uploaded here -- the source is still in storage, because the
+// original is deleted only after a successful publish, so a retry is a state reset
+// and a job insert.
+//
+// The failed attempt's rendition rows go with it. The worker upserts by
+// (asset_id, height, codec), so a row for a rung the profile no longer contains would
+// survive every future encode stuck in 'encoding' and hold the asset at
+// partially_ready for life. Chunks cascade from renditions.
+func (s *Server) retryAsset(w http.ResponseWriter, r *http.Request) {
+	tenantID, _ := r.Context().Value(tenantKey).(string)
+	assetID := chi.URLParam(r, "id")
+
+	// A retry is an ingest and costs the same compute, so it answers to the same
+	// limits -- otherwise retrying is the way around a concurrency cap.
+	if msg, err := s.checkIngestQuota(r.Context(), tenantID); err != nil {
+		if errors.Is(err, errQuotaExceeded) {
+			writeErrFor(w, r, http.StatusTooManyRequests, "quota_exceeded", msg)
+			return
+		}
+		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
+			"Something went wrong on our side.")
+		return
+	}
+
+	var state string
+	var hasSource bool
+	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(r.Context(),
+			`select state::text,
+			        (source_key is not null
+			         or (source_url is not null and source_url <> '')
+			         or (bucket_source_id is not null and source_object_key is not null))
+			   from assets where id = $1`, assetID).Scan(&state, &hasSource); err != nil {
+			return err
+		}
+		if state != "failed" || !hasSource {
+			return nil
+		}
+		if _, err := tx.Exec(r.Context(),
+			`delete from renditions where asset_id = $1`, assetID); err != nil {
+			return err
+		}
+		_, err := tx.Exec(r.Context(),
+			`update assets set state = 'uploaded', error_code = null, updated_at = now()
+			  where id = $1 and state = 'failed'`, assetID)
+		return err
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeErrFor(w, r, http.StatusNotFound, "asset_not_found", "We couldn't find that video.")
+		return
+	}
+	if err != nil {
+		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
+			"Something went wrong on our side.")
+		return
+	}
+	if state != "failed" {
+		writeErrFor(w, r, http.StatusConflict, "invalid_state",
+			"Only a video that failed can be tried again.")
+		return
+	}
+	// Every path that can fail keeps its source, so this means someone removed the
+	// file. Saying so beats queueing a job that fails the same way in an hour.
+	if !hasSource {
+		writeErrFor(w, r, http.StatusConflict, "source_gone",
+			"The original file is no longer available, so this video has to be uploaded again.")
+		return
+	}
+
+	if _, err := s.river.Insert(r.Context(),
+		pipeline.TranscodeArgs{AssetID: assetID, TenantID: tenantID}, nil); err != nil {
+		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
+			"We couldn't queue your video for processing.")
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]string{"asset_id": assetID, "state": "uploaded"})
+}
+
 type playbackURLs struct {
 	HLS        string `json:"hls"`
 	DASH       string `json:"dash"`

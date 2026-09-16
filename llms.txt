@@ -107,6 +107,8 @@ GET  /v1/assets/{id}           -> title, state, renditions with chunk progress,
 PATCH /v1/assets/{id}          -> rename a video; title only, null clears it
 GET  /v1/assets/{id}/chunks    -> the chunk map, per rendition
 GET  /v1/assets/{id}/activity  -> pipeline steps, states and timings (no error text)
+POST /v1/assets/{id}/retry     -> try a failed video again; no re-upload, the source
+                                  is still there. Only from `failed`.
 GET  /v1/keys                  -> names and dates, never the key; q, revoked
 POST /v1/keys                  -> another key (shown once)
 PATCH /v1/keys/{id}            -> rename a key; the secret is untouched

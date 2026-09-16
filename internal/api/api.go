@@ -163,6 +163,7 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/whoami", s.whoami)
 		r.Post("/uploads", s.createUpload)
 		r.Post("/assets/{id}/complete", s.completeUpload)
+		r.Post("/assets/{id}/retry", s.retryAsset)
 		r.Get("/assets/{id}", s.getAsset)
 		r.Patch("/assets/{id}", s.patchAsset)
 		r.Delete("/assets/{id}", s.deleteAsset)
