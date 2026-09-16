@@ -13,6 +13,7 @@
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import Steps from '$lib/components/Steps.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import { listKeys, createKey, revokeKey, ApiError, type ApiKey } from '$lib/api';
 	import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
 
@@ -27,6 +28,7 @@
 	let confirming = $state('');
 	let step = $state(0);
 	let busy = $state(false);
+	let open = $state(false);
 
 	// One question a screen, like every other form here. Naming a key and being told
 	// what happens when it is made are two different things to take in.
@@ -71,8 +73,9 @@
 			fresh = await createKey(name.trim() || 'Untitled key');
 			name = '';
 			step = 0;
-			// The key is the only thing that matters now. Clearing the form put the cursor
-			// back in the name field, pulling attention off a secret shown exactly once.
+			open = false;
+			// Queued so it lands after the dialog's own close puts focus back on "Make a key";
+			// otherwise the cursor sits on that button, off a secret shown exactly once.
 			queueMicrotask(() => keyCard?.focus());
 			await load();
 		} catch (err) {
@@ -114,11 +117,25 @@
 
 <Seo title="API keys — Alchemist" description="Create and revoke the keys your code uses." />
 
-<h1 class="text-2xl font-semibold tracking-tight">API keys</h1>
-<p class="mt-1 max-w-xl text-sm text-dim">
-	A key is how your own code talks to us. We keep only a scrambled copy, so a key is shown
-	once — if one goes missing, revoke it and make another.
-</p>
+<header class="flex flex-wrap items-start justify-between gap-4">
+	<div class="min-w-0">
+		<h1 class="text-2xl font-semibold tracking-tight">API keys</h1>
+		<p class="mt-1 max-w-xl text-sm text-dim">
+			A key is how your own code talks to us. We keep only a scrambled copy, so a key is
+			shown once — if one goes missing, revoke it and make another.
+		</p>
+	</div>
+	<button
+		type="button"
+		class="btn-solid flex-none"
+		onclick={() => {
+			step = 0;
+			open = true;
+		}}
+	>
+		Make a key
+	</button>
+</header>
 
 {#if fresh}
 	<div
@@ -150,8 +167,9 @@
 	</div>
 {/if}
 
-<form class="card mt-6 max-w-2xl" onsubmit={mint}>
-	<Steps {steps} {step}>
+<Dialog bind:open title="Make a key">
+	<form onsubmit={mint}>
+		<Steps {steps} {step}>
 		<div class="mt-5">
 			{#if step === 0}
 				<label class="block">
@@ -182,6 +200,10 @@
 				</p>
 			{/if}
 
+			{#if error}
+				<p class="mt-3 text-sm text-red" role="alert">{error}</p>
+			{/if}
+
 			<div class="mt-6 flex items-center gap-2">
 				{#if step > 0 && !busy}
 					<button
@@ -210,8 +232,9 @@
 				</button>
 			</div>
 		</div>
-	</Steps>
-</form>
+		</Steps>
+	</form>
+</Dialog>
 
 {#if error}
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>

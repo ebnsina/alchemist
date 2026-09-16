@@ -28,6 +28,15 @@
 - **The Refresh buttons are gone** from Videos and Live. Both pages already reload
   themselves every five seconds while anything is in flight, so the button could only
   ask again for a list that was either already coming or could not have changed.
+- **Every form opens in a dialog, from a button in the header.** Live streams, API keys,
+  Webhooks, Team and Connected buckets follow Move a library: the primary action sits
+  top right level with the title, and the form it opens is a modal rather than a panel
+  that pushes the page down and leaves you scrolling back to what you were reading. The
+  steps, the fields and the wording inside each form are unchanged. Where a page told
+  you to use "the button above" it now names the button.
+- **A key, an invite link or a stream key still takes the cursor when it appears.** A
+  native dialog hands focus back to the button that opened it, which would have left the
+  cursor on "Make a key" rather than on the secret shown exactly once.
 
 - **Moved into the Alchemist repository as the `web/` workspace**, with its history.
   The player is now a workspace dependency rather than `file:../alchemist-player`, so

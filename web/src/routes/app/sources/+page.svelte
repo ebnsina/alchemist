@@ -10,6 +10,7 @@
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import Steps from '$lib/components/Steps.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import RegionPicker from '$lib/components/RegionPicker.svelte';
 	import { listBucketSources, connectBucket, ApiError, type BucketSource } from '$lib/api';
 
@@ -112,32 +113,33 @@
 
 <Seo title="Connected buckets — Alchemist" description="Point us at a bucket and we take what lands in it." />
 
-<h1 class="text-2xl font-semibold tracking-tight">Connected buckets</h1>
-<p class="sub mt-1 max-w-xl">
-	Point us at a bucket you already own and every video that appears in it gets taken in. We
-	re-list it every fifteen minutes, so nothing is missed when a notification goes astray.
-</p>
+<header class="flex flex-wrap items-start justify-between gap-4">
+	<div class="min-w-0">
+		<h1 class="text-2xl font-semibold tracking-tight">Connected buckets</h1>
+		<p class="sub mt-1 max-w-xl">
+			Point us at a bucket you already own and every video that appears in it gets taken
+			in. We re-list it every fifteen minutes, so nothing is missed when a notification
+			goes astray.
+		</p>
+	</div>
+	<button
+		type="button"
+		class="btn-solid flex-none"
+		onclick={() => {
+			step = 0;
+			open = true;
+		}}
+	>
+		Connect a bucket
+	</button>
+</header>
 
 {#if error}
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
 {/if}
 
-<div class="mt-6">
-	<button
-		type="button"
-		class={open ? 'btn' : 'btn-solid'}
-		onclick={() => {
-			open = !open;
-			step = 0;
-		}}
-	>
-		{open ? 'Never mind' : 'Connect a bucket'}
-	</button>
-</div>
-
-{#if open}
-	<div class="card mt-4 max-w-2xl">
-		<Steps {steps} {step}>
+<Dialog bind:open title="Connect a bucket">
+	<Steps {steps} {step}>
 			<div class="mt-5 grid gap-4">
 				{#if step === 0}
 					<label class="block">
@@ -238,9 +240,8 @@
 					</button>
 				</div>
 			</div>
-		</Steps>
-	</div>
-{/if}
+	</Steps>
+</Dialog>
 
 {#if loading}
 	<div class="mt-6 grid gap-2">
@@ -250,7 +251,7 @@
 	<div class="card mt-6 py-8 text-center">
 		<p class="title">No bucket connected</p>
 		<p class="sub mx-auto mt-2 max-w-md">
-			Use <b>Connect a bucket</b> above if your videos already live in S3-compatible storage
+			Use <b>Connect a bucket</b> if your videos already live in S3-compatible storage
 			of your own. Otherwise there is nothing to do here — send videos through
 			<a href="/app/upload/" class="link">Upload</a> or the API instead.
 		</p>

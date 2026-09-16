@@ -12,6 +12,7 @@
 	import Seo from '$lib/Seo.svelte';
 	import Check from '$lib/components/Check.svelte';
 	import Steps from '$lib/components/Steps.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import { listWebhooks, createWebhook, WEBHOOK_EVENTS, ApiError, type Webhook } from '$lib/api';
 
 	let hooks = $state<Webhook[]>([]);
@@ -23,6 +24,7 @@
 	let fresh = $state<{ url: string; secret: string } | null>(null);
 	let secretCard = $state<HTMLElement | null>(null);
 	let step = $state(0);
+	let open = $state(false);
 
 	// An address, a choice of events and a signing secret to save are three separate
 	// things to get right, so they arrive one at a time.
@@ -79,8 +81,9 @@
 			fresh = { url: r.url, secret: r.secret };
 			url = '';
 			step = 0;
-			// Same as a stream key and an API key: the secret gets the attention, because
-			// this is the only time it is on screen.
+			open = false;
+			// Queued so it lands after the dialog's own close puts focus back on "Add an
+			// endpoint"; the secret is on screen once and it, not the button, gets the cursor.
 			queueMicrotask(() => secretCard?.focus());
 			await load();
 		} catch (err) {
@@ -124,11 +127,25 @@
 
 <Seo title="Webhooks — Alchemist" description="Be told when a video is ready instead of asking." />
 
-<h1 class="text-2xl font-semibold tracking-tight">Webhooks</h1>
-<p class="sub mt-1 max-w-xl">
-	We call you when something finishes, so your code never has to sit and poll. Every delivery
-	is signed — check the signature before you trust the body.
-</p>
+<header class="flex flex-wrap items-start justify-between gap-4">
+	<div class="min-w-0">
+		<h1 class="text-2xl font-semibold tracking-tight">Webhooks</h1>
+		<p class="sub mt-1 max-w-xl">
+			We call you when something finishes, so your code never has to sit and poll. Every
+			delivery is signed — check the signature before you trust the body.
+		</p>
+	</div>
+	<button
+		type="button"
+		class="btn-solid flex-none"
+		onclick={() => {
+			step = 0;
+			open = true;
+		}}
+	>
+		Add an endpoint
+	</button>
+</header>
 
 {#if error}
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
@@ -158,8 +175,9 @@
 	</div>
 {/if}
 
-<form class="card mt-6 max-w-2xl" onsubmit={add}>
-	<Steps {steps} {step}>
+<Dialog bind:open title="Add an endpoint">
+	<form onsubmit={add}>
+		<Steps {steps} {step}>
 		<div class="mt-5">
 			{#if step === 0}
 				<label class="block">
@@ -245,8 +263,9 @@
 				</button>
 			</div>
 		</div>
-	</Steps>
-</form>
+		</Steps>
+	</form>
+</Dialog>
 
 <h2 class="mt-10 text-lg font-semibold tracking-tight">Your endpoints</h2>
 {#if loading}
@@ -255,8 +274,8 @@
 	</div>
 {:else if hooks.length === 0}
 	<p class="sub mt-4">
-		None yet. Without one, your code has to ask us whether a video is ready — add an endpoint
-		and we will tell you instead.
+		None yet. Without one, your code has to ask us whether a video is ready — use
+		<b>Add an endpoint</b> and we will tell you instead.
 	</p>
 {:else}
 	<ul class="mt-4 divide-y divide-sunk border-y border-sunk">

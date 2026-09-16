@@ -12,6 +12,7 @@
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import Steps from '$lib/components/Steps.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import Check from '$lib/components/Check.svelte';
 	import {
 		listMembers,
@@ -36,6 +37,7 @@
 	let copied = $state(false);
 	let confirming = $state('');
 	let step = $state(0);
+	let open = $state(false);
 
 	// Who, then what they may do, then a link to hand over. Choosing a role in the
 	// same breath as typing an address is how people invite an owner by accident.
@@ -99,10 +101,11 @@
 		try {
 			const r = await inviteMember(email.trim(), role);
 			step = 0;
+			open = false;
 			fresh = { email: r.email, link: `${location.origin}/invite/?token=${r.token}` };
 			email = '';
-			// The link works once and is never shown again, so it gets the attention
-			// rather than the form it came from.
+			// Queued so it lands after the dialog's own close puts focus back on "Invite
+			// someone"; the link is shown once and it, not the button, gets the cursor.
 			queueMicrotask(() => linkCard?.focus());
 			await load();
 		} catch (err) {
@@ -144,11 +147,25 @@
 
 <Seo title="Team — Alchemist" description="Who can reach this account, and what they can do." />
 
-<h1 class="text-2xl font-semibold tracking-tight">Team</h1>
-<p class="sub mt-1 max-w-xl">
-	Everyone here can sign in to this account. An API key cannot change any of this — only a
-	person who is signed in can.
-</p>
+<header class="flex flex-wrap items-start justify-between gap-4">
+	<div class="min-w-0">
+		<h1 class="text-2xl font-semibold tracking-tight">Team</h1>
+		<p class="sub mt-1 max-w-xl">
+			Everyone here can sign in to this account. An API key cannot change any of this —
+			only a person who is signed in can.
+		</p>
+	</div>
+	<button
+		type="button"
+		class="btn-solid flex-none"
+		onclick={() => {
+			step = 0;
+			open = true;
+		}}
+	>
+		Invite someone
+	</button>
+</header>
 
 {#if error}
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
@@ -176,8 +193,9 @@
 	</div>
 {/if}
 
-<form class="card mt-6 max-w-2xl" onsubmit={invite}>
-	<Steps {steps} {step}>
+<Dialog bind:open title="Invite someone">
+	<form onsubmit={invite}>
+		<Steps {steps} {step}>
 		<div class="mt-5">
 			{#if step === 0}
 				<label class="block">
@@ -224,6 +242,10 @@
 				</p>
 			{/if}
 
+			{#if error}
+				<p class="mt-3 text-sm text-red" role="alert">{error}</p>
+			{/if}
+
 			<div class="mt-6 flex items-center gap-2">
 				{#if step > 0 && !busy}
 					<button
@@ -253,8 +275,9 @@
 				</button>
 			</div>
 		</div>
-	</Steps>
-</form>
+		</Steps>
+	</form>
+</Dialog>
 
 <h2 class="mt-10 text-lg font-semibold tracking-tight">People</h2>
 {#if loading}

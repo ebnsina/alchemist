@@ -5,6 +5,7 @@
 	import { Copy01Icon, Tick02Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import {
 		listLiveStreams,
 		getLiveStream,
@@ -26,6 +27,7 @@
 	// One decision per screen, even here: two fields is still two decisions, and a
 	// customer who has never set up an encoder should meet them one at a time.
 	let step = $state(1);
+	let open = $state(false);
 	// Somebody using their own camera is never asked which encoder protocol to use,
 	// so the sequence is the state rather than a count -- a branch on step numbers
 	// drifts the moment a step moves.
@@ -107,7 +109,9 @@
 			source = 'camera';
 			protocol = 'srt';
 			step = 1;
-			// The key is the only thing that matters now; the form behind it can wait.
+			open = false;
+			// Queued so it lands after the dialog's own close puts focus back on "Make a
+			// stream"; the key is on screen once and it, not the button, gets the cursor.
 			queueMicrotask(() => keyCard?.focus());
 			await load();
 		} catch (err) {
@@ -185,7 +189,7 @@
 
 <Seo title="Live streams — Alchemist" description="Create a stream, point your encoder at it, and watch it go out." />
 
-<header class="flex flex-wrap items-end justify-between gap-4">
+<header class="flex flex-wrap items-start justify-between gap-4">
 	<div class="min-w-0">
 		<h1 class="text-2xl font-semibold tracking-tight">Live streams</h1>
 		<p class="sub mt-1.5 max-w-xl">
@@ -193,12 +197,134 @@
 			out to viewers and is kept afterwards as an ordinary recording.
 		</p>
 	</div>
+	{#if !unsold}
+		<button
+			type="button"
+			class="btn-solid flex-none"
+			onclick={() => {
+				step = 1;
+				open = true;
+			}}
+		>
+			Make a stream
+		</button>
+	{/if}
 </header>
 
+<Dialog bind:open title="Make a stream">
+	<form onsubmit={make}>
+		<div class="flex items-baseline justify-between gap-3">
+			<p class="label">Step {step} of {steps.length}</p>
+			{#if step > 1}
+				<button type="button" class="label hover:text-ink" onclick={() => (step -= 1)}>Back</button>
+			{/if}
+		</div>
+
+		{#if at === 'name'}
+			<h3 class="mt-4">What is this stream for?</h3>
+			<p class="sub mt-1">A name only you see, so you can tell your streams apart later.</p>
+			<!-- Focused only when the customer is actually on step 1 of a fresh form, never
+			     when step 1 is being re-rendered behind a stream key they must copy. -->
+			<input
+				bind:value={name}
+				class="field mt-4"
+				type="text"
+				placeholder="e.g. Friday physics class"
+				maxlength="60"
+				required
+			/>
+			<button
+				type="button"
+				class="btn-solid mt-5"
+				disabled={!name.trim()}
+				onclick={() => (step = 2)}
+			>
+				Next
+			</button>
+		{:else if at === 'source'}
+			<h3 class="mt-4">Where will the picture come from?</h3>
+			<p class="sub mt-1">
+				You can go live straight from this browser with the camera in your laptop or phone,
+				or send it from software like OBS if you already use one.
+			</p>
+			<div class="mt-4 grid gap-2.5">
+				{#each [{ id: 'camera', title: 'This browser', why: 'Your webcam and microphone. Nothing to install.' }, { id: 'encoder', title: 'An encoder', why: 'OBS, vMix or a hardware encoder you already have.' }] as o (o.id)}
+					<label class="card flex cursor-pointer items-start gap-3 p-4" class:tier--lead={source === o.id}>
+						<input
+							type="radio"
+							name="source"
+							value={o.id}
+							checked={source === o.id}
+							onchange={() => (source = o.id as 'camera' | 'encoder')}
+							class="mt-1"
+						/>
+						<span>
+							<span class="block text-sm font-semibold">{o.title}</span>
+							<span class="sub">{o.why}</span>
+						</span>
+					</label>
+				{/each}
+			</div>
+			<button type="button" class="btn-solid mt-5" onclick={() => (step = 3)}>Next</button>
+		{:else if at === 'protocol'}
+			<h3 class="mt-4">How will your encoder send it?</h3>
+			<p class="sub mt-1">
+				If you are not sure, keep SRT. It holds a picture together on a weak uplink, which
+				is most uplinks.
+			</p>
+			<div class="mt-4 grid gap-2.5">
+				{#each [{ id: 'srt', title: 'SRT', why: 'Survives a lossy connection. The right answer almost always.' }, { id: 'rtmp', title: 'RTMP', why: 'For older hardware encoders that speak nothing else.' }] as o (o.id)}
+					<label class="card flex cursor-pointer items-start gap-3 p-4" class:tier--lead={protocol === o.id}>
+						<input
+							type="radio"
+							name="protocol"
+							value={o.id}
+							checked={protocol === o.id}
+							onchange={() => (protocol = o.id as 'srt' | 'rtmp')}
+							class="mt-1"
+						/>
+						<span>
+							<span class="block text-sm font-semibold">{o.title}</span>
+							<span class="sub">{o.why}</span>
+						</span>
+					</label>
+				{/each}
+			</div>
+			<button type="button" class="btn-solid mt-5" onclick={() => (step = 4)}>Next</button>
+		{:else}
+			<h3 class="mt-4">Ready to make it?</h3>
+			<p class="sub mt-1">
+				{#if source === 'camera'}
+					Nothing goes on air until you open the stream and press Go live. We ask for your
+					camera then, not before.
+				{:else}
+					The stream key is shown once, on the next screen. Nothing goes on air until you
+					press Start and your encoder connects.
+				{/if}
+			</p>
+			<dl class="mt-4 grid gap-2.5">
+				<div class="flex items-baseline justify-between gap-3">
+					<dt class="sub">Name</dt>
+					<dd class="text-sm font-semibold">{name}</dd>
+				</div>
+				<div class="flex items-baseline justify-between gap-3">
+					<dt class="sub">Picture comes from</dt>
+					<dd class="text-sm font-semibold">
+						{source === 'camera' ? 'This browser' : protocol.toUpperCase() + ' encoder'}
+					</dd>
+				</div>
+			</dl>
+			{#if error}
+				<p class="mt-4 text-sm text-red" role="alert">{error}</p>
+			{/if}
+			<button type="submit" class="btn-solid mt-5">Make a stream</button>
+		{/if}
+	</form>
+</Dialog>
+
 {#if fresh}
-	<!-- Focused on appearing: the create form resets behind this, and without it the
-	     browser put the cursor back in the name field, pulling attention off a secret
-	     that is on screen exactly once. -->
+	<!-- Focused on appearing: closing the dialog puts the cursor back on "Make a stream",
+	     which is not where a key shown exactly once should leave it. -->
 	<div
 		class="card mt-6 p-6"
 		tabindex="-1"
@@ -271,112 +397,6 @@
 		<a href="/contact/" class="btn mt-5">Talk to us about live</a>
 	</div>
 {:else}
-<form class="card mt-6" onsubmit={make}>
-	<div class="flex items-baseline justify-between gap-3">
-		<p class="label">Step {step} of {steps.length}</p>
-		{#if step > 1}
-			<button type="button" class="label hover:text-ink" onclick={() => (step -= 1)}>Back</button>
-		{/if}
-	</div>
-
-	{#if at === 'name'}
-		<h3 class="mt-4">What is this stream for?</h3>
-		<p class="sub mt-1">A name only you see, so you can tell your streams apart later.</p>
-		<!-- Focused only when the customer is actually on step 1 of a fresh form, never
-		     when step 1 is being re-rendered behind a stream key they must copy. -->
-		<input
-			bind:value={name}
-			class="field mt-4"
-			type="text"
-			placeholder="e.g. Friday physics class"
-			maxlength="60"
-			required
-		/>
-		<button
-			type="button"
-			class="btn-solid mt-5"
-			disabled={!name.trim()}
-			onclick={() => (step = 2)}
-		>
-			Next
-		</button>
-	{:else if at === 'source'}
-		<h3 class="mt-4">Where will the picture come from?</h3>
-		<p class="sub mt-1">
-			You can go live straight from this browser with the camera in your laptop or phone,
-			or send it from software like OBS if you already use one.
-		</p>
-		<div class="mt-4 grid gap-2.5">
-			{#each [{ id: 'camera', title: 'This browser', why: 'Your webcam and microphone. Nothing to install.' }, { id: 'encoder', title: 'An encoder', why: 'OBS, vMix or a hardware encoder you already have.' }] as o (o.id)}
-				<label class="card flex cursor-pointer items-start gap-3 p-4" class:tier--lead={source === o.id}>
-					<input
-						type="radio"
-						name="source"
-						value={o.id}
-						checked={source === o.id}
-						onchange={() => (source = o.id as 'camera' | 'encoder')}
-						class="mt-1"
-					/>
-					<span>
-						<span class="block text-sm font-semibold">{o.title}</span>
-						<span class="sub">{o.why}</span>
-					</span>
-				</label>
-			{/each}
-		</div>
-		<button type="button" class="btn-solid mt-5" onclick={() => (step = 3)}>Next</button>
-	{:else if at === 'protocol'}
-		<h3 class="mt-4">How will your encoder send it?</h3>
-		<p class="sub mt-1">
-			If you are not sure, keep SRT. It holds a picture together on a weak uplink, which
-			is most uplinks.
-		</p>
-		<div class="mt-4 grid gap-2.5">
-			{#each [{ id: 'srt', title: 'SRT', why: 'Survives a lossy connection. The right answer almost always.' }, { id: 'rtmp', title: 'RTMP', why: 'For older hardware encoders that speak nothing else.' }] as o (o.id)}
-				<label class="card flex cursor-pointer items-start gap-3 p-4" class:tier--lead={protocol === o.id}>
-					<input
-						type="radio"
-						name="protocol"
-						value={o.id}
-						checked={protocol === o.id}
-						onchange={() => (protocol = o.id as 'srt' | 'rtmp')}
-						class="mt-1"
-					/>
-					<span>
-						<span class="block text-sm font-semibold">{o.title}</span>
-						<span class="sub">{o.why}</span>
-					</span>
-				</label>
-			{/each}
-		</div>
-		<button type="button" class="btn-solid mt-5" onclick={() => (step = 4)}>Next</button>
-	{:else}
-		<h3 class="mt-4">Ready to make it?</h3>
-		<p class="sub mt-1">
-			{#if source === 'camera'}
-				Nothing goes on air until you open the stream and press Go live. We ask for your
-				camera then, not before.
-			{:else}
-				The stream key is shown once, on the next screen. Nothing goes on air until you
-				press Start and your encoder connects.
-			{/if}
-		</p>
-		<dl class="mt-4 grid gap-2.5">
-			<div class="flex items-baseline justify-between gap-3">
-				<dt class="sub">Name</dt>
-				<dd class="text-sm font-semibold">{name}</dd>
-			</div>
-			<div class="flex items-baseline justify-between gap-3">
-				<dt class="sub">Picture comes from</dt>
-				<dd class="text-sm font-semibold">
-					{source === 'camera' ? 'This browser' : protocol.toUpperCase() + ' encoder'}
-				</dd>
-			</div>
-		</dl>
-		<button type="submit" class="btn-solid mt-5">Make a stream</button>
-	{/if}
-</form>
-
 {#if error}
 	<p class="mt-4 text-sm text-red" role="alert">{error}</p>
 {/if}
@@ -389,8 +409,8 @@
 	<div class="card mt-6 py-8 text-center">
 		<p class="title">No streams yet</p>
 		<p class="sub mx-auto mt-2 max-w-sm">
-			Make one above. Use the camera in this browser, or point an encoder at the address we
-			give you. Either way the broadcast is kept as an ordinary video afterwards.
+			Use <b>Make a stream</b>. The camera in this browser, or an encoder pointed at the
+			address we give you. Either way the broadcast is kept as an ordinary video afterwards.
 		</p>
 	</div>
 {:else}
