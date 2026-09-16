@@ -63,7 +63,9 @@ rows, and those copies are now resolved rather than stored.
 `internal/platform/db/migrations/028_usage_bytes.sql` adds `tenant_stored_bytes()`, another
 `SECURITY DEFINER` reader for a cross-tenant job, and the unique index the daily egress
 and storage rows upsert onto -- without it every flush inserts a new row instead of
-folding into the day. `internal/platform/db/migrations/034_live_recording.sql` adds `live_sessions.swept_at`
+folding into the day. `internal/platform/db/migrations/040_captions.sql` adds the subtitle table; it holds
+only sidecar WebVTT metadata, so there is nothing to backfill and no media to migrate.
+`internal/platform/db/migrations/034_live_recording.sql` adds `live_sessions.swept_at`
 and `live_tenants()`, both additive and safe to re-run; the reaper needs the definer
 function because RLS on `tenant_limits` is forced and a cross-tenant select there
 returns zero rows without erroring.

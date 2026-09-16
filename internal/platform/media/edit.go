@@ -281,11 +281,13 @@ func (e Edit) Args(src, dst string, durationSec float64) ([]string, error) {
 		args = append(args, "-vf", graph)
 	}
 
-	keyint := strconv.Itoa(GOPSeconds * MezzanineFrameRate)
+	// No -r: the input is a mezzanine, already constant at whatever rate its source
+	// was normalised to. Forcing 30 here threw that away before the pipeline that
+	// re-ingests this file ever saw it, so a 24fps edit came back with judder.
+	keyint := strconv.Itoa(GOPSeconds * DefaultFrameRate)
 	args = append(args,
 		"-c:v", "libx264", "-preset", "veryfast", "-crf", "17",
 		"-pix_fmt", "yuv420p",
-		"-r", strconv.Itoa(MezzanineFrameRate),
 		"-g", keyint, "-keyint_min", keyint,
 		"-sc_threshold", "0",
 		"-movflags", "+faststart")
@@ -379,11 +381,13 @@ func RenderWith(ctx context.Context, e Edit, src, dst string, durationSec float6
 		"-filter_complex", strings.Join(chain, ";"),
 		"-map", "[vout]")
 
-	keyint := strconv.Itoa(GOPSeconds * MezzanineFrameRate)
+	// No -r: the input is a mezzanine, already constant at whatever rate its source
+	// was normalised to. Forcing 30 here threw that away before the pipeline that
+	// re-ingests this file ever saw it, so a 24fps edit came back with judder.
+	keyint := strconv.Itoa(GOPSeconds * DefaultFrameRate)
 	args = append(args,
 		"-c:v", "libx264", "-preset", "veryfast", "-crf", "17",
 		"-pix_fmt", "yuv420p",
-		"-r", strconv.Itoa(MezzanineFrameRate),
 		"-g", keyint, "-keyint_min", keyint,
 		"-sc_threshold", "0",
 		"-movflags", "+faststart")

@@ -432,6 +432,70 @@ paths:
         "409": { description: invalid_state, or source_gone when the original is no longer in storage }
         "429": { description: quota_exceeded }
 
+  /v1/assets/{id}/captions:
+    get:
+      summary: The subtitle tracks on this video
+      description: |
+        Language, label, size and when each was last replaced. A deduplicated asset
+        answers with the canonical asset's tracks, because it plays the canonical
+        asset's manifests.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: The tracks, oldest language code first }
+        "401": { description: Missing or invalid credentials }
+
+  /v1/assets/{id}/captions/{lang}:
+    put:
+      summary: Add or replace a subtitle track
+      description: |
+        The body is the WebVTT file itself, not JSON — it is a file exported from
+        somewhere else, and wrapping it in an envelope only adds a step to get wrong.
+        Up to 2 MB. It must begin with `WEBVTT`; a malformed track shows a player no
+        subtitles and no error, so it is refused here instead.
+
+        Uploading the same language again replaces it, which is what correcting a
+        typo in a transcript is. The manifests are rewritten in the background; the
+        media is never touched, so nothing is evicted from any edge cache.
+
+        Nothing is marked default. Subtitles a viewer did not ask for, switched on for
+        them, is the setting people turn off and never turn back on.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: lang
+          in: path
+          required: true
+          description: BCP-47, as the manifests carry it — bn, en, bn-BD.
+          schema: { type: string }
+        - name: label
+          in: query
+          description: What a viewer picks from the player's menu. Defaults to the language code.
+          schema: { type: string, maxLength: 60 }
+      requestBody:
+        required: true
+        content:
+          text/vtt:
+            schema: { type: string }
+      responses:
+        "200": { description: Stored }
+        "400": { description: invalid_language, invalid_label or invalid_captions }
+        "401": { description: Missing or invalid credentials }
+        "404": { description: asset_not_found }
+        "413": { description: caption_too_large }
+    delete:
+      summary: Remove a subtitle track
+      description: |
+        The manifests stop naming it first, then the file is reclaimed — the other
+        order leaves a manifest pointing at a 404, which a player reports as a broken
+        video rather than a missing track.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: lang, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Removed }
+        "401": { description: Missing or invalid credentials }
+        "404": { description: caption_not_found }
+
   /v1/keys:
     get:
       summary: List this tenant's API keys

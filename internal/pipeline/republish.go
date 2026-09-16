@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -28,6 +29,11 @@ func (w *TranscodeWorker) buildRendition(ctx context.Context, a JITArgs, mezz, d
 		return err
 	}
 
+	// The mezzanine's own rate, not a fixed one: it was normalised at ingest and this
+	// rung has to share its GOP grid or ABR switching breaks against the rungs that
+	// were built alongside it.
+	fps := int(math.Round(probe.FrameRate))
+
 	full := filepath.Join(dir, fmt.Sprintf("%dp.mp4", rung.Height))
 	chunks := media.PlanChunks(probe.DurationSec)
 	paths := make([]string, len(chunks))
@@ -42,7 +48,7 @@ func (w *TranscodeWorker) buildRendition(ctx context.Context, a JITArgs, mezz, d
 		i, c := i, c
 		out := filepath.Join(dir, fmt.Sprintf("chunk-%05d.mp4", c.Index))
 		paths[i] = out
-		g.Go(func() error { return media.EncodeChunk(gctx, mezz, c, rung, out) })
+		g.Go(func() error { return media.EncodeChunk(gctx, mezz, c, rung, fps, out) })
 	}
 	if err := g.Wait(); err != nil {
 		return err
@@ -141,9 +147,21 @@ type variant struct {
 	codec                    string
 }
 
-func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID, dir string) error {
+func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID string) error {
 	var variants []variant
 	hasAudio := false
+
+	captions, err := w.captionsFor(ctx, tenantID, assetID)
+	if err != nil {
+		return fmt.Errorf("read subtitle tracks: %w", err)
+	}
+	var durationSec float64
+	if err := w.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx,
+			`select coalesce(duration_sec, 0) from assets where id = $1`, assetID).Scan(&durationSec)
+	}); err != nil {
+		return err
+	}
 
 	if err := w.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx,
@@ -178,8 +196,16 @@ func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID, dir 
 
 	sort.Slice(variants, func(i, j int) bool { return variants[i].height < variants[j].height })
 
+	// Written before the master names them: a playlist the master points at and that
+	// is not there yet is a 404 the player reports as "subtitles unavailable".
+	if err := w.writeCaptionPlaylists(ctx, prefix, captions, durationSec); err != nil {
+		return err
+	}
+	subsMedia, subsAttr := hlsCaptionMedia(captions)
+
 	var b bytes.Buffer
 	b.WriteString("#EXTM3U\n#EXT-X-VERSION:6\n#EXT-X-INDEPENDENT-SEGMENTS\n\n")
+	b.WriteString(subsMedia)
 	audioAttr := ""
 	if hasAudio {
 		b.WriteString(`#EXT-X-MEDIA:TYPE=AUDIO,URI="audio.m3u8",GROUP-ID="audio",` +
@@ -192,8 +218,8 @@ func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID, dir 
 			codecs += ",mp4a.40.2"
 		}
 		fmt.Fprintf(&b,
-			"#EXT-X-STREAM-INF:BANDWIDTH=%d,CODECS=\"%s\",RESOLUTION=%dx%d%s\n%dp.m3u8\n",
-			v.bandwidth, codecs, v.width, v.height, audioAttr, v.height)
+			"#EXT-X-STREAM-INF:BANDWIDTH=%d,CODECS=\"%s\",RESOLUTION=%dx%d%s%s\n%dp.m3u8\n",
+			v.bandwidth, codecs, v.width, v.height, audioAttr, subsAttr, v.height)
 	}
 
 	if err := w.Store.Put(ctx, prefix+"/master.m3u8", bytes.NewReader(b.Bytes()),
@@ -203,7 +229,7 @@ func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID, dir 
 
 	// A stale MPD is a silent defect: DASH players keep seeing the ingest-time ladder
 	// and never discover the rungs that were generated for them.
-	if err := w.rebuildDASH(ctx, tenantID, assetID); err != nil {
+	if err := w.rebuildDASH(ctx, tenantID, assetID, captions); err != nil {
 		// Not fatal. HLS is correct and is the BD playback path; a broken MPD refresh
 		// must not fail the job and leave the rendition unpublished.
 		_ = w.DB.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
@@ -266,7 +292,8 @@ func (w *TranscodeWorker) encryptionFor(ctx context.Context, tenantID, assetID s
 // slower: the files are encrypted, so it cannot demux them, and decrypting to
 // re-package would rewrite every segment and evict the asset from every edge cache.
 // Composition touches nothing but the manifest itself.
-func (w *TranscodeWorker) rebuildDASH(ctx context.Context, tenantID, assetID string) error {
+func (w *TranscodeWorker) rebuildDASH(ctx context.Context, tenantID, assetID string,
+	captions []Caption) error {
 	var skeleton *string
 	var reps []string
 
@@ -301,6 +328,12 @@ func (w *TranscodeWorker) rebuildDASH(ctx context.Context, tenantID, assetID str
 	}
 
 	mpd := media.ComposeMPD(*skeleton, reps)
+	// Text sets go beside the video set, not inside its representation placeholder: a
+	// subtitle is not a rendition of the video, and a player looking for one never
+	// reads that AdaptationSet.
+	if sets := dashCaptionSets(captions); sets != "" {
+		mpd = strings.Replace(mpd, "</Period>", sets+"  </Period>", 1)
+	}
 	return w.Store.Put(ctx, fmt.Sprintf("cmaf/%s/%s/manifest.mpd", tenantID, assetID),
 		strings.NewReader(mpd), "application/dash+xml")
 }

@@ -113,5 +113,5 @@ func (w *JITWorker) Work(ctx context.Context, job *river.Job[JITArgs]) error {
 	if err := w.buildRendition(ctx, a, mezz, dir, rung); err != nil {
 		return err
 	}
-	return w.republish(ctx, a.TenantID, a.AssetID, dir)
+	return w.republish(ctx, a.TenantID, a.AssetID)
 }

@@ -13,6 +13,10 @@ import (
 
 type TranscodeResult struct {
 	Probe *Probe
+	// FrameRate is what the mezzanine and every rendition were built at, which is not
+	// the source's rate whenever MezzanineRate snapped it. It is the rate delivered,
+	// so it is the one worth reporting.
+	FrameRate int
 	// MezzProbe is what was actually encoded. It differs from Probe whenever the
 	// source carries a rotation matrix: ffmpeg applies it building the mezzanine, so
 	// a 1920x1080 phone clip tagged rotate:90 becomes a 1080x1920 intermediate and
@@ -48,7 +52,7 @@ type Options struct {
 	// These exist so progress can be recorded where somebody can see it. Without
 	// them the only observable states are "started" and "finished", which on an hour
 	// of video is an hour of nothing.
-	OnPlan      func(rungs []Rung, chunks []Chunk) error
+	OnPlan      func(rungs []Rung, chunks []Chunk, fps int) error
 	OnChunkDone func(r Rung, c Chunk)
 }
 
@@ -69,9 +73,18 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 		return nil, err
 	}
 
+	// Chosen once, here, and carried: the GOP grid, the chunk plan, the params hash and
+	// the VMAF frame-to-time mapping are all expressed in whole frames of this rate.
+	fps := MezzanineRate(probe.FrameRate)
+
 	mezz := filepath.Join(workDir, "mezzanine.mp4")
-	if err := BuildMezzanine(ctx, src, mezz); err != nil {
-		return nil, err
+	if !done(mezz) {
+		if err := BuildMezzanine(ctx, src, mezz+tmpSuffix, fps); err != nil {
+			return nil, err
+		}
+		if err := os.Rename(mezz+tmpSuffix, mezz); err != nil {
+			return nil, err
+		}
 	}
 	// Chunk against the mezzanine's own duration, not the source's: normalizing to
 	// CFR can shift the total by a frame or two.
@@ -110,7 +123,7 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 	}
 
 	if opts.OnPlan != nil {
-		if err := opts.OnPlan(rungs, chunks); err != nil {
+		if err := opts.OnPlan(rungs, chunks, fps); err != nil {
 			return nil, err
 		}
 	}
@@ -131,11 +144,16 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 			// Content-addressed: a retry overwrites deterministically and a
 			// parameter change can never collide with older output.
 			out := filepath.Join(chunkDir,
-				fmt.Sprintf("%dp-%s-%05d.mp4", r.Height, ParamsHash(r), c.Index))
+				fmt.Sprintf("%dp-%s-%05d.mp4", r.Height, ParamsHash(r, fps), c.Index))
 			paths[ri][ci] = out
 			g.Go(func() error {
-				if err := EncodeChunk(gctx, mezz, c, r, out); err != nil {
-					return err
+				if !done(out) {
+					if err := EncodeChunk(gctx, mezz, c, r, fps, out+tmpSuffix); err != nil {
+						return err
+					}
+					if err := os.Rename(out+tmpSuffix, out); err != nil {
+						return err
+					}
 				}
 				if opts.OnChunkDone != nil {
 					opts.OnChunkDone(r, c)
@@ -145,8 +163,13 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 		}
 	}
 	audio := filepath.Join(workDir, "audio.mp4")
-	if probe.HasAudio {
-		g.Go(func() error { return EncodeAudio(gctx, mezz, audio) })
+	if probe.HasAudio && !done(audio) {
+		g.Go(func() error {
+			if err := EncodeAudio(gctx, mezz, audio+tmpSuffix); err != nil {
+				return err
+			}
+			return os.Rename(audio+tmpSuffix, audio)
+		})
 	}
 	if err := g.Wait(); err != nil {
 		return nil, err
@@ -189,7 +212,7 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 	}
 
 	res := &TranscodeResult{
-		Probe: probe, MezzProbe: mezzProbe, Rungs: rungs, Chunks: len(chunks), Scenes: len(scenes),
+		Probe: probe, MezzProbe: mezzProbe, FrameRate: fps, Rungs: rungs, Chunks: len(chunks), Scenes: len(scenes),
 		Complexity: complexity, OutDir: outDir, Manifest: manifest, Thumbs: thumbs,
 	}
 
@@ -202,9 +225,26 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 	// everything, at a fraction of the compute.
 	if len(rungs) > 0 && rand.Float64() < opts.VMAFSample {
 		top := inputs[len(rungs)-1]
-		if rep, err := ScoreVMAF(ctx, top.Path, mezz, workDir, chunks); err == nil {
+		if rep, err := ScoreVMAF(ctx, top.Path, mezz, workDir, chunks, fps); err == nil {
 			res.VMAF = map[string]*VMAFReport{top.Name: rep}
 		}
 	}
 	return res, nil
+}
+
+// tmpSuffix marks output that is still being written.
+//
+// Every expensive stage writes to a temporary name and renames on success, so the
+// final name existing means the work behind it finished. Without the rename a process
+// killed mid-write leaves a truncated file that the next attempt would accept and
+// stitch, producing a video that plays for a few seconds and stops.
+const tmpSuffix = ".partial"
+
+// done reports whether a stage's output is already there from an earlier attempt.
+// Retries re-run the whole chain, and re-encoding two hours of chunks because the
+// upload at the end timed out is the difference between a ten-minute retry and a
+// six-hour one.
+func done(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.Size() > 0
 }

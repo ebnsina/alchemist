@@ -35,7 +35,8 @@ type vmafLog struct {
 // measured across. A fixed window cannot stand in for them: PlanChunksAtScenes emits
 // anything from 6 to 24 seconds, so a 12-second window averages over the boundary
 // instead of straddling it and the oscillation this exists to catch is smoothed away.
-func ScoreVMAF(ctx context.Context, distorted, reference string, workDir string, chunks []Chunk) (*VMAFReport, error) {
+func ScoreVMAF(ctx context.Context, distorted, reference string, workDir string,
+	chunks []Chunk, fps int) (*VMAFReport, error) {
 	ref, err := Inspect(ctx, reference)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func ScoreVMAF(ctx context.Context, distorted, reference string, workDir string,
 		rep.Min = math.Min(rep.Min, scores[i])
 	}
 	rep.Mean = total / float64(len(scores))
-	rep.PerChunk = perChunkScores(scores, chunks)
+	rep.PerChunk = perChunkScores(scores, chunks, fps)
 
 	for i := 1; i < len(rep.PerChunk); i++ {
 		rep.MaxAdjDiff = math.Max(rep.MaxAdjDiff, math.Abs(rep.PerChunk[i]-rep.PerChunk[i-1]))
@@ -88,18 +89,21 @@ func ScoreVMAF(ctx context.Context, distorted, reference string, workDir string,
 
 // perChunkScores averages frame scores within each real chunk.
 //
-// Frames are numbered against the mezzanine's forced constant rate, so a frame index
-// converts to a timestamp exactly. With no chunk plan the whole run is one window,
+// Frames are numbered against the mezzanine's constant rate, so a frame index converts
+// to a timestamp exactly. With no chunk plan the whole run is one window,
 // which is honest rather than wrong: MaxAdjDiff is then zero because there is no
 // boundary to measure across.
-func perChunkScores(scores []float64, chunks []Chunk) []float64 {
+func perChunkScores(scores []float64, chunks []Chunk, fps int) []float64 {
+	if fps <= 0 {
+		fps = DefaultFrameRate
+	}
 	var out []float64
 	var sum float64
 	var n int
 	at := 0
 
 	for i, v := range scores {
-		t := float64(i) / MezzanineFrameRate
+		t := float64(i) / float64(fps)
 		for at < len(chunks)-1 && t >= chunks[at].EndSec {
 			if n > 0 {
 				out = append(out, sum/float64(n))
