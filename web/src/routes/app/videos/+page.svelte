@@ -9,6 +9,7 @@
 	} from '@hugeicons/core-free-icons';
 	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
 	import Seo from '$lib/Seo.svelte';
+	import { readOnly } from '$lib/me.svelte';
 	import DataTable from '$lib/components/DataTable.svelte';
 	import AssetRow from '$lib/components/AssetRow.svelte';
 	import RowMenu from '$lib/components/RowMenu.svelte';
@@ -189,10 +190,12 @@
 			is still being made.
 		</p>
 	</div>
-	<a href="/app/upload/" class="btn-solid btn-sm flex-none">
-		<HugeiconsIcon icon={Upload01Icon} size={14} strokeWidth={2} />
-		Upload
-	</a>
+	{#if !readOnly()}
+		<a href="/app/upload/" class="btn-solid btn-sm flex-none">
+			<HugeiconsIcon icon={Upload01Icon} size={14} strokeWidth={2} />
+			Upload
+		</a>
+	{/if}
 </header>
 
 {#if error}

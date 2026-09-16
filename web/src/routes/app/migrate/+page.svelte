@@ -14,6 +14,7 @@
 		Delete02Icon
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
+	import { readOnly } from '$lib/me.svelte';
 	import Steps from '$lib/components/Steps.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Check from '$lib/components/Check.svelte';
@@ -239,17 +240,19 @@
 			is deleted on the far side.
 		</p>
 	</div>
-	<button
-		type="button"
-		aria-label="Start a migration"
-		class="btn-solid flex-none"
-		onclick={() => {
-			step = 0;
-			open = true;
-		}}
-	>
-		Add new
-	</button>
+	{#if !readOnly()}
+		<button
+			type="button"
+			aria-label="Start a migration"
+			class="btn-solid flex-none"
+			onclick={() => {
+				step = 0;
+				open = true;
+			}}
+		>
+			Add new
+		</button>
+	{/if}
 </header>
 
 {#if error}

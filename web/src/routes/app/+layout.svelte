@@ -17,6 +17,7 @@
 		ArrowDown01Icon,
 		UserGroupIcon,
 		UserIcon,
+		BuildingIcon,
 		ConnectIcon,
 		ChartHistogramIcon,
 		LiveStreaming01Icon,
@@ -26,7 +27,17 @@
 	} from '@hugeicons/core-free-icons';
 	import Logo from '$lib/components/Logo.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import { session, logout, getBranding, whoami, ApiError, type Session, type Branding } from '$lib/api';
+	import {
+		session,
+		logout,
+		getBranding,
+		whoami,
+		stopImpersonating,
+		ApiError,
+		type Session,
+		type Branding
+	} from '$lib/api';
+	import { setMe } from '$lib/me.svelte';
 	import { crumbs } from '$lib/crumbs.svelte';
 	import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
 
@@ -91,7 +102,12 @@
 		}
 	];
 
-	const flat = [home, ...groups.flatMap((g) => g.items)];
+	const staffRow = { href: '/app/staff/', label: 'Accounts', icon: BuildingIcon };
+	const flat = $derived([
+		home,
+		...groups.flatMap((g) => g.items),
+		...(me?.platform_admin ? [staffRow] : [])
+	]);
 
 	// A nested route keeps its section lit. Exact match alone left every deeper page
 	// with nothing selected; a bare startsWith would light Overview on all of them,
@@ -119,6 +135,7 @@
 		session()
 			.then((s) => {
 				me = s;
+				setMe(s);
 				trouble = '';
 			})
 			.catch((e) => {
@@ -220,6 +237,22 @@
 					</a>
 				</li>
 			</ul>
+			{#if me?.platform_admin}
+				<p class="flex items-center gap-2 px-2 pt-4 pb-2"><span class="label">Alchemist</span></p>
+				<ul class="grid gap-0.5">
+					<li>
+						<a
+							href={staffRow.href}
+							class="side-link"
+							class:side-link--on={staffRow === active}
+							aria-current={staffRow === active ? 'page' : undefined}
+						>
+							<HugeiconsIcon icon={staffRow.icon} size={17} strokeWidth={1.7} />
+							{staffRow.label}
+						</a>
+					</li>
+				</ul>
+			{/if}
 			{#each groups as group (group.label)}
 				{@const locked = !!group.live && !live}
 				<p class="flex items-center gap-2 px-2 pt-4 pb-2">
@@ -318,6 +351,23 @@
 
 	<!-- The inset panel: its own surface, its own scroll, floating on the ground. -->
 	<div class="panel-wrap">
+		{#if me?.impersonating}
+			<div class="acting">
+				<p class="min-w-0">
+					<b>Viewing {me.org}</b> as staff. Nothing here can be changed while you are.
+				</p>
+				<button
+					type="button"
+					class="btn btn-sm flex-none"
+					onclick={async () => {
+						await stopImpersonating().catch(() => {});
+						location.assign('/app/staff/');
+					}}
+				>
+					Stop viewing
+				</button>
+			</div>
+		{/if}
 		<div class="panel">
 			<header class="panel__bar">
 				<button
@@ -365,13 +415,43 @@
 {/if}
 
 <style>
+	/* Across the top of the panel and in the brand, because mistaking someone else's
+	   account for your own is the whole risk of this feature. */
+	.acting {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 10px;
+		padding: 10px 16px;
+		border-radius: var(--radius-md);
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+		font-size: 13px;
+	}
+
 	.shell-grid {
 		display: grid;
 		height: 100svh;
 		grid-template-columns: 1fr;
 	}
 	@media (min-width: 1024px) {
-		.shell-grid {
+		/* Across the top of the panel and in the brand, because mistaking someone else's
+	   account for your own is the whole risk of this feature. */
+	.acting {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 10px;
+		padding: 10px 16px;
+		border-radius: var(--radius-md);
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+		font-size: 13px;
+	}
+
+	.shell-grid {
 			grid-template-columns: 15rem 1fr;
 		}
 	}

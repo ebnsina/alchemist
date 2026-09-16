@@ -8,6 +8,7 @@
 	} from '@hugeicons/core-free-icons';
 	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
 	import Seo from '$lib/Seo.svelte';
+	import { readOnly } from '$lib/me.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Confirm from '$lib/components/Confirm.svelte';
 	import DataTable from '$lib/components/DataTable.svelte';
@@ -193,7 +194,7 @@
 			a link you have already handed out keeps working.
 		</p>
 	</div>
-	{#if editable.length > 0}
+	{#if editable.length > 0 && !readOnly()}
 		<button type="button" aria-label="Pick a video to edit" class="btn-solid flex-none" onclick={() => (picking = true)}>
 			<HugeiconsIcon icon={Scissor01Icon} size={15} strokeWidth={2} />
 			Add new

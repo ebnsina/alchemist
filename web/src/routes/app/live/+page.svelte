@@ -13,6 +13,7 @@
 	} from '@hugeicons/core-free-icons';
 	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
 	import Seo from '$lib/Seo.svelte';
+	import { readOnly } from '$lib/me.svelte';
 	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Confirm from '$lib/components/Confirm.svelte';
@@ -347,17 +348,19 @@
 		</p>
 	</div>
 	{#if !unsold}
-		<button
-			type="button"
-			aria-label="Make a stream"
-			class="btn-solid flex-none"
-			onclick={() => {
-				step = 1;
-				open = true;
-			}}
-		>
-			Add new
-		</button>
+		{#if !readOnly()}
+			<button
+				type="button"
+				aria-label="Make a stream"
+				class="btn-solid flex-none"
+				onclick={() => {
+					step = 1;
+					open = true;
+				}}
+			>
+				Add new
+			</button>
+		{/if}
 	{/if}
 </header>
 

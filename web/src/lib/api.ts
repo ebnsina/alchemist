@@ -10,6 +10,8 @@ const MESSAGES: Record<string, string> = {
 	email_taken: 'There is already an account with that email.',
 	invalid_credentials: 'That email and password do not match.',
 	no_session: 'You are not signed in.',
+	read_only_session: 'You are viewing this account as staff. Stop viewing it to make changes.',
+	staff_only: 'This is for Alchemist staff.',
 	too_many_attempts: 'Too many tries. Wait a minute, then have another go.',
 	internal_error: 'Something went wrong on our side. Please try again.',
 	offline: 'We could not reach Alchemist. Check your connection and try again.',
@@ -88,7 +90,15 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export type SignupResult = { tenant_id: string; org: string; email: string; api_key: string };
-export type Session = { user_id: string; tenant_id: string; email: string; org: string };
+export type Session = {
+	user_id: string;
+	// The account being viewed, which is not the staff member's own while impersonating.
+	tenant_id: string;
+	email: string;
+	org: string;
+	platform_admin?: boolean;
+	impersonating?: boolean;
+};
 
 export const signup = (org: string, email: string, password: string) =>
 	call<SignupResult>('/v1/auth/signup', {
@@ -158,6 +168,55 @@ export const listParams = (l: ListQuery = {}) => {
 	const s = p.toString();
 	return s ? `?${s}` : '';
 };
+
+export type StaffTenant = {
+	tenant_id: string;
+	name: string;
+	assets: number;
+	live_streams: number;
+	members: number;
+	created_at: string;
+};
+export const staffTenants = (l: ListQuery = {}) =>
+	call<{ tenants: StaffTenant[]; total: number }>(`/v1/staff/tenants${listParams(l)}`);
+export const impersonate = (tenantId: string) =>
+	call<{ tenant_id: string; impersonating: boolean; read_only: boolean }>('/v1/staff/impersonate', {
+		method: 'POST',
+		body: JSON.stringify({ tenant_id: tenantId })
+	});
+export const stopImpersonating = () =>
+	call<{ impersonating: boolean }>('/v1/staff/impersonate', { method: 'DELETE' });
+
+export type JobError = { at?: string; attempt?: number; error?: string; trace?: string };
+export type DiagnosticJob = {
+	id: number;
+	kind: string;
+	state: string;
+	attempt: number;
+	max_attempts: number;
+	queue: string;
+	queued_at: string;
+	scheduled_at?: string | null;
+	started_at?: string | null;
+	finished_at?: string | null;
+	errors: JobError[];
+};
+export const assetDiagnostics = (id: string) =>
+	call<{
+		asset: {
+			id: string;
+			tenant_id: string;
+			state: string;
+			error_code: string | null;
+			deduplicated_from: string | null;
+			media_prefix: string | null;
+		};
+		jobs: DiagnosticJob[];
+	}>(`/v1/assets/${id}/diagnostics`);
+export const liveSessionDiagnostics = (id: string) =>
+	call<{ session: Record<string, string | null>; jobs: DiagnosticJob[] }>(
+		`/v1/live-sessions/${id}/diagnostics`
+	);
 
 export const listAssets = (l: ListQuery = {}) =>
 	call<{ assets: Asset[]; total: number }>(`/v1/assets${listParams(l)}`);

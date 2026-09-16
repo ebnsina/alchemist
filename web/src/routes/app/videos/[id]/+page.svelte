@@ -12,7 +12,15 @@
 	import { setCrumbs } from '$lib/crumbs.svelte';
 	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
 	import Advanced from '$lib/components/Advanced.svelte';
-	import { getAsset, ApiError, type AssetDetail } from '$lib/api';
+	import Diagnostics from '$lib/components/Diagnostics.svelte';
+	import { me } from '$lib/me.svelte';
+	import {
+		getAsset,
+		assetDiagnostics,
+		ApiError,
+		type AssetDetail,
+		type DiagnosticJob
+	} from '$lib/api';
 
 	let asset = $state<AssetDetail | null>(null);
 	let error = $state('');
@@ -20,6 +28,37 @@
 	let copied = $state('');
 
 	const id = $derived(page.params.id ?? '');
+
+	let diag = $state<{ jobs: DiagnosticJob[]; facts: [string, string | null | undefined][] }>({
+		jobs: [],
+		facts: []
+	});
+	let diagError = $state('');
+	let diagLoading = $state(true);
+
+	// Staff only, and fetched for staff only: the endpoint refuses anybody else, so
+	// asking would just log a 403 on every customer's page load.
+	$effect(() => {
+		if (!id || !me()?.platform_admin) return;
+		diagLoading = true;
+		assetDiagnostics(id)
+			.then((d) => {
+				diag = {
+					jobs: d.jobs,
+					facts: [
+						['Asset', d.asset.id],
+						['Tenant', d.asset.tenant_id],
+						['State', d.asset.state],
+						['Error code', d.asset.error_code],
+						['Deduplicated from', d.asset.deduplicated_from],
+						['Media prefix', d.asset.media_prefix]
+					]
+				};
+				diagError = '';
+			})
+			.catch((e) => (diagError = e instanceof ApiError ? e.message : 'Something went wrong.'))
+			.finally(() => (diagLoading = false));
+	});
 
 	async function load() {
 		try {
@@ -394,4 +433,8 @@
 	{/if}
 
 	<Advanced {asset} live={working} />
+
+	{#if me()?.platform_admin}
+		<Diagnostics jobs={diag.jobs} facts={diag.facts} loading={diagLoading} error={diagError} />
+	{/if}
 {/if}

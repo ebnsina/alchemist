@@ -14,6 +14,7 @@
 	} from '@hugeicons/core-free-icons';
 	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
 	import Seo from '$lib/Seo.svelte';
+	import { readOnly } from '$lib/me.svelte';
 	import Steps from '$lib/components/Steps.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Confirm from '$lib/components/Confirm.svelte';
@@ -243,17 +244,19 @@
 			shown once — if one goes missing, revoke it and make another.
 		</p>
 	</div>
-	<button
-		type="button"
-		aria-label="Make a key"
-		class="btn-solid flex-none"
-		onclick={() => {
-			step = 0;
-			open = true;
-		}}
-	>
-		Add new
-	</button>
+	{#if !readOnly()}
+		<button
+			type="button"
+			aria-label="Make a key"
+			class="btn-solid flex-none"
+			onclick={() => {
+				step = 0;
+				open = true;
+			}}
+		>
+			Add new
+		</button>
+	{/if}
 </header>
 
 {#if fresh}

@@ -15,6 +15,7 @@
 	} from '@hugeicons/core-free-icons';
 	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
 	import Seo from '$lib/Seo.svelte';
+	import { readOnly } from '$lib/me.svelte';
 	import Check from '$lib/components/Check.svelte';
 	import Steps from '$lib/components/Steps.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -287,17 +288,19 @@
 			delivery is signed — check the signature before you trust the body.
 		</p>
 	</div>
-	<button
-		type="button"
-		aria-label="Add an endpoint"
-		class="btn-solid flex-none"
-		onclick={() => {
-			step = 0;
-			open = true;
-		}}
-	>
-		Add new
-	</button>
+	{#if !readOnly()}
+		<button
+			type="button"
+			aria-label="Add an endpoint"
+			class="btn-solid flex-none"
+			onclick={() => {
+				step = 0;
+				open = true;
+			}}
+		>
+			Add new
+		</button>
+	{/if}
 </header>
 
 {#if error}
