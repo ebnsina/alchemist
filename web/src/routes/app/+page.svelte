@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
-		Upload01Icon,
 		VideoReplayIcon,
 		Timer02Icon,
 		DatabaseIcon,
@@ -72,8 +71,9 @@
 			.catch(() => {});
 	});
 
+	// Once a second: the clock shows seconds, so anything slower reads as stopped.
 	$effect(() => {
-		const id = setInterval(() => (now = new Date()), 30000);
+		const id = setInterval(() => (now = new Date()), 1000);
 		return () => clearInterval(id);
 	});
 
@@ -93,14 +93,20 @@
 	);
 	const firstName = $derived(email ? email.split('@')[0].replace(/[._-]+/g, ' ') : '');
 	const stamp = $derived(
-		new Intl.DateTimeFormat('en', {
-			weekday: 'long',
-			day: 'numeric',
-			month: 'long',
-			hour: 'numeric',
-			minute: '2-digit'
-		}).format(now)
+		new Intl.DateTimeFormat('en', { weekday: 'long', day: 'numeric', month: 'long' }).format(now)
 	);
+
+	// Split so the colons can blink and the digits keep their own width.
+	const clock = $derived.by(() => {
+		const parts = new Intl.DateTimeFormat('en', {
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: true
+		}).formatToParts(now);
+		const at = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+		return { h: at('hour'), m: at('minute'), s: at('second'), period: at('dayPeriod') };
+	});
 
 	// The engine writes one usage line: ingest, in seconds. Looking up gb/gb_month
 	// returned undefined and printed 0 GB, which read as measured-and-empty.
@@ -161,13 +167,17 @@
 		<h1 class="text-2xl font-semibold tracking-tight">
 			{greeting}{firstName ? ', ' + firstName : ''}
 		</h1>
-		<p class="mono mt-1.5">{stamp}</p>
 	</div>
-	<div class="flex flex-none items-center gap-2">
-		<a href="/app/upload/" class="btn-solid btn-sm">
-			<HugeiconsIcon icon={Upload01Icon} size={14} strokeWidth={2} />
-			Upload
-		</a>
+	<div class="flex-none text-right">
+		<p class="led">
+			<span class="led__off" aria-hidden="true">88:88:88</span>
+			<!-- No whitespace inside: a collapsed space would shift the lit digits off the
+			     unlit ones behind them. -->
+			<span class="led__on">{clock.h}<span class="led__sep">:</span>{clock.m}<span
+					class="led__sep">:</span>{clock.s}</span>
+			<span class="led__period">{clock.period}</span>
+		</p>
+		<p class="mono mt-1.5">{stamp}</p>
 	</div>
 </header>
 
@@ -281,3 +291,48 @@
 		</dl>
 	</section>
 </div>
+
+<style>
+	/* The unlit segments behind the lit ones, which is what makes a readout read as a
+	   readout rather than as text that happens to be monospaced. */
+	.led {
+		position: relative;
+		display: inline-flex;
+		align-items: baseline;
+		gap: 7px;
+		font-family: var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		font-size: 26px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		line-height: 1;
+	}
+	.led__off {
+		position: absolute;
+		inset: 0 auto auto 0;
+		color: var(--color-ink);
+		opacity: 0.09;
+	}
+	.led__on {
+		color: var(--color-accent);
+	}
+	.led__period {
+		font-size: 11px;
+		font-weight: 500;
+		letter-spacing: 0.14em;
+		color: var(--color-dim);
+	}
+	.led__sep {
+		animation: led-blink 1s steps(1, end) infinite;
+	}
+	@keyframes led-blink {
+		50% {
+			opacity: 0.25;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.led__sep {
+			animation: none;
+		}
+	}
+</style>

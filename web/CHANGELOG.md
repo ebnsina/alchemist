@@ -15,6 +15,10 @@
   waiting, above everything else. `/app/videos/` is the list and nothing else.
 
 ### Changed
+- **The overview leads with a running clock**, on the right where the Upload button
+  was. It ticks every second and shows them, with the unlit segments drawn behind the
+  lit ones. Upload belongs on Videos, one row away, not on a page you are reading
+  rather than acting on.
 - **The sidebar is ordered by what you came to do**: Videos, Live, then Develop and
   Account. Getting video in is one job with three doors, so Upload, Connected buckets
   and Connected buckets no longer take a row each — they are reached from the Upload
