@@ -214,7 +214,7 @@
 							}
 						},
 						{
-							label: 'Switch off',
+							label: 'Turn off',
 							icon: Delete02Icon,
 							danger: true,
 							disabled: !!k.revoked_at || liveCount === 1,
@@ -370,6 +370,7 @@
 		bind:size
 		bind:sorting
 		bind:q
+		filtered={!!only}
 		searchLabel="Search by name"
 	>
 		{#snippet toolbar()}

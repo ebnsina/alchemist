@@ -224,7 +224,7 @@
 					label: `Actions for ${m.email}`,
 					actions: [
 						{
-							label: 'Change role',
+							label: 'Role',
 							icon: SecurityIcon,
 							onclick: () => {
 								changing = m;

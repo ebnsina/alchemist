@@ -566,6 +566,7 @@
 		bind:size
 		bind:sorting
 		bind:q
+		filtered={!!onlyState || !!onlyProtocol}
 		searchLabel="Search by name or ID"
 	>
 		{#snippet toolbar()}

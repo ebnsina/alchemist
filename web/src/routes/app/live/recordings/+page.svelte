@@ -123,7 +123,7 @@
 				return renderComponent(RowMenu, {
 					label: `Actions for ${assetName(a)}`,
 					actions: [
-						{ label: 'Watch', icon: ViewIcon, href: `/app/videos/${a.id}/` },
+						{ label: 'Open', icon: ViewIcon, href: `/app/videos/${a.id}/` },
 						{
 							label: 'Rename',
 							icon: PencilEdit02Icon,
@@ -133,7 +133,7 @@
 								renameOpen = true;
 							}
 						},
-						{ label: 'Edit in Studio', icon: Scissor01Icon, href: `/app/studio/${a.id}/` },
+						{ label: 'Edit', icon: Scissor01Icon, href: `/app/studio/${a.id}/` },
 						{
 							label: 'Delete',
 							icon: Delete02Icon,

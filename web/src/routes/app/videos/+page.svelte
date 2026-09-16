@@ -154,7 +154,7 @@
 				return renderComponent(RowMenu, {
 					label: `Actions for ${assetName(a)}`,
 					actions: [
-						{ label: 'View', icon: ViewIcon, href: `/app/videos/${a.id}/` },
+						{ label: 'Open', icon: ViewIcon, href: `/app/videos/${a.id}/` },
 						{
 							label: 'Rename',
 							icon: PencilEdit02Icon,
@@ -165,7 +165,7 @@
 							}
 						},
 						{
-							label: 'Edit in Studio',
+							label: 'Edit',
 							icon: Scissor01Icon,
 							href: `/app/studio/${a.id}/`,
 							disabled: !ASSET_STATE[a.state]?.done,
@@ -209,6 +209,7 @@
 		bind:size
 		bind:sorting
 		bind:q
+		filtered={!!only}
 		searchLabel="Search by name or ID"
 	>
 		{#snippet toolbar()}

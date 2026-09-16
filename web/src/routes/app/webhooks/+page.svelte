@@ -248,7 +248,7 @@
 					label: `Actions for ${h.url}`,
 					actions: [
 						{
-							label: 'Edit URL',
+							label: 'Edit',
 							icon: PencilEdit02Icon,
 							onclick: () => {
 								editing = h;
@@ -427,6 +427,7 @@
 		bind:size
 		bind:sorting
 		bind:q
+		filtered={!!only}
 		searchLabel="Search by address"
 	>
 		{#snippet toolbar()}

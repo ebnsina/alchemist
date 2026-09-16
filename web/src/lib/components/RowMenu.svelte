@@ -97,6 +97,7 @@
 		border-radius: var(--radius-sm);
 		font-size: 13px;
 		text-align: left;
+		white-space: nowrap;
 		color: var(--color-ink);
 		cursor: pointer;
 	}

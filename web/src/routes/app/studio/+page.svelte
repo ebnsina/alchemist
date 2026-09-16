@@ -160,14 +160,14 @@
 					label: `Actions for the edit made ${stamp(e.created_at)}`,
 					actions: [
 						{
-							label: 'Open it',
+							label: 'Open',
 							icon: ViewIcon,
 							href: e.output_asset_id ? `/app/videos/${e.output_asset_id}/` : undefined,
 							disabled: !e.output_asset_id,
 							why: 'The new video opens once this edit has finished'
 						},
 						{
-							label: 'Remove from this list',
+							label: 'Remove',
 							icon: Delete02Icon,
 							danger: true,
 							onclick: () => {

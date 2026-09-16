@@ -32,6 +32,7 @@
 		sorting = $bindable([]),
 		q = $bindable(''),
 		searchLabel = 'Search',
+		filtered = false,
 		toolbar,
 		empty
 	}: {
@@ -46,6 +47,8 @@
 		sorting?: SortingState;
 		q?: string;
 		searchLabel?: string;
+		/** A filter is on, so an empty result is worth a way back rather than a bare page. */
+		filtered?: boolean;
 		toolbar?: import('svelte').Snippet;
 		empty?: import('svelte').Snippet;
 	} = $props();
@@ -89,6 +92,15 @@
 	const pages = $derived(Math.max(1, Math.ceil(total / size)));
 	const num = (n: number) => new Intl.NumberFormat('en').format(n);
 
+	// Nothing to search, nothing to page: controls over an empty list are furniture
+	// that suggests the list is hiding something. They come back with the first row,
+	// and stay whenever a search or filter is what emptied it.
+	const narrowed = $derived(!!q.trim() || filtered);
+	const bare = $derived(!loading && total === 0 && !narrowed);
+	// Rows-per-page and page arrows over nothing are controls for a list that is not
+	// there; the search stays, because it is what emptied it.
+	const noFooter = $derived(!loading && total === 0);
+
 	let typed = $state(q);
 	// Typed into, not typed: a request per keystroke would fire six for one word.
 	$effect(() => {
@@ -103,6 +115,7 @@
 	});
 </script>
 
+{#if !bare}
 <div class="flex flex-wrap items-center justify-between gap-3">
 	<label class="dt-search">
 		<HugeiconsIcon icon={Search01Icon} size={15} strokeWidth={1.8} class="flex-none text-faint" />
@@ -113,8 +126,9 @@
 		<div class="flex flex-none flex-wrap items-center gap-2">{@render toolbar()}</div>
 	{/if}
 </div>
+{/if}
 
-<div class="card mt-4 overflow-x-auto p-0">
+<div class="card overflow-x-auto p-0" class:mt-4={!bare}>
 	<table class="dt">
 		<thead>
 			{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
@@ -169,6 +183,7 @@
 	</table>
 </div>
 
+{#if !noFooter}
 <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
 	<label class="flex items-center gap-2">
 		<span class="label">Rows</span>
@@ -217,6 +232,7 @@
 		</div>
 	</div>
 </div>
+{/if}
 
 <style>
 	.dt-search {
