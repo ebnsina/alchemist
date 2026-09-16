@@ -40,6 +40,7 @@
 	let armed = $state<{ id: string; ingest_url: string } | null>(null);
 	let watching = $state<{ id: string; name: string; asset: AssetDetail } | null>(null);
 	let copied = $state('');
+	let confirming = $state('');
 	let unsold = $state(false);
 
 	const STATE: Record<LiveStream['state'], { chip: string; means: string }> = {
@@ -121,6 +122,7 @@
 		error = '';
 		try {
 			await deleteLiveStream(s.id);
+			confirming = '';
 			if (armed?.id === s.id) armed = null;
 			if (watching?.id === s.id) watching = null;
 			await load();
@@ -400,11 +402,31 @@
 				<button
 					type="button"
 					class="flex items-center gap-1.5 text-xs text-dim transition-colors hover:text-red"
-					onclick={() => remove(s)}
+					onclick={() => (confirming = confirming === s.id ? '' : s.id)}
 				>
 					<HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.8} />
 					Delete
 				</button>
+				{#if confirming === s.id}
+					<!-- Deleting was one click and no warning, on the row above a stream key
+					     that cannot be issued again. -->
+					<div class="w-full rounded-md border border-sunk p-4">
+						<p class="text-sm">Delete “{s.name}”?</p>
+						<p class="sub mt-1.5">
+							The stream and its key are gone for good, and an encoder still pointed here
+							stops being accepted. Recordings of broadcasts it already made stay in your
+							library.
+						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							<button type="button" class="btn btn-sm" onclick={() => remove(s)}>
+								Yes, delete it
+							</button>
+							<button type="button" class="btn btn-sm" onclick={() => (confirming = '')}>
+								Keep it
+							</button>
+						</div>
+					</div>
+				{/if}
 			</li>
 		{/each}
 	</ul>

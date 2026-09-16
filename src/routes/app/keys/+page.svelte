@@ -13,7 +13,9 @@
 	let name = $state('');
 	type Minted = { name: string; api_key: string };
 	let fresh = $state<Minted | null>(null);
+	let keyCard = $state<HTMLElement | null>(null);
 	let copied = $state(false);
+	let confirming = $state('');
 
 	async function load() {
 		try {
@@ -35,6 +37,9 @@
 		try {
 			fresh = await createKey(name.trim() || 'Untitled key');
 			name = '';
+			// The key is the only thing that matters now. Clearing the form put the cursor
+			// back in the name field, pulling attention off a secret shown exactly once.
+			queueMicrotask(() => keyCard?.focus());
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
@@ -45,6 +50,7 @@
 		error = '';
 		try {
 			await revokeKey(k.id);
+			confirming = '';
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
@@ -79,7 +85,12 @@
 </p>
 
 {#if fresh}
-	<div class="card mt-6 p-6" in:fly={{ y: 12, duration: 340, easing: cubicOut }}>
+	<div
+		class="card mt-6 p-6"
+		tabindex="-1"
+		bind:this={keyCard}
+		in:fly={{ y: 12, duration: 340, easing: cubicOut }}
+	>
 		<p class="text-sm font-semibold">{fresh.name}</p>
 		<p class="mt-1 text-xs text-dim">Copy it now. This is the only time it is on screen.</p>
 		<div class="mt-3 flex items-center gap-2 rounded-xl border border-sunk bg-bg px-3 py-2">
@@ -133,13 +144,32 @@
 					<button
 						type="button"
 						class="flex items-center gap-1.5 text-xs text-dim transition-colors hover:text-red"
-						onclick={() => revoke(k)}
+						onclick={() => (confirming = confirming === k.id ? '' : k.id)}
 						disabled={live.length === 1}
 						title={live.length === 1 ? 'Make another key before switching this one off' : undefined}
 					>
 						<HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.8} />
 						Switch off
 					</button>
+				{/if}
+				{#if confirming === k.id}
+					<!-- Said before it happens, not after: switching a key off is instant and
+					     there is no putting it back. -->
+					<div class="w-full rounded-md border border-sunk p-4">
+						<p class="text-sm">Switch off “{k.name}”?</p>
+						<p class="sub mt-1.5">
+							Anything still using this key stops working straight away, and it cannot be
+							turned back on. Videos already uploaded with it are not affected.
+						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							<button type="button" class="btn btn-sm" onclick={() => revoke(k)}>
+								Yes, switch it off
+							</button>
+							<button type="button" class="btn btn-sm" onclick={() => (confirming = '')}>
+								Keep it
+							</button>
+						</div>
+					</div>
 				{/if}
 			</li>
 		{/each}

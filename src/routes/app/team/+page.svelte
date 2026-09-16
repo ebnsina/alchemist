@@ -21,7 +21,9 @@
 	let role = $state('member');
 	let busy = $state(false);
 	let fresh = $state<{ email: string; link: string } | null>(null);
+	let linkCard = $state<HTMLElement | null>(null);
 	let copied = $state(false);
+	let confirming = $state('');
 
 	async function load() {
 		error = '';
@@ -50,6 +52,9 @@
 			const r = await inviteMember(email.trim(), role);
 			fresh = { email: r.email, link: `${location.origin}/invite/?token=${r.token}` };
 			email = '';
+			// The link works once and is never shown again, so it gets the attention
+			// rather than the form it came from.
+			queueMicrotask(() => linkCard?.focus());
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
@@ -62,6 +67,7 @@
 		error = '';
 		try {
 			await fn();
+			confirming = '';
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
@@ -100,7 +106,7 @@
 {/if}
 
 {#if fresh}
-	<div class="card mt-6">
+	<div class="card mt-6" tabindex="-1" bind:this={linkCard}>
 		<p class="title">Invite ready for {fresh.email}</p>
 		<p class="sub mt-2">
 			We do not send the email yet, so pass this link on yourself. It works once, and only for
@@ -164,24 +170,53 @@
 						{m.last_login_at ? `last signed in ${when(m.last_login_at)}` : 'has not signed in yet'}
 					</p>
 				</div>
-				<select
-					class="select w-40"
-					value={m.role}
-					onchange={(e) => act(() => setMemberRole(m.id, e.currentTarget.value))}
-					aria-label="Role for {m.email}"
-				>
-					<option value="member">Member</option>
-					<option value="admin">Admin</option>
-					<option value="owner">Owner</option>
-				</select>
-				<button
-					type="button"
-					class="icon-btn"
-					onclick={() => act(() => removeMember(m.id))}
-					aria-label="Remove {m.email}"
-				>
-					<HugeiconsIcon icon={Delete02Icon} size={16} strokeWidth={1.8} />
-				</button>
+				{#if m.you}
+					<!-- Both controls only ever refused on your own row: the API will not let
+					     anyone remove themselves or leave the account without an owner. -->
+					<span class="chip w-40 justify-center">{m.role}</span>
+					<span class="sub flex-none">Another owner has to change this</span>
+				{:else}
+					<select
+						class="select w-40"
+						value={m.role}
+						onchange={(e) => act(() => setMemberRole(m.id, e.currentTarget.value))}
+						aria-label="Role for {m.email}"
+					>
+						<option value="member">Member</option>
+						<option value="admin">Admin</option>
+						<option value="owner">Owner</option>
+					</select>
+					<button
+						type="button"
+						class="icon-btn"
+						onclick={() => (confirming = confirming === m.id ? '' : m.id)}
+						aria-label="Remove {m.email}"
+					>
+						<HugeiconsIcon icon={Delete02Icon} size={16} strokeWidth={1.8} />
+					</button>
+				{/if}
+				{#if confirming === m.id}
+					<div class="w-full rounded-md border border-sunk p-4">
+						<p class="text-sm">Remove {m.email}?</p>
+						<p class="sub mt-1.5">
+							They lose access to this account immediately and any invite link they used is
+							spent. Videos and keys are the account's, so nothing of theirs is deleted. You
+							can invite them again afterwards.
+						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							<button
+								type="button"
+								class="btn btn-sm"
+								onclick={() => act(() => removeMember(m.id))}
+							>
+								Yes, remove them
+							</button>
+							<button type="button" class="btn btn-sm" onclick={() => (confirming = '')}>
+								Keep them
+							</button>
+						</div>
+					</div>
+				{/if}
 			</li>
 		{/each}
 	</ul>

@@ -12,6 +12,7 @@
 	let picked = $state<string[]>([...WEBHOOK_EVENTS]);
 	let busy = $state(false);
 	let fresh = $state<{ url: string; secret: string } | null>(null);
+	let secretCard = $state<HTMLElement | null>(null);
 	let copied = $state(false);
 
 	async function load() {
@@ -37,6 +38,9 @@
 			const r = await createWebhook(url.trim(), picked);
 			fresh = { url: r.url, secret: r.secret };
 			url = '';
+			// Same as a stream key and an API key: the secret gets the attention, because
+			// this is the only time it is on screen.
+			queueMicrotask(() => secretCard?.focus());
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
@@ -90,7 +94,7 @@
 {/if}
 
 {#if fresh}
-	<div class="card mt-6">
+	<div class="card mt-6" tabindex="-1" bind:this={secretCard}>
 		<p class="title">Signing secret for {fresh.url}</p>
 		<p class="sub mt-2">
 			Shown once. Deliveries carry <code>X-Alchemist-Signature: sha256=&lt;hmac&gt;</code> over the
