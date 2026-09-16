@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/ebnsina/alchemist/internal/pipeline"
+	"github.com/ebnsina/alchemist/internal/platform/httpx"
 	"github.com/ebnsina/alchemist/internal/platform/providers"
 )
 
@@ -154,7 +155,19 @@ func (s *Server) listMigrations(w http.ResponseWriter, r *http.Request) {
 		LastError   *string `json:"last_error"`
 		CreatedAt   string  `json:"created_at"`
 	}
+	page, ok := httpx.ParseList(w, r, []string{"created_at", "state"}, "created_at")
+	if !ok {
+		return
+	}
+	state := r.URL.Query().Get("state")
+
+	// Only the predicate is shared: the page joins in the item counts and the total
+	// must not, or a migration with 40 videos would count as 40 migrations.
+	const where = `where ($1::text = '' or m.provider ilike '%' || $1::text || '%')
+	    and ($2::text = '' or m.state = $2::text)`
+
 	items := []item{}
+	var total int
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(r.Context(),
 			`select m.id::text, m.provider, m.state, m.preview_done,
@@ -166,7 +179,9 @@ func (s *Server) listMigrations(w http.ResponseWriter, r *http.Request) {
 			        to_char(m.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 			   from migration_sources m
 			   left join migration_items i on i.source_id = m.id
-			  group by m.id order by m.created_at desc`)
+			   `+where+`
+			  group by m.id order by m.`+page.OrderBy()+` limit $3 offset $4`,
+			page.Q, state, page.Limit, page.Offset)
 		if err != nil {
 			return err
 		}
@@ -180,14 +195,18 @@ func (s *Server) listMigrations(w http.ResponseWriter, r *http.Request) {
 			}
 			items = append(items, it)
 		}
-		return rows.Err()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		return tx.QueryRow(r.Context(), `select count(*) from migration_sources m `+where,
+			page.Q, state).Scan(&total)
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
 			"Something went wrong on our side.")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"migrations": items})
+	writeJSON(w, http.StatusOK, map[string]any{"migrations": items, "total": total})
 }
 
 // listMigrationItems is what makes a partial migration explainable: which videos came

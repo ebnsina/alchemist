@@ -67,6 +67,10 @@ folding into the day. `internal/platform/db/migrations/034_live_recording.sql` a
 and `live_tenants()`, both additive and safe to re-run; the reaper needs the definer
 function because RLS on `tenant_limits` is forced and a cross-tenant select there
 returns zero rows without erroring.
+`internal/platform/db/migrations/038_asset_title.sql` adds the nullable
+`assets.title` and nothing else; it is additive, safe to re-run, and deliberately
+backfills nothing — null means a video nobody has named and the dashboard shows the
+short id instead.
 `internal/platform/db/migrations/033_encryption_default.sql` flips
 `tenants.encrypt_playback` to default true and changes **nothing** for tenants that
 already exist -- see below.

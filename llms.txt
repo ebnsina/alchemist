@@ -33,6 +33,19 @@ Things that will otherwise surprise you:
   cap) and a bound viewer streaming from more devices than that gets
   `403 viewer_limit_reached` on the newest one. This is the answer to one login shared
   with a class; encryption is not.
+- **Every list endpoint pages the same way.** `limit` (1-100, default 25), `offset`,
+  `q` for free text, `sort` from a fixed set per endpoint, `order` (`asc`/`desc`,
+  default `desc`), plus filters the endpoint names. The response carries the
+  collection under its own name and a `total` — how many match, ignoring limit and
+  offset — so a table can say "1-25 of 340". Nothing is clamped: `limit=500`, a
+  negative `offset` and an unlisted `sort` are each a `400`
+  (`invalid_limit`, `invalid_offset`, `invalid_sort`, `invalid_order`,
+  `invalid_filter`), because a page quietly different from the one you asked for is
+  worse than a refusal.
+- **A video's `title` can be null,** and that is a real state meaning nobody named
+  it — render the first characters of the id rather than inventing "Untitled". Set
+  it on upload or import, or with `PATCH /v1/assets/{id}`. An import with no title
+  takes the last segment of the source URL, decoded, without its extension.
 - **Errors are `{"error":{"code","message"}}`.** Branch on `code`, which is stable.
   `message` is written for a human and is translated when the request sends
   `Accept-Language: bn`.
@@ -81,19 +94,32 @@ POST /v1/assets/{id}/complete  -> queues processing
   or
 POST /v1/assets {"url":"..."}  -> import from a URL instead
 
-GET  /v1/assets                -> recent assets, newest first (dashboard listing)
-GET  /v1/assets/{id}           -> state, renditions with chunk progress, playback URLs
+GET  /v1/assets                -> your videos, paged: limit, offset, q, sort, order,
+                                  state (repeatable); answers {assets, total}
+GET  /v1/assets/{id}           -> title, state, renditions with chunk progress,
+                                  playback URLs
                                   ?viewer=&watermark= binds the links to one person
+PATCH /v1/assets/{id}          -> rename a video; title only, null clears it
 GET  /v1/assets/{id}/chunks    -> the chunk map, per rendition
 GET  /v1/assets/{id}/activity  -> pipeline steps, states and timings (no error text)
-GET  /v1/keys                  -> names and dates, never the key
+GET  /v1/keys                  -> names and dates, never the key; q, revoked
 POST /v1/keys                  -> another key (shown once)
+PATCH /v1/keys/{id}            -> rename a key; the secret is untouched
 POST /v1/contact               -> an enquiry from the public site (no account)
 DELETE /v1/assets/{id}         -> delete a video; media shared with a deduplicated
                                   copy survives until the last of them is gone
 DELETE /v1/keys/{id}           -> revoke
 POST /v1/webhooks              -> asset.ready, asset.failed, rendition.ready,
                                   live.started, live.ended, live.failed
+GET  /v1/webhooks              -> your endpoints; q matches the URL, active filters
+GET  /v1/webhooks/{id}         -> one endpoint (never the signing secret)
+PATCH /v1/webhooks/{id}        -> change the url, or pause with active:false
+DELETE /v1/webhooks/{id}       -> stop deliveries for good, queued ones included
+GET  /v1/bucket-sources        -> connected buckets; q matches bucket and prefix
+GET  /v1/bucket-sources/{id}   -> one bucket (never the access keys)
+PATCH /v1/bucket-sources/{id}  -> pause or resume scanning
+DELETE /v1/bucket-sources/{id} -> disconnect; 409 bucket_in_use while a video from
+                                  it is still being processed
 GET  /v1/usage                 -> billable aggregates: ingest seconds, egress bytes,
                                   storage gb_hours
 GET  /v1/branding              -> account name and logo URL
@@ -104,7 +130,8 @@ who has bought it -- otherwise every endpoint here answers `live_not_enabled` (4
 Live is a separate product from the VOD engine; a customer may hold either or both:
 POST   /v1/live-streams           -> create; the stream key is shown once
                                      protocol: camera (a browser webcam), srt or rtmp
-GET    /v1/live-streams           -> your streams
+GET    /v1/live-streams           -> your streams; q, state (repeatable), protocol
+PATCH  /v1/live-streams/{id}      -> rename, allowed even mid broadcast
 GET    /v1/live-streams/{id}      -> state and the asset the broadcast plays at
 POST   /v1/live-streams/{id}/start -> go on air; returns the ingest_url for OBS,
                                      or a WHIP endpoint plus publish_token for camera
@@ -118,7 +145,8 @@ recording is reported by asset.ready on the same asset id, so an integrator who
 already handles uploads gets the VOD for free.
 
 Session only (an API key gets 403 session_required):
-GET    /v1/members             -> teammates and pending invites
+GET    /v1/members             -> teammates and pending invites; q matches the email,
+                                  role filters, and total counts members
 POST   /v1/members/invites     -> invite someone; token returned once
 DELETE /v1/members/invites/{id}-> withdraw a pending invite
 PATCH  /v1/members/{id}        -> change a role

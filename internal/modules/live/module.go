@@ -89,6 +89,7 @@ func (m *Module) Routes(r chi.Router) {
 		r.Post("/live-streams", m.createStream)
 		r.Get("/live-streams", m.listStreams)
 		r.Get("/live-streams/{id}", m.getStream)
+		r.Patch("/live-streams/{id}", m.patchStream)
 		r.Post("/live-streams/{id}/start", m.startStream)
 		r.Post("/live-streams/{id}/stop", m.stopStream)
 		r.Post("/live-streams/{id}/key", m.replaceKey)
