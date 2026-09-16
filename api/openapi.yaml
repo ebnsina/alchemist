@@ -192,8 +192,17 @@ paths:
     get:
       summary: Who the session belongs to
       security: []
+      description: |
+        `tenant_id` and `org` are the account the session is **currently acting as**,
+        which for a platform administrator viewing a customer is that customer, not
+        their own. `platform_admin` says whether this person is Alchemist staff and
+        `impersonating` whether they are viewing someone else right now — draw an
+        unmissable banner when it is true, because the session is read-only and every
+        write will be refused with `read_only_session`.
       responses:
-        "200": { description: User, tenant, email and organisation name }
+        "200":
+          description: |
+            `{user_id, tenant_id, email, org, platform_admin, impersonating}`.
         "401": { description: No live session }
 
   /e/{tenant}/{asset}:
@@ -1543,6 +1552,111 @@ paths:
         - { name: asset, in: path, required: true, schema: { type: string } }
       responses:
         "204": { description: Allowed methods and headers }
+
+  /v1/staff/tenants:
+    get:
+      summary: Every account (Alchemist staff only)
+      description: |
+        The picker impersonation starts from. Names and counts only — no customer
+        content crosses tenants anywhere in this API. `q` matches the account name
+        and the start of the id.
+
+        Session only, and only for a platform administrator: an API key gets
+        `403 session_required`, anybody else `403 staff_only`.
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, name, assets], default: created_at }
+      responses:
+        "200":
+          description: |
+            `{tenants: [{tenant_id, name, assets, live_streams, members, created_at}],
+            total}`.
+        "400": { description: invalid_limit, invalid_offset, invalid_sort or invalid_order }
+        "403": { description: session_required or staff_only }
+
+  /v1/staff/impersonate:
+    post:
+      summary: View an account as its customer sees it (Alchemist staff only)
+      description: |
+        Sets the acting tenant on the session. Every other endpoint then answers for
+        that account with no change in how it is called — support sees exactly what
+        the customer sees, rather than a parallel view that drifts from it.
+
+        **The session becomes read-only.** Any `POST`, `PATCH`, `PUT` or `DELETE`
+        while impersonating is refused with `403 read_only_session`, except this
+        endpoint's own `DELETE`. Operator changes still go through `/admin/*` with
+        the static admin key.
+
+        The acting tenant is stored on the session, not sent per request, and the
+        `platform_admin` flag is re-read on every request: revoke it and impersonation
+        stops on the next call.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_id]
+              properties:
+                tenant_id: { type: string, format: uuid }
+      responses:
+        "200": { description: '`{tenant_id, impersonating: true, read_only: true}`' }
+        "400": { description: invalid_request }
+        "403": { description: session_required or staff_only }
+        "404": { description: tenant_not_found }
+    delete:
+      summary: Stop viewing an account (Alchemist staff only)
+      description: |
+        Clears the acting tenant; the session returns to its own. Allowed while the
+        session is read-only, since it is what ends the read-only state.
+      responses:
+        "200": { description: '`{impersonating: false}`' }
+        "403": { description: session_required or staff_only }
+
+  /v1/assets/{id}/diagnostics:
+    get:
+      summary: Queue history with the raw error text (Alchemist staff only)
+      description: |
+        What `/v1/assets/{id}/activity` deliberately withholds. A queue failure
+        carries whatever ffmpeg or the storage client said — paths, hostnames,
+        internal arguments — so a customer gets the stable `error_code` and staff get
+        this. Scoped to the tenant in scope like any other endpoint, so it reads the
+        account currently being impersonated.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: |
+            `{asset: {id, tenant_id, state, error_code, deduplicated_from,
+            media_prefix}, jobs: [{id, kind, state, attempt, max_attempts, queue,
+            queued_at, scheduled_at, started_at, finished_at, errors}]}`. `errors` is
+            the `river_job` array untouched: each entry carries `at`, `attempt`,
+            `error` and `trace`.
+        "403": { description: session_required or staff_only }
+        "404": { description: asset_not_found }
+
+  /v1/live-sessions/{id}/diagnostics:
+    get:
+      summary: One broadcast, with the raw error text (Alchemist staff only)
+      description: |
+        `last_seen_at` is when a segment last landed, which is the difference between
+        "the encoder never arrived" and "it stopped mid-match". The jobs are the queue
+        rows for the broadcast's asset, error text included.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: |
+            `{session: {id, stream_id, stream_name, stream_protocol, stream_state,
+            asset_id, asset_state, state, error_code, started_at, ended_at,
+            last_seen_at, stop_requested_at, swept_at, created_at}, jobs: [...]}`.
+        "403": { description: session_required or staff_only }
+        "404": { description: session_not_found }
 
   /internal/verify-playback:
     get:
