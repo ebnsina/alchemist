@@ -101,6 +101,17 @@ grant execute on function staff_impersonate(bytea, uuid) to alchemist_app;
 -- users is force-RLS so there is no tenant in scope to insert under. Same shape and
 -- same reason as auth_signup. Run twice it promotes the account that is already
 -- there and leaves its password alone, rather than creating a second user.
+-- Live is sold per tenant, so a staff account lands in one that has not bought it and
+-- gets sold its own product. Turning it on here saves an admin call after every setup.
+create or replace function staff_enable_live(t uuid)
+returns void language sql security definer
+set search_path = public as $$
+  insert into tenant_limits (tenant_id, live_enabled) values (t, true)
+  on conflict (tenant_id) do update set live_enabled = true, updated_at = now()
+$$;
+revoke all on function staff_enable_live(uuid) from public;
+grant execute on function staff_enable_live(uuid) to alchemist_app;
+
 create or replace function staff_grant(user_email citext, hash text, org text)
 returns table (user_id uuid, tenant_id uuid, created boolean)
 language plpgsql security definer
@@ -112,6 +123,7 @@ begin
   select id, users.tenant_id into u, t from users where email = user_email;
   if found then
     update users set platform_admin = true where id = u;
+    perform staff_enable_live(t);
     return query select u, t, false;
     return;
   end if;
@@ -121,6 +133,7 @@ begin
   end if;
   insert into users (tenant_id, email, password_hash, role, platform_admin)
   values (t, user_email, hash, 'owner', true) returning id into u;
+  perform staff_enable_live(t);
   return query select u, t, true;
 end;
 $$;

@@ -13,7 +13,8 @@ import (
 
 // staffOrg is the tenant the platform administrator's own account lives in. It is an
 // ordinary tenant with nothing in it: the flag, not the tenant, is what grants
-// anything, and impersonation is how staff reach a customer's data.
+// anything, and impersonation is how staff reach a customer's data. Live is switched
+// on for it, since staff testing their own product should not be sold it.
 const staffOrg = "Alchemist"
 
 // createAdmin makes or promotes the platform administrator.
@@ -64,9 +65,9 @@ func createAdmin(log *slog.Logger, args []string) {
 	}
 	if created {
 		log.Info("platform administrator created", "email", email,
-			"user_id", userID, "tenant_id", tenantID)
+			"user_id", userID, "tenant_id", tenantID, "live_enabled", true)
 		return
 	}
 	log.Info("platform administrator confirmed; the account already existed and its password is unchanged",
-		"email", email, "user_id", userID, "tenant_id", tenantID)
+		"email", email, "user_id", userID, "tenant_id", tenantID, "live_enabled", true)
 }
