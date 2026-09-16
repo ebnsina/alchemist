@@ -2,6 +2,7 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { ImageAdd02Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
+	import Confirm from '$lib/components/Confirm.svelte';
 	import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
 	import {
 		getBranding,
@@ -18,6 +19,7 @@
 	let loading = $state(true);
 	let busy = $state(false);
 	let error = $state('');
+	let removeOpen = $state(false);
 	let input: HTMLInputElement | null = $state(null);
 
 	async function load() {
@@ -60,6 +62,7 @@
 		busy = true;
 		try {
 			await deleteLogo();
+			removeOpen = false;
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
@@ -116,7 +119,7 @@
 					/>
 				</label>
 				{#if logoSrc}
-					<button type="button" class="btn" onclick={remove} disabled={busy}>
+					<button type="button" class="btn" onclick={() => (removeOpen = true)} disabled={busy}>
 						<HugeiconsIcon icon={Delete02Icon} size={15} strokeWidth={1.8} />
 						Remove
 					</button>
@@ -141,3 +144,16 @@
 
 {/if}
 
+<Confirm
+	bind:open={removeOpen}
+	title="Remove your logo?"
+	confirm="Yes, remove it"
+	destructive
+	busy={busy}
+	onconfirm={remove}
+>
+	<p class="sub">
+		Every player and embed goes back to showing nothing in its place, straight away. You
+		can upload it again whenever you like — we do not keep a copy.
+	</p>
+</Confirm>

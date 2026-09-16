@@ -142,6 +142,17 @@ These were established by measurement and are expensive to rediscover.
   means two jobs overwriting each other's mezzanine and chunks, and one's deferred
   cleanup deleting the other's working files. It surfaces as unrelated-looking
   stitch/encode/probe failures that pass on retry.
+- **Every dimension comes from the mezzanine, never from the source probe.** ffmpeg
+  applies a rotation matrix while building the mezzanine, so a phone clip that probes
+  1920x1080 with `rotate:90` is encoded 1080x1920. Deriving a rendition's width from
+  the source probe transposes it, and that width is what `republish` writes as the
+  HLS `RESOLUTION` — HLS and DASH then disagree about the same rung. `Probe.Rotation`
+  is read by nothing and is not the fix; using `MezzProbe` is.
+- **Deferred rungs are filtered by source height too.** `Applicable` runs inside
+  `Transcode` on the eager set only, so taking `LazyRungs` off the raw profile pends a
+  720p row on a 360p upload: the asset never leaves `partially_ready`, its mezzanine is
+  retained and billed for life, and first playback queues a JIT job that upscales.
+  Nothing errors anywhere, which is why it survived.
 - **The packager hoists width/height onto the AdaptationSet when there is exactly one
   Representation.** Parsing an MPD for per-rendition height finds nothing in that
   case, which silently drops deferred rungs from DASH.

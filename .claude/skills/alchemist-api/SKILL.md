@@ -151,7 +151,8 @@ switch asset.State {
 case "ready", "partially_ready":
     // playable
 case "failed":
-    // asset.ErrorCode says why, in stable form
+    // asset.ErrorCode says why, in stable form. POST /v1/assets/{id}/retry
+    // re-queues it without re-uploading: the source is still in storage.
 default:
     // created, uploading, uploaded, probing, mezzanine, analyzing, encoding, packaging
 }
@@ -248,7 +249,15 @@ Defaults to the current calendar month.
 | `invite_not_found` | Expired, already redeemed, or never existed — the three are one answer on purpose. |
 
 `encode_failed`, `stitch_failed`, `package_failed` and `processing_failed` are ours,
-not yours — surface them as a generic failure and check the Alchemist logs.
+not yours — surface them as a generic failure and check the Alchemist logs. They are
+also the ones worth retrying: `POST /v1/assets/{id}/retry` re-queues the encode from
+the stored source, so the customer does not upload the file a second time. It answers
+`invalid_state` unless the asset is `failed`, `source_gone` if the original really has
+gone, and counts against the same ingest quota as a new upload.
+
+A source problem — `source_unreadable`, `no_video_stream`, `source_too_large`,
+`source_url_not_allowed` — will fail again identically. Fix the file or the link
+first; retrying it unchanged just spends the quota.
 
 ## Running Alchemist locally
 

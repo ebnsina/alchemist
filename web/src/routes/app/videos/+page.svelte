@@ -5,6 +5,7 @@
 		ViewIcon,
 		PencilEdit02Icon,
 		Scissor01Icon,
+		RefreshIcon,
 		Delete02Icon
 	} from '@hugeicons/core-free-icons';
 	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
@@ -16,11 +17,12 @@
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import Confirm from '$lib/components/Confirm.svelte';
-	import { ASSET_STATE, assetName, bytes, clock, when } from '$lib/assets';
+	import { ASSET_STATE, assetName, bytes, canRetry, clock, when, WHY_NO_RETRY } from '$lib/assets';
 	import {
 		listAssets,
 		patchAsset,
 		deleteAsset,
+		retryAsset,
 		ApiError,
 		type Asset
 	} from '$lib/api';
@@ -106,6 +108,22 @@
 		}
 	}
 
+	// No confirmation and no dialog: it costs a wait, and the row starts moving again
+	// where the customer is already looking. Polling resumes on its own -- `busy` counts
+	// any row that is neither done nor failed, and this one has just stopped being failed.
+	async function retry(a: Asset) {
+		error = '';
+		busyRow = true;
+		try {
+			await retryAsset(a.id);
+			await load();
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Something went wrong.';
+		} finally {
+			busyRow = false;
+		}
+	}
+
 	async function remove() {
 		if (!removing) return;
 		error = '';
@@ -172,6 +190,17 @@
 							disabled: !ASSET_STATE[a.state]?.done,
 							why: 'Editing opens once the video has finished'
 						},
+						...(a.state === 'failed'
+							? [
+									{
+										label: 'Try again',
+										icon: RefreshIcon,
+										onclick: () => retry(a),
+										disabled: !canRetry(a),
+										why: WHY_NO_RETRY
+									}
+								]
+							: []),
 						{ label: 'Delete', icon: Delete02Icon, danger: true, onclick: () => { removing = a; removeOpen = true; } }
 					]
 				});

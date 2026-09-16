@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### Added
+- **A failed video can be tried again.** The failure card on a video's page now offers
+  "Try again" and says that the file we were sent is still here, so nothing has to be
+  uploaded a second time. It is not offered for the three codes where the same bytes
+  fail the same way — no video track, too large, or a link we will not fetch from —
+  because a button that spends ingest quota to reach the same screen is worse than no
+  button. There is no confirmation step: it costs a wait and nothing else. The page
+  resumes its own polling once the video moves back into the queue.
+
+  The Videos table offers the same thing from a row's menu, on a failed row only — a
+  permanently dead item on every ready video's menu is worse than one that is not
+  there. On the three codes that cannot be retried it is shown but disabled, and says
+  why on hover, because someone opening that menu has come looking for it.
+
+- **Two destructive actions that never asked now ask.** Removing your logo under
+  Branding, and the bin icon beside an edit in Studio — the second sat next to the
+  state chip with nothing between a mis-click and a deleted record. Both use the same
+  confirm dialog as every other delete, and Studio's wording matches the one already
+  on the Studio list for the same action. Cancelling a migration and stopping a
+  broadcast already confirmed, inline where the control is, and were left that way: a
+  modal over a live preview is worse than the question sitting in the control bar.
+
 ### Changed
 - **Live streams is a real table** — name, state, source, made — with a state filter and
   a source filter, and a row menu for Open, Rename, Start, Watch and Delete. Renaming a

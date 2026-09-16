@@ -31,7 +31,11 @@ type vmafLog struct {
 // The per-chunk breakdown is the point: chunked encoding's characteristic failure is
 // quality oscillating on a chunk-length cycle, which is glaring on a TV and invisible
 // on a laptop. A large MaxAdjDiff means rate control is drifting between chunks.
-func ScoreVMAF(ctx context.Context, distorted, reference string, workDir string) (*VMAFReport, error) {
+// chunks are the real boundaries the encode used, which is what MaxAdjDiff has to be
+// measured across. A fixed window cannot stand in for them: PlanChunksAtScenes emits
+// anything from 6 to 24 seconds, so a 12-second window averages over the boundary
+// instead of straddling it and the oscillation this exists to catch is smoothed away.
+func ScoreVMAF(ctx context.Context, distorted, reference string, workDir string, chunks []Chunk) (*VMAFReport, error) {
 	ref, err := Inspect(ctx, reference)
 	if err != nil {
 		return nil, err
@@ -65,27 +69,49 @@ func ScoreVMAF(ctx context.Context, distorted, reference string, workDir string)
 		return nil, fmt.Errorf("vmaf: no frames scored")
 	}
 
-	framesPerChunk := TargetChunkSeconds * MezzanineFrameRate
+	scores := make([]float64, len(parsed.Frames))
 	rep := &VMAFReport{Min: math.MaxFloat64}
 	var total float64
-	var chunkSum float64
-	var chunkN int
-
 	for i, f := range parsed.Frames {
-		v := f.Metrics.VMAF
-		total += v
-		rep.Min = math.Min(rep.Min, v)
-		chunkSum += v
-		chunkN++
-		if (i+1)%framesPerChunk == 0 || i == len(parsed.Frames)-1 {
-			rep.PerChunk = append(rep.PerChunk, chunkSum/float64(chunkN))
-			chunkSum, chunkN = 0, 0
-		}
+		scores[i] = f.Metrics.VMAF
+		total += scores[i]
+		rep.Min = math.Min(rep.Min, scores[i])
 	}
-	rep.Mean = total / float64(len(parsed.Frames))
+	rep.Mean = total / float64(len(scores))
+	rep.PerChunk = perChunkScores(scores, chunks)
 
 	for i := 1; i < len(rep.PerChunk); i++ {
 		rep.MaxAdjDiff = math.Max(rep.MaxAdjDiff, math.Abs(rep.PerChunk[i]-rep.PerChunk[i-1]))
 	}
 	return rep, nil
+}
+
+// perChunkScores averages frame scores within each real chunk.
+//
+// Frames are numbered against the mezzanine's forced constant rate, so a frame index
+// converts to a timestamp exactly. With no chunk plan the whole run is one window,
+// which is honest rather than wrong: MaxAdjDiff is then zero because there is no
+// boundary to measure across.
+func perChunkScores(scores []float64, chunks []Chunk) []float64 {
+	var out []float64
+	var sum float64
+	var n int
+	at := 0
+
+	for i, v := range scores {
+		t := float64(i) / MezzanineFrameRate
+		for at < len(chunks)-1 && t >= chunks[at].EndSec {
+			if n > 0 {
+				out = append(out, sum/float64(n))
+			}
+			sum, n = 0, 0
+			at++
+		}
+		sum += v
+		n++
+	}
+	if n > 0 {
+		out = append(out, sum/float64(n))
+	}
+	return out
 }

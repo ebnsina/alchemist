@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/ebnsina/alchemist/internal/platform/media"
 )
@@ -29,12 +31,21 @@ func (w *TranscodeWorker) buildRendition(ctx context.Context, a JITArgs, mezz, d
 	full := filepath.Join(dir, fmt.Sprintf("%dp.mp4", rung.Height))
 	chunks := media.PlanChunks(probe.DurationSec)
 	paths := make([]string, len(chunks))
+
+	// In parallel, like ingest. This is the priority-1 path -- a viewer asked for
+	// this rung and is watching a lower one until it lands -- so encoding 600 chunks
+	// of a two-hour lecture one after another made the most urgent work in the system
+	// also the slowest.
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(runtime.NumCPU())
 	for i, c := range chunks {
+		i, c := i, c
 		out := filepath.Join(dir, fmt.Sprintf("chunk-%05d.mp4", c.Index))
-		if err := media.EncodeChunk(ctx, mezz, c, rung, out); err != nil {
-			return err
-		}
 		paths[i] = out
+		g.Go(func() error { return media.EncodeChunk(gctx, mezz, c, rung, out) })
+	}
+	if err := g.Wait(); err != nil {
+		return err
 	}
 	if err := media.Stitch(ctx, paths, full); err != nil {
 		return err

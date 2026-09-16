@@ -19,6 +19,7 @@
 	import Timeline from '$lib/components/Timeline.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import Player from '$lib/components/Player.svelte';
+	import Confirm from '$lib/components/Confirm.svelte';
 	import { setCrumbs } from '$lib/crumbs.svelte';
 	import { getBranding, type EditOverlay, type Branding } from '$lib/api';
 	import { PUBLIC_ALCHEMIST_API } from '$env/static/public';
@@ -324,13 +325,25 @@
 		}
 	}
 
-	async function forget(e: Edit) {
+	// An icon on its own, beside the state chip, with nothing between a mis-click and a
+	// deleted record. It asks now, in the same words the Studio list uses for the same
+	// action.
+	let forgetting = $state<Edit | null>(null);
+	let forgetOpen = $state(false);
+	let forgetBusy = $state(false);
+
+	async function forget() {
+		if (!forgetting) return;
 		error = '';
+		forgetBusy = true;
 		try {
-			await deleteEdit(e.id);
+			await deleteEdit(forgetting.id);
+			forgetOpen = false;
 			await load();
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Something went wrong.';
+		} finally {
+			forgetBusy = false;
 		}
 	}
 
@@ -768,7 +781,10 @@
 					<button
 						type="button"
 						class="icon-btn flex-none"
-						onclick={() => forget(e)}
+						onclick={() => {
+							forgetting = e;
+							forgetOpen = true;
+						}}
 						aria-label="Forget this edit"
 					>
 						<HugeiconsIcon icon={Delete02Icon} size={15} strokeWidth={1.8} />
@@ -783,6 +799,21 @@
 	{/if}
 {/if}
 {/if}
+
+<Confirm
+	bind:open={forgetOpen}
+	title="Remove this edit from the list?"
+	confirm="Yes, remove it"
+	destructive
+	busy={forgetBusy}
+	onconfirm={forget}
+>
+	<p class="text-sm">{forgetting ? describe(forgetting.ops) : ''}</p>
+	<p class="sub mt-2">
+		Only this record goes. The video it made stays in your library and keeps playing —
+		delete that under Videos if you want it gone too.
+	</p>
+</Confirm>
 
 <style>
 	/* Tools, stage, timeline. On a phone the three stack and the page scrolls, because

@@ -10,12 +10,14 @@
 	} from '@hugeicons/core-free-icons';
 	import Seo from '$lib/Seo.svelte';
 	import { setCrumbs } from '$lib/crumbs.svelte';
+	import { canRetry } from '$lib/assets';
 	import AssetPlayer from '$lib/components/AssetPlayer.svelte';
 	import Advanced from '$lib/components/Advanced.svelte';
 	import Diagnostics from '$lib/components/Diagnostics.svelte';
 	import { me } from '$lib/me.svelte';
 	import {
 		getAsset,
+		retryAsset,
 		assetDiagnostics,
 		ApiError,
 		type AssetDetail,
@@ -26,6 +28,8 @@
 	let error = $state('');
 	let loading = $state(true);
 	let copied = $state('');
+	let retrying = $state(false);
+	let retryError = $state('');
 
 	const id = $derived(page.params.id ?? '');
 
@@ -115,7 +119,7 @@
 		live: { label: 'On air', means: 'This is a broadcast going out right now. It plays below as it happens.' },
 		live_ended: { label: 'Broadcast finished', means: 'The live broadcast has ended. What went out is kept here to watch back.' },
 		ready: { label: 'Ready to watch', means: 'Every size is made. Nothing left to wait for.' },
-		failed: { label: 'Did not work', means: 'Something about the file stopped us. Sending it again rarely helps — the detail below says what happened.' }
+		failed: { label: 'Did not work', means: 'Something stopped us part way through. The detail below says what, and whether trying again is worth it.' }
 	};
 
 	const FAILURES: Record<string, string> = {
@@ -131,6 +135,23 @@
 		no_encoder: 'Nothing ever connected to this stream, so there is no recording.',
 		recording_unreadable: 'We could not read the broadcast back, so there is no recording to watch.'
 	};
+
+	const retryable = $derived(!!asset && canRetry(asset));
+
+	// No confirmation: it costs the customer nothing but a wait, and it is the thing
+	// they came to this page to do. Polling restarts on its own once the state moves.
+	async function retry() {
+		retrying = true;
+		retryError = '';
+		try {
+			await retryAsset(id);
+			await load();
+		} catch (e) {
+			retryError = e instanceof ApiError ? e.message : 'Something went wrong.';
+		} finally {
+			retrying = false;
+		}
+	}
 
 	// What each playback link is actually for. The description is a tooltip now: four
 	// paragraphs beside four URLs pushed the thing people came for off the screen.
@@ -311,6 +332,17 @@
 			<p class="title text-red">This one did not work</p>
 			<p class="sub mt-2">{FAILURES[asset.error_code] ?? 'Something stopped us processing it.'}</p>
 			<p class="mono mt-3">Reference: {asset.error_code}</p>
+			{#if retryable}
+				<p class="sub mt-4">
+					We still have the file you sent, so you do not need to upload it again.
+				</p>
+				<button class="btn btn-sm mt-3" onclick={retry} disabled={retrying}>
+					{retrying ? 'Starting it again…' : 'Try again'}
+				</button>
+			{/if}
+			{#if retryError}
+				<p class="sub mt-3 text-red">{retryError}</p>
+			{/if}
 		</div>
 	{/if}
 

@@ -30,8 +30,15 @@ const (
 // Thumbnails produces a poster frame and a scrubbing sprite sheet with its WebVTT
 // index. One sprite image beats hundreds of separate thumbnail requests, which
 // matters most on the high-latency mobile connections this is built for.
-func Thumbnails(ctx context.Context, mezzanine string, durationSec float64, height int, outDir string) (*ThumbnailResult, error) {
-	tileH := int(math.Round(float64(spriteTileWidth) * float64(height) / float64(heightToWidth(height))))
+func Thumbnails(ctx context.Context, mezzanine string, durationSec float64,
+	width, height int, outDir string) (*ThumbnailResult, error) {
+	// From the mezzanine's real shape. Assuming 16:9 squashes every phone upload:
+	// the tiles are stretched and the VTT xywh boxes index the stretched grid, so
+	// the scrub preview is wrong on exactly the content phones produce.
+	tileH := spriteTileWidth * 9 / 16
+	if width > 0 && height > 0 {
+		tileH = int(math.Round(float64(spriteTileWidth) * float64(height) / float64(width)))
+	}
 	if tileH%2 != 0 {
 		tileH++
 	}
@@ -69,9 +76,4 @@ func Thumbnails(ctx context.Context, mezzanine string, durationSec float64, heig
 		Columns: spriteColumns, TileWidth: spriteTileWidth,
 		TileHeight: tileH, IntervalS: interval,
 	}, nil
-}
-
-func heightToWidth(h int) int {
-	// Tiles are generated from 16:9 mezzanine output.
-	return h * 16 / 9
 }
