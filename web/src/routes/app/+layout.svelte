@@ -21,6 +21,7 @@
 		ChartHistogramIcon,
 		LiveStreaming01Icon,
 		Scissor01Icon,
+		SlidersHorizontalIcon,
 		RecordIcon
 	} from '@hugeicons/core-free-icons';
 	import Logo from '$lib/components/Logo.svelte';
@@ -56,6 +57,8 @@
 					owns: ['/app/upload', '/app/sources']
 				},
 				{ href: '/app/studio/', label: 'Studio', icon: Scissor01Icon },
+				// What we make from a video, not how the account presents itself.
+				{ href: '/app/encoding/', label: 'Encoding', icon: SlidersHorizontalIcon },
 				// Arriving from another service is a job of its own, not a way to upload.
 				{
 					href: '/app/migrate/',
