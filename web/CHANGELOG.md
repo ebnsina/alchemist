@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Changed
+- **API keys is a real table** — name, made, state — with a Live/Switched off filter and
+  a row menu that renames a key as well as switching it off. Renaming a key was in the
+  API and had no control anywhere in the dashboard. The last live key still cannot be
+  switched off and still says why; that count now comes from the account rather than
+  from whichever ten keys are on screen.
 - **Recordings is a real table.** Same five columns as Videos — name, state, length,
   size, added — paged, searched and sorted by the server with `state=live_ended`
   pinned, and a row menu for Watch, Rename, Edit in Studio and Delete. The old
