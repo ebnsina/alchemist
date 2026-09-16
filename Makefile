@@ -50,4 +50,11 @@ edge-stop:
 customer-servers:
 	python3 test/customer_servers.py
 
-.PHONY: build run storage db-reset create-admin test edge edge-stop customer-servers
+# A real broadcast, including an encoder that drops mid-class and comes back. Starts
+# its own mediamtx; needs `make storage` and `make run` alongside, and live_enabled on
+# the tenant the key belongs to.
+#   make live-journey KEY=<api-key>
+live-journey:
+	./test/live-journey.sh $(KEY)
+
+.PHONY: build run storage db-reset create-admin test edge edge-stop customer-servers live-journey
