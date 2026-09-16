@@ -17,6 +17,7 @@
 		ArrowDown01Icon,
 		UserGroupIcon,
 		PaintBoardIcon,
+		UserIcon,
 		ConnectIcon,
 		ChartHistogramIcon,
 		LiveStreaming01Icon,
@@ -43,6 +44,9 @@
 
 	// The account at a glance, above everything it is a glance at.
 	const home = { href: '/app/', label: 'Overview', icon: DashboardSquare01Icon };
+
+	// In the account menu, not the sidebar, but the trail still needs its name.
+	const profile = { href: '/app/profile/', label: 'Your profile', icon: UserIcon };
 
 	// What you came to do, then how it is set up. Getting video in is one job with
 	// three doors, so it is reached from Videos rather than taking three rows here.
@@ -93,7 +97,7 @@
 		}
 	];
 
-	const flat = [home, ...groups.flatMap((g) => g.items)];
+	const flat = [home, profile, ...groups.flatMap((g) => g.items)];
 
 	// A nested route keeps its section lit. Exact match alone left every deeper page
 	// with nothing selected; a bare startsWith would light Overview on all of them,
@@ -268,11 +272,9 @@
 					class="account-menu"
 					transition:fly={{ y: 6, duration: 160, easing: cubicOut }}
 				>
-					<!-- The sidebar and this menu point at the same page, so they say the same
-					     word. "Account settings" promised a page that does not exist. -->
-					<a href="/app/settings/" class="side-link">
-						<HugeiconsIcon icon={PaintBoardIcon} size={16} strokeWidth={1.7} />
-						Branding
+					<a href="/app/profile/" class="side-link">
+						<HugeiconsIcon icon={UserIcon} size={16} strokeWidth={1.7} />
+						Your profile
 					</a>
 					<a href="/" class="side-link">
 						<HugeiconsIcon icon={ArrowUpRight01Icon} size={16} strokeWidth={1.7} />
