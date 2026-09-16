@@ -137,13 +137,14 @@
 	</div>
 	<button
 		type="button"
+		aria-label="Add an endpoint"
 		class="btn-solid flex-none"
 		onclick={() => {
 			step = 0;
 			open = true;
 		}}
 	>
-		Add an endpoint
+		Add new
 	</button>
 </header>
 
@@ -270,7 +271,7 @@
 {:else if hooks.length === 0}
 	<p class="sub mt-4">
 		None yet. Without one, your code has to ask us whether a video is ready — use
-		<b>Add an endpoint</b> and we will tell you instead.
+		<b>Add new</b> and we will tell you instead.
 	</p>
 {:else}
 	<ul class="mt-4 divide-y divide-sunk border-y border-sunk">

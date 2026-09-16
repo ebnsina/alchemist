@@ -200,13 +200,14 @@
 	{#if !unsold}
 		<button
 			type="button"
+			aria-label="Make a stream"
 			class="btn-solid flex-none"
 			onclick={() => {
 				step = 1;
 				open = true;
 			}}
 		>
-			Make a stream
+			Add new
 		</button>
 	{/if}
 </header>
@@ -414,7 +415,7 @@
 	<div class="card mt-6 py-8 text-center">
 		<p class="title">No streams yet</p>
 		<p class="sub mx-auto mt-2 max-w-sm">
-			Use <b>Make a stream</b>. The camera in this browser, or an encoder pointed at the
+			Use <b>Add new</b>. The camera in this browser, or an encoder pointed at the
 			address we give you. Either way the broadcast is kept as an ordinary video afterwards.
 		</p>
 	</div>

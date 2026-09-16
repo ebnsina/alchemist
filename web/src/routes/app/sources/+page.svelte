@@ -124,13 +124,14 @@
 	</div>
 	<button
 		type="button"
+		aria-label="Connect a bucket"
 		class="btn-solid flex-none"
 		onclick={() => {
 			step = 0;
 			open = true;
 		}}
 	>
-		Connect a bucket
+		Add new
 	</button>
 </header>
 
@@ -255,7 +256,7 @@
 	<div class="card mt-6 py-8 text-center">
 		<p class="title">No bucket connected</p>
 		<p class="sub mx-auto mt-2 max-w-md">
-			Use <b>Connect a bucket</b> if your videos already live in S3-compatible storage
+			Use <b>Add new</b> if your videos already live in S3-compatible storage
 			of your own. Otherwise there is nothing to do here — send videos through
 			<a href="/app/upload/" class="link">Upload</a> or the API instead.
 		</p>

@@ -157,13 +157,14 @@
 	</div>
 	<button
 		type="button"
+		aria-label="Invite someone"
 		class="btn-solid flex-none"
 		onclick={() => {
 			step = 0;
 			open = true;
 		}}
 	>
-		Invite someone
+		Add new
 	</button>
 </header>
 

@@ -127,13 +127,14 @@
 	</div>
 	<button
 		type="button"
+		aria-label="Make a key"
 		class="btn-solid flex-none"
 		onclick={() => {
 			step = 0;
 			open = true;
 		}}
 	>
-		Make a key
+		Add new
 	</button>
 </header>
 

@@ -241,13 +241,14 @@
 	</div>
 	<button
 		type="button"
+		aria-label="Start a migration"
 		class="btn-solid flex-none"
 		onclick={() => {
 			step = 0;
 			open = true;
 		}}
 	>
-		Start a migration
+		Add new
 	</button>
 </header>
 
@@ -434,7 +435,7 @@
 		<p class="title">Nothing moved yet</p>
 		<p class="sub mx-auto mt-2 max-w-md">
 			This is a one-off for when you are arriving from somewhere else. Use
-			<b>Start a migration</b> and we will show you what is there before anything moves. Day
+			<b>Add new</b> and we will show you what is there before anything moves. Day
 			to day, videos come in through the API or a
 			<a href="/app/sources/" class="link">connected bucket</a>.
 		</p>
