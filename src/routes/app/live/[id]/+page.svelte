@@ -58,8 +58,12 @@
 
 	$effect(() => {
 		if (!id) return;
-		setCrumbs([{ label: 'Live', href: '/app/live/' }, { label: id.slice(0, 8) }]);
 		load();
+	});
+
+	// The name, not the id: a trail reading "6080efa2" tells nobody which stream this is.
+	$effect(() => {
+		setCrumbs([{ label: 'Streams', href: '/app/live/' }, { label: stream?.name ?? 'Stream' }]);
 	});
 
 	async function load() {
@@ -254,12 +258,19 @@
 		);
 </script>
 
-<Seo title="Stream — Alchemist" description="One live stream and its settings." />
+<Seo
+	title={(stream?.name ?? 'Stream') + ' — Alchemist'}
+	description="One live stream and its settings."
+/>
 
 {#if loading && !stream}
 	<div class="sk h-8 w-64"></div>
 {:else if error && !stream}
-	<p class="text-sm text-red" role="alert">{error}</p>
+	<div class="card mt-6 py-8 text-center">
+		<p class="title">We could not open that stream</p>
+		<p class="sub mx-auto mt-2 max-w-sm">{error}</p>
+		<a href="/app/live/" class="btn-solid mt-5">Back to your streams</a>
+	</div>
 {:else if stream}
 	<header>
 		<h1 class="text-2xl font-semibold tracking-tight">{stream.name}</h1>
@@ -267,6 +278,12 @@
 			{SOURCE[stream.protocol]} · made {when(stream.created_at)} · {STATE[stream.state]}
 		</p>
 	</header>
+
+	{#if error}
+		<!-- Beside the controls that produce it. At the foot of the page it sat below
+		     three panels, where nobody pressing a button at the top would ever see it. -->
+		<p class="mt-4 text-sm text-red" role="alert">{error}</p>
+	{/if}
 
 	{#if freshKey}
 		<div class="card mt-6 p-6" in:fly={{ y: 12, duration: 340, easing: cubicOut }}>
@@ -428,6 +445,14 @@
 				Your key is already in the server address above. Putting it here as well sends it
 				twice and nothing will connect.
 			</p>
+		{:else if stream.state === 'armed' || stream.state === 'live'}
+			<!-- The address is minted once per broadcast and never returned again, so
+			     pressing Start here only ever answered "already waiting for an encoder". -->
+			<p class="sub mt-2 max-w-lg">
+				The address was shown when this stream was started, and we cannot show it again.
+				If you no longer have it, stop the broadcast below and start it again — that
+				gives you a fresh one.
+			</p>
 		{:else}
 			<p class="sub mt-2">
 				The address appears when you start the stream. Starting holds a slot for your encoder;
@@ -492,15 +517,14 @@
 	</section>
 	{/if}
 
-	{#if stream.asset_id}
+	{#if stream.asset_id && stream.state !== 'armed'}
 		<section class="card mt-4 p-6">
 			<h2 class="text-lg font-semibold tracking-tight">The recording</h2>
+			<!-- Offered only once something has actually gone out: on an armed stream this
+			     linked to a recording of nothing. -->
 			<p class="sub mt-2">Everything sent on this stream is kept as an ordinary video.</p>
 			<a href="/app/videos/{stream.asset_id}/" class="btn mt-4">Open the recording</a>
 		</section>
 	{/if}
 
-	{#if error}
-		<p class="mt-4 text-sm text-red" role="alert">{error}</p>
-	{/if}
 {/if}

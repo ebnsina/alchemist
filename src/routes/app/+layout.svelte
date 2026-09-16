@@ -89,14 +89,12 @@
 		return (item.owns ?? []).some((p) => path === p || path.startsWith(p + '/'));
 	}
 
-	const active = $derived(flat.find((i) => isActive(i, page.url.pathname)));
-	const current = $derived(
-		page.url.pathname.startsWith('/app/studio/')
-			? 'Studio'
-			: page.url.pathname.startsWith('/app/videos/')
-				? 'Video'
-				: (active?.label ?? 'Videos')
+	// Longest match wins: /app/live/recordings/ also starts with /app/live/, and taking
+	// the first hit titled the Recordings page "Streams".
+	const active = $derived(
+		[...flat].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(i, page.url.pathname))
 	);
+	const current = $derived(active?.label ?? 'Videos');
 
 	// The session lives in an HttpOnly cookie, so the page cannot read it — asking
 	// the API is the only way to know, and the only way to be sure it is still live.
@@ -138,7 +136,9 @@
 		setCrumbs([]);
 	});
 
-	const trail = $derived(crumbs().length ? crumbs() : [{ label: current }]);
+	const trail = $derived(
+		crumbs().length ? crumbs() : page.url.pathname === '/app/videos/' ? [] : [{ label: current }]
+	);
 
 	async function signOut() {
 		await logout().catch(() => {});
@@ -300,7 +300,13 @@
 					<HugeiconsIcon icon={Menu01Icon} size={18} strokeWidth={1.8} />
 				</button>
 				<nav class="flex min-w-0 items-center gap-2 text-sm" aria-label="Breadcrumb">
-					<a href="/app/videos/" class="flex-none text-dim transition-colors hover:text-ink">Dashboard</a>
+					<!-- The list is the dashboard, so on that page the root crumb is a label,
+					     not a link back to the page you are already reading. -->
+					{#if page.url.pathname === '/app/videos/'}
+						<span class="flex-none font-medium" aria-current="page">Dashboard</span>
+					{:else}
+						<a href="/app/videos/" class="flex-none text-dim transition-colors hover:text-ink">Dashboard</a>
+					{/if}
 					{#each trail as c, i (c.label + i)}
 						<span class="flex-none text-dim" aria-hidden="true">/</span>
 						{#if c.href && i < trail.length - 1}
