@@ -3,6 +3,12 @@
 ## Unreleased
 
 ### Changed
+- **Connected buckets is a table with controls.** Bucket, prefix, state, how many videos
+  it has taken in and when it was last checked, with a row menu that pauses, resumes or
+  disconnects it. Disconnecting a bucket whose videos are still being made is refused by
+  the API, and the refusal now reaches the page in plain words instead of disappearing:
+  "Videos from this bucket are still being made. Wait for them to finish, then
+  disconnect it."
 - **Webhook endpoints can be changed, not only made.** The list was a row, a Live/Paused
   chip and nothing that could move either. It is now a table — address, events, state —
   with a Live/Paused filter and a row menu that edits the address, pauses or resumes the

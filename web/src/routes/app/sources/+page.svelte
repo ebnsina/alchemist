@@ -5,21 +5,48 @@
 		CloudServerIcon,
 		FolderLibraryIcon,
 		SquareLock01Icon,
+		PlayIcon,
+		PauseIcon,
+		Unlink01Icon,
 		ArrowLeft01Icon,
 		ArrowRight01Icon
 	} from '@hugeicons/core-free-icons';
+	import { renderComponent, type ColumnDef } from '@tanstack/svelte-table';
 	import Seo from '$lib/Seo.svelte';
 	import Steps from '$lib/components/Steps.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
+	import Confirm from '$lib/components/Confirm.svelte';
+	import DataTable from '$lib/components/DataTable.svelte';
+	import RowMenu from '$lib/components/RowMenu.svelte';
+	import Badge from '$lib/components/Badge.svelte';
 	import RegionPicker from '$lib/components/RegionPicker.svelte';
-	import { listBucketSources, connectBucket, ApiError, type BucketSource } from '$lib/api';
+	import {
+		listBucketSources,
+		patchBucketSource,
+		deleteBucketSource,
+		connectBucket,
+		ApiError,
+		type BucketSource
+	} from '$lib/api';
 
-	let sources = $state<BucketSource[]>([]);
+	let rows = $state<BucketSource[]>([]);
+	let total = $state(0);
 	let loading = $state(true);
 	let error = $state('');
 	let busy = $state(false);
 	let open = $state(false);
 	let step = $state(0);
+
+	let page = $state(0);
+	let size = $state(10);
+	let sorting = $state<{ id: string; desc: boolean }[]>([{ id: 'created_at', desc: true }]);
+	let q = $state('');
+
+	// The dialog owns a plain boolean: passing !!row unbound means Escape closes it and
+	// the next render opens it straight back up.
+	let removeOpen = $state(false);
+	let removing = $state<BucketSource | null>(null);
+	let busyRow = $state(false);
 	let form = $state({
 		endpoint: '',
 		region: 'us-east-1',
@@ -71,10 +98,22 @@
 		if (step < steps.length - 1) step += 1;
 		else connect();
 	}
+	// One read of every control the table owns, so a change to any of them refetches
+	// exactly once rather than each firing its own request.
+	const query = $derived({
+		limit: size,
+		offset: page * size,
+		q,
+		sort: sorting[0]?.id ?? 'created_at',
+		order: (sorting[0]?.desc ?? true ? 'desc' : 'asc') as 'asc' | 'desc'
+	});
+
 	async function load() {
 		error = '';
 		try {
-			sources = (await listBucketSources()).bucket_sources;
+			const r = await listBucketSources(query);
+			rows = r.bucket_sources;
+			total = r.total;
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong.';
 		} finally {
@@ -83,8 +122,37 @@
 	}
 
 	$effect(() => {
+		query;
 		load();
 	});
+
+	async function toggleActive(b: BucketSource) {
+		error = '';
+		try {
+			await patchBucketSource(b.id, { active: !b.active });
+			await load();
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Something went wrong.';
+		}
+	}
+
+	// A bucket with videos still being made answers 409 bucket_in_use, and that refusal
+	// is the whole answer the customer needs — it is shown, not swallowed.
+	async function remove() {
+		if (!removing) return;
+		error = '';
+		busyRow = true;
+		try {
+			await deleteBucketSource(removing.id);
+			removeOpen = false;
+			await load();
+		} catch (err) {
+			error = err instanceof ApiError ? err.message : 'Something went wrong.';
+			removeOpen = false;
+		} finally {
+			busyRow = false;
+		}
+	}
 
 	async function connect() {
 		error = '';
@@ -109,6 +177,69 @@
 	$effect(() => {
 		setCrumbs([{ label: 'Videos', href: '/app/videos/' }, { label: 'Connected buckets' }]);
 	});
+	const columns: ColumnDef<any, BucketSource>[] = [
+		{ accessorKey: 'bucket', header: 'Bucket' },
+		{
+			accessorKey: 'prefix',
+			header: 'Prefix',
+			enableSorting: false,
+			cell: (c) => (c.getValue() as string) || 'The whole bucket'
+		},
+		{
+			id: 'state',
+			header: 'State',
+			enableSorting: false,
+			cell: (c) => {
+				const b = c.row.original as BucketSource;
+				// A failed scan is not a state you can filter on, but it is the one a
+				// customer needs to see: syncing and failing looks identical otherwise.
+				const label = !b.active ? 'Paused' : b.last_error ? 'Scan failed' : 'Syncing';
+				return renderComponent(Badge, {
+					label,
+					tone: !b.active ? 'idle' : b.last_error ? 'bad' : 'good'
+				});
+			}
+		},
+		{
+			accessorKey: 'imported_objects',
+			header: 'Taken in',
+			enableSorting: false,
+			cell: (c) => count(c.getValue() as number)
+		},
+		{
+			accessorKey: 'last_synced_at',
+			header: 'Last checked',
+			enableSorting: false,
+			cell: (c) => when(c.getValue() as string | null)
+		},
+		{
+			id: 'actions',
+			header: '',
+			enableSorting: false,
+			cell: (c) => {
+				const b = c.row.original as BucketSource;
+				return renderComponent(RowMenu, {
+					label: `Actions for ${b.bucket}`,
+					actions: [
+						{
+							label: b.active ? 'Pause' : 'Resume',
+							icon: b.active ? PauseIcon : PlayIcon,
+							onclick: () => toggleActive(b)
+						},
+						{
+							label: 'Disconnect',
+							icon: Unlink01Icon,
+							danger: true,
+							onclick: () => {
+								removing = b;
+								removeOpen = true;
+							}
+						}
+					]
+				});
+			}
+		}
+	];
 </script>
 
 <Seo title="Connected buckets — Alchemist" description="Point us at a bucket and we take what lands in it." />
@@ -248,36 +379,47 @@
 	{/snippet}
 </Dialog>
 
-{#if loading}
-	<div class="mt-6 grid gap-2">
-		{#each [0, 1] as i (i)}<div class="sk h-16"></div>{/each}
-	</div>
-{:else if sources.length === 0}
-	<div class="card mt-6 py-8 text-center">
-		<p class="title">No bucket connected</p>
-		<p class="sub mx-auto mt-2 max-w-md">
-			Use <b>Add new</b> if your videos already live in S3-compatible storage
-			of your own. Otherwise there is nothing to do here — send videos through
-			<a href="/app/upload/" class="link">Upload</a> or the API instead.
-		</p>
-	</div>
-{:else}
-	<ul class="mt-6 divide-y divide-sunk border-y border-sunk">
-		{#each sources as s (s.id)}
-			<li class="py-4">
-				<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-					<div class="min-w-48 flex-1">
-						<p class="font-mono text-sm">{s.bucket}{s.prefix ? '/' + s.prefix : ''}</p>
-						<p class="mono mt-0.5">
-							{count(s.imported_objects)} taken in · Last checked {when(s.last_synced_at)}
-						</p>
-					</div>
-					<span class="chip" class:chip-on={s.active}>{s.active ? 'Syncing' : 'Paused'}</span>
-				</div>
-				{#if s.last_error}
-					<p class="mt-2 text-sm text-red">Last scan did not finish. We will try again shortly.</p>
+<div class="mt-6">
+	<DataTable
+		{columns}
+		{rows}
+		{total}
+		{loading}
+		bind:page
+		bind:size
+		bind:sorting
+		bind:q
+		searchLabel="Search by bucket or prefix"
+	>
+		{#snippet empty()}
+			<p class="title">No bucket connected</p>
+			<p class="sub mx-auto mt-2 max-w-md">
+				{#if q}
+					No bucket matches that. Clear the search to see them all.
+				{:else}
+					Use <b>Add new</b> if your videos already live in S3-compatible storage of your
+					own. Otherwise there is nothing to do here — send videos through
+					<a href="/app/upload/" class="link">Upload</a> or the API instead.
 				{/if}
-			</li>
-		{/each}
-	</ul>
-{/if}
+			</p>
+		{/snippet}
+	</DataTable>
+</div>
+
+<Confirm
+	bind:open={removeOpen}
+	title="Disconnect this bucket?"
+	confirm="Yes, disconnect it"
+	destructive
+	busy={busyRow}
+	onconfirm={remove}
+>
+	<p class="font-mono text-sm">
+		{removing ? removing.bucket + (removing.prefix ? '/' + removing.prefix : '') : ''}
+	</p>
+	<p class="sub mt-2">
+		We stop watching it and forget which files we have already taken in. Videos we made from
+		it stay in your library and keep playing. Connecting the same bucket again takes
+		everything in it in a second time.
+	</p>
+</Confirm>
