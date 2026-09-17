@@ -157,7 +157,7 @@
 		<div class="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs text-dim">
 			<span>{note}</span>
 			{#if !blocked}
-				<span>{level ? `Playing ${level} · ` : ''}link expires in four hours</span>
+				<span>{level ? `Playing ${level} · ` : ''}link expires on its own</span>
 			{/if}
 		</div>
 	{/if}

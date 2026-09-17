@@ -111,6 +111,8 @@ POST /v1/assets/{id}/retry     -> try a failed video again; no re-upload, the so
                                   is still there. Only from `failed`.
 GET  /v1/assets/{id}?origin=  -> lock the links to one of your allowed sites; the
                                   lock is inside the signature and checked at the edge
+GET  /v1/assets/{id}?ttl=      -> shorten this link's life; the account's setting is
+                                  the ceiling, and it must outlast the longest viewing
 GET  /v1/assets/{id}/captions  -> the subtitle tracks on a video
 PUT  /v1/assets/{id}/captions/{lang}
                                -> add or replace one; the body is the WebVTT file

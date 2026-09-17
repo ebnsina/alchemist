@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -347,5 +348,36 @@ func TestPatchWebhookLeavesOmittedFieldsAlone(t *testing.T) {
 	if got := patch(`{"url":"https://example.test/other"}`); got["active"] != false ||
 		got["url"] != "https://example.test/other" {
 		t.Errorf("changing the URL resumed a paused endpoint: %v", got)
+	}
+}
+
+// The ceiling is the account's setting and ?ttl= may only shorten it. A caller able to
+// lengthen it would be setting the policy rather than working inside it -- and nothing
+// at the edge re-checks what went into a token.
+func TestPlaybackTTLBounds(t *testing.T) {
+	const max = 2 * time.Hour
+
+	for _, c := range []struct {
+		asked string
+		want  time.Duration
+		ok    bool
+	}{
+		{"", max, true},                 // no ask: the account's own setting
+		{"900", 15 * time.Minute, true}, // shorter is fine
+		{"7200", max, true},             // exactly the ceiling
+		{"7201", 0, false},              // one second over it
+		{"30", 0, false},                // under the floor a player cannot retry in
+		{"0", 0, false},
+		{"-60", 0, false},
+		{"soon", 0, false},
+	} {
+		got, err := resolveTTL(max, c.asked)
+		if (err == nil) != c.ok {
+			t.Errorf("ttl=%q: err=%v, want ok=%v", c.asked, err, c.ok)
+			continue
+		}
+		if c.ok && got != c.want {
+			t.Errorf("ttl=%q: got %v, want %v", c.asked, got, c.want)
+		}
 	}
 }

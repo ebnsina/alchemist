@@ -592,8 +592,8 @@
 		<section class="mt-8">
 			<h2 class="text-lg font-semibold tracking-tight">The links</h2>
 			<p class="mt-1 text-sm text-dim">
-				Signed, good for four hours. Ask for the asset again when you need fresh ones rather
-				than building them yourself.
+				Signed, and they expire — how soon is yours to set under Settings → Playback. Ask
+				for the video again when you need fresh ones rather than building them yourself.
 			</p>
 			<div class="card mt-4 divide-y divide-sunk">
 				{#each Object.entries(asset.playback).filter((e): e is [string, string] => e[0] in LINKS) as [kind, url] (kind)}

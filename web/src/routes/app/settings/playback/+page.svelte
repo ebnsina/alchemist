@@ -16,6 +16,7 @@
 	let devices = $state(0);
 	let origins = $state<string[]>([]);
 	let newOrigin = $state('');
+	let ttl = $state(14400);
 
 	async function load() {
 		error = '';
@@ -24,6 +25,7 @@
 			encrypt = settings.encrypt_playback;
 			devices = settings.max_viewer_devices;
 			origins = [...settings.playback_origins];
+			ttl = settings.playback_ttl_seconds;
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong.';
 		} finally {
@@ -39,6 +41,7 @@
 		!!settings &&
 			(encrypt !== settings.encrypt_playback ||
 				devices !== settings.max_viewer_devices ||
+				ttl !== settings.playback_ttl_seconds ||
 				origins.join('\n') !== settings.playback_origins.join('\n'))
 	);
 
@@ -61,13 +64,16 @@
 			devices = Math.min(20, Math.max(0, Math.round(Number(devices) || 0)));
 			// Both fields, always: the API writes both, so sending one would set the
 			// other to its zero value and quietly remove the device cap.
+			ttl = Math.min(86400, Math.max(60, Math.round(Number(ttl) || 14400)));
 			settings = await setDelivery({
 				encrypt_playback: encrypt,
 				playback_origins: origins,
+				playback_ttl_seconds: ttl,
 				max_viewer_devices: devices
 			});
 			encrypt = settings.encrypt_playback;
 			devices = settings.max_viewer_devices;
+			ttl = settings.playback_ttl_seconds;
 			// Echoed back normalised — a trailing slash or capitals are tidied by the
 			// API, and the list on screen has to be the list that is enforced.
 			origins = [...settings.playback_origins];
@@ -108,7 +114,7 @@
 			<Check
 				bind:checked={encrypt}
 				label="Scramble stored video"
-				hint="On for new accounts."
+				hint="Off for new accounts."
 				disabled={readOnly()}
 			/>
 		</div>
@@ -193,6 +199,44 @@
 				A web page tells us which site it is; a phone app or a TV app does not, so a link
 				locked to a site will not play in one. If your videos are watched in an app of
 				your own, leave this list empty — expiring links still protect them.
+			</p>
+		</div>
+	</div>
+
+	<div class="card mt-4">
+		<p class="title">How long a playback link lasts</p>
+		<p class="sub mt-2 max-w-xl">
+			A link you hand out stops working after this. Your app asks for the video again
+			whenever somebody presses play, so this is not how long a video lives — only how
+			long one link to it keeps working.
+		</p>
+
+		<label class="mt-5 block max-w-40">
+			<span class="label">Minutes</span>
+			<input
+				value={Math.round(ttl / 60)}
+				oninput={(e) => (ttl = Math.round(Number(e.currentTarget.value) * 60))}
+				class="field mt-1.5"
+				type="number"
+				min="1"
+				max="1440"
+				disabled={readOnly()}
+			/>
+		</label>
+
+		<!-- The floor, where it is chosen. Set this to fifteen minutes and a
+		     forty-minute lecture stops playing two thirds of the way through. -->
+		<div class="mt-5 rounded-xl border border-sunk p-4">
+			<p class="text-sm font-medium">Set this from your longest video, not your shortest</p>
+			<p class="sub mt-2">
+				The same link carries the whole video, so if it runs out while somebody is
+				watching, the video stops there. A four hour link covers a three hour lecture; a
+				fifteen minute one does not.
+			</p>
+			<p class="sub mt-2">
+				If what you are worried about is a link being passed around rather than kept too
+				long, the list of allowed sites above is the setting for that — it does not care
+				how long the link lasts.
 			</p>
 		</div>
 	</div>

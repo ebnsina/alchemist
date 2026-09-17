@@ -264,7 +264,7 @@ counted. This, not encryption, is what answers one login shared with a class.
 
 ### Encryption
 
-**On by default for new accounts.** Media is `cenc` and the key endpoint returns an EME
+**Off by default.** Turned on, media is `cenc` and the key endpoint returns an EME
 Clear Key licence:
 
 ```json

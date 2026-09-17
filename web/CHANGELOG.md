@@ -3,6 +3,18 @@
 ## Unreleased
 
 ### Added
+- **How long a playback link lasts is a setting now**, not a hardcoded four hours, with
+  the warning that matters said where the number is chosen: pick it from your longest
+  video, because the same link carries the whole thing and a link that runs out mid-
+  lecture stops the lecture. If the worry is a link being passed around rather than kept
+  too long, the allowed-sites list is the control for that instead.
+
+### Changed
+- **Scrambling stored video is off for new accounts.** It was on, and it refuses every
+  iPhone, iPad and Safari viewer — for a key that is handed to the browser in the clear
+  anyway, so it never stopped anyone who was allowed to watch from keeping a copy.
+  Accounts that already have it on keep it, and videos already made are untouched.
+- The player and the video page no longer claim links last four hours.
 - **Playback settings can name the sites your videos are allowed to play on.** A link
   copied out of your page then does nothing anywhere else, which is the control every
   other video platform ships and this one did not — playback answered

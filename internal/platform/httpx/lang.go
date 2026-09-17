@@ -62,6 +62,7 @@ var bangla = map[string]string{
 	"invalid_viewer":          "ভিউয়ার আইডি বা ওয়াটারমার্কে কেবল অক্ষর, সংখ্যা এবং - . _ ~ @ ব্যবহার করুন।",
 	"invalid_origin":          "সাইটের ঠিকানা https://app.example.com এর মতো হতে হবে।",
 	"origin_not_allowed":      "এই অ্যাকাউন্টে এই সাইটে ভিডিও চালানোর অনুমতি নেই।",
+	"invalid_ttl":             "লিংকের মেয়াদ ৬০ সেকেন্ড থেকে ২৪ ঘণ্টার মধ্যে হতে হবে।",
 	"browser_not_supported":   "এই ভিডিওটি চালাতে Chrome, Firefox বা Edge ব্যবহার করুন। Safari এখনো সমর্থিত নয়।",
 	"range_not_satisfiable":   "ফাইলের এই অংশটি নেই।",
 	"storage_unavailable":     "ভিডিওটি সাময়িকভাবে পাওয়া যাচ্ছে না। একটু পরে চেষ্টা করুন।",

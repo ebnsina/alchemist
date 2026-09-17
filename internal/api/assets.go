@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -303,6 +304,12 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ttl, ttlErr := s.playbackTTL(r.Context(), tenantID, r.URL.Query().Get("ttl"))
+	if ttlErr != nil {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_ttl", ttlErr.Error())
+		return
+	}
+
 	var resp assetResponse
 	var encrypted bool
 	resp.Renditions = []rendition{}
@@ -354,7 +361,7 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	// it has ended but the recording has not been converted yet.
 	switch resp.State {
 	case "ready", "partially_ready", "live", "live_ended":
-		exp := time.Now().Add(4 * time.Hour).Unix()
+		exp := time.Now().Add(ttl).Unix()
 		base := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
 		kid, sig := s.delivery.SignPlayback(base, exp, viewer, label, lock)
 		q := fmt.Sprintf("exp=%d&kid=%s&sig=%s", exp, kid, sig)
@@ -580,4 +587,56 @@ func (s *Server) playbackLock(ctx context.Context, tenantID, asked string) (stri
 		}
 	}
 	return "", fmt.Errorf("This account does not allow playback on %s.", want)
+}
+
+// Playback link lifetime. The floor is a minute because anything shorter cannot
+// survive a player's own retry after a dropped segment; the ceiling is a day because
+// past that the expiry has stopped being a control.
+const (
+	MinPlaybackTTL     = time.Minute
+	MaxPlaybackTTL     = 24 * time.Hour
+	DefaultPlaybackTTL = 4 * time.Hour
+)
+
+// playbackTTL resolves how long this link should last.
+//
+// The account's setting is both the default and the ceiling: ?ttl= may only shorten it.
+// A caller that could lengthen it would be setting the policy rather than working
+// inside it, and the token is trusted by the edge precisely because nothing at the
+// edge re-checks what went into it.
+//
+// The floor matters more than it looks. Every segment request carries the same
+// signature, so a link that expires mid-lecture stops playback mid-lecture -- the TTL
+// has to outlast the longest single viewing, not the shortest.
+func (s *Server) playbackTTL(ctx context.Context, tenantID, asked string) (time.Duration, error) {
+	max := DefaultPlaybackTTL
+	var secs int
+	if err := s.db.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `select playback_ttl_seconds from tenants`).Scan(&secs)
+	}); err == nil && secs > 0 {
+		max = time.Duration(secs) * time.Second
+	}
+
+	return resolveTTL(max, asked)
+}
+
+// resolveTTL is the rule on its own, so the bounds can be tested without a database.
+func resolveTTL(max time.Duration, asked string) (time.Duration, error) {
+	if asked == "" {
+		return max, nil
+	}
+	n, err := strconv.Atoi(asked)
+	if err != nil || n <= 0 {
+		return 0, fmt.Errorf("ttl is a number of seconds.")
+	}
+	want := time.Duration(n) * time.Second
+	if want < MinPlaybackTTL {
+		return 0, fmt.Errorf("A link has to last at least %d seconds, or a player cannot "+
+			"retry a dropped segment.", int(MinPlaybackTTL.Seconds()))
+	}
+	if want > max {
+		return 0, fmt.Errorf("This account mints links for up to %d seconds. "+
+			"Raise it in playback settings first.", int(max.Seconds()))
+	}
+	return want, nil
 }
