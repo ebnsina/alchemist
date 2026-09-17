@@ -269,6 +269,25 @@ These were established by measurement and are expensive to rediscover.
 - **One realtime rung, but not the cheapest one.** A core goes on encoding in realtime
   at all, not on the pixel count, so 144p and 360p cost nearly the same and 144p is
   unreadable for the slides and whiteboards this is used for. `LiveMaxHeight` caps it.
+- **A recording is remuxed, not re-encoded.** Live writes H.264 on the `GOPSeconds`
+  grid at `DefaultFrameRate`, which is exactly what a mezzanine has to be, so
+  re-encoding it to CRF 17 built a copy ~1.9x the size of its own source with a
+  generation of loss and then made the whole ladder from that. Measured: 0.04s against
+  0.61s. `Conformant` checks the file rather than trusting the caller, and its
+  frame-rate tolerance is 0.01 rather than a round — 29.97 rounding to 30 and being
+  copied leaves a chunk plan drifting off the keyframes, which surfaces as a stitch
+  failure and not as an error where it was caused.
+- **One piece of code composes `master.m3u8`: `republish`.** The packager writes its own
+  at package time and knows nothing about subtitles or the audio-only variant, so
+  ingest replaces it. Two writers is how a caption track sat in the database, missing
+  from the manifest, with nothing to say so.
+- **Audio-only is a variant, not an `EXT-X-MEDIA` rendition.** It points at the same
+  shared audio object every video variant already references, so it costs a playlist
+  line and no storage — roughly 40 MB an hour against 300 at 144p, which on a market
+  that pays by the gigabyte is the difference between finishing a lecture and not.
+- **Encoder threads are deliberately unbounded.** Measured on 10 cores: unbounded 6.3s,
+  `-threads 2` 7.2s, `-threads 1` 9.9s. Capping them idles cores on the tail of an
+  encode. Do not "fix" the apparent oversubscription.
 - **Live cannot call `media.Package()`.** `Package()` shells out once with
   `CombinedOutput()` over complete files and writes one byte-range CMAF file per
   rendition. A live packager never exits, cannot read a file still being written, and

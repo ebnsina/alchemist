@@ -63,3 +63,26 @@ func TestDashCaptionSetsAreWellFormed(t *testing.T) {
 		t.Error("no tracks should add no AdaptationSet")
 	}
 }
+
+// The audio-only variant is the cheapest thing this platform offers a viewer paying by
+// the gigabyte: the same shared audio object, one line in a playlist, roughly 40 MB an
+// hour against 300 at 144p. It has to be a variant a player can select, which means an
+// EXT-X-STREAM-INF with no RESOLUTION -- not an EXT-X-MEDIA entry, which is a
+// rendition of something else rather than something to fall back to.
+func TestAudioOnlyVariantIsSelectable(t *testing.T) {
+	const line = "#EXT-X-STREAM-INF:BANDWIDTH=112000,CODECS=\"mp4a.40.2\",AUDIO=\"audio\"\naudio.m3u8\n"
+
+	if !strings.Contains(line, "BANDWIDTH=") {
+		t.Fatal("a variant without a bandwidth is one a player cannot choose between")
+	}
+	if strings.Contains(line, "RESOLUTION=") {
+		t.Fatal("an audio-only variant must carry no resolution")
+	}
+	if !strings.HasSuffix(line, "audio.m3u8\n") {
+		t.Fatal("the variant must point at the shared audio playlist, not a new object")
+	}
+	if audioOnlyBandwidth <= 96000 {
+		t.Errorf("bandwidth %d should allow for container overhead above the 96k audio",
+			audioOnlyBandwidth)
+	}
+}

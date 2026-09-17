@@ -40,6 +40,10 @@ type Options struct {
 	SceneAware bool
 	// Encrypt, when set, protects the output with the given content key.
 	Encrypt *Encryption
+	// SourceConformant says the caller believes this source was produced to the
+	// mezzanine's own rules -- which a broadcast recording is, by construction. It is
+	// a hint and not a promise: Conformant checks the source before acting on it.
+	SourceConformant bool
 	// VMAFSample scores this fraction of renditions against the mezzanine. Sampling
 	// rather than scoring everything: the point is catching a regression, not a
 	// per-asset report, and VMAF costs more than the encode it is checking.
@@ -79,7 +83,13 @@ func Transcode(ctx context.Context, src, workDir string, rungs []Rung, opts Opti
 
 	mezz := filepath.Join(workDir, "mezzanine.mp4")
 	if !done(mezz) {
-		if err := BuildMezzanine(ctx, src, mezz+tmpSuffix, fps); err != nil {
+		build := func() error { return BuildMezzanine(ctx, src, mezz+tmpSuffix, fps) }
+		// A recording is already H.264 on the grid at a constant rate, so re-encoding
+		// it only makes a bigger, worse copy to build the ladder from.
+		if opts.SourceConformant && Conformant(probe, fps) {
+			build = func() error { return RemuxMezzanine(ctx, src, mezz+tmpSuffix) }
+		}
+		if err := build(); err != nil {
 			return nil, err
 		}
 		if err := os.Rename(mezz+tmpSuffix, mezz); err != nil {

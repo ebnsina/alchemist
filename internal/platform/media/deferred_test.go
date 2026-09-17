@@ -75,3 +75,27 @@ func TestParamsHashSeparatesFrameRates(t *testing.T) {
 		t.Fatal("24fps and 30fps encodes of the same rung hash the same")
 	}
 }
+
+// A recording is already what a mezzanine has to be. Re-encoding it made a copy
+// roughly twice the size with a generation of loss, and the ladder was then built from
+// that -- so the check that decides has to be right in both directions.
+func TestConformantDecidesRemux(t *testing.T) {
+	grid := &Probe{VideoCodec: "h264", FrameRate: 30, Width: 640, Height: 360}
+	if !Conformant(grid, 30) {
+		t.Error("a recording on the grid should be remuxed")
+	}
+	// 29.97 is not 30. Copying it leaves a chunk plan that drifts off the keyframes,
+	// which surfaces as a stitch failure rather than as an error here.
+	if Conformant(&Probe{VideoCodec: "h264", FrameRate: 29.97, Width: 640, Height: 360}, 30) {
+		t.Error("a near-miss frame rate must be re-encoded, not copied")
+	}
+	if Conformant(&Probe{VideoCodec: "hevc", FrameRate: 30, Width: 640, Height: 360}, 30) {
+		t.Error("another codec must be re-encoded")
+	}
+	if Conformant(&Probe{VideoCodec: "h264", FrameRate: 30}, 30) {
+		t.Error("a probe with no dimensions must not be trusted")
+	}
+	if Conformant(nil, 30) {
+		t.Error("no probe at all must not be trusted")
+	}
+}
