@@ -24,6 +24,7 @@ import (
 	"github.com/ebnsina/alchemist/internal/platform/fetch"
 	"github.com/ebnsina/alchemist/internal/platform/keys"
 	"github.com/ebnsina/alchemist/internal/platform/metrics"
+	"github.com/ebnsina/alchemist/internal/platform/payments"
 	"github.com/ebnsina/alchemist/internal/platform/signing"
 	"github.com/ebnsina/alchemist/internal/platform/storage"
 )
@@ -97,6 +98,24 @@ func main() {
 	river.AddWorker(workers, reconciler)
 	river.AddWorker(workers, &pipeline.JITWorker{TranscodeWorker: transcoder})
 	river.AddWorker(workers, &pipeline.RepublishWorker{TranscodeWorker: transcoder})
+
+	// Payment gateways, each mounted only if it has keys. An unconfigured gateway is
+	// absent rather than failing: a deployment with no Stripe account should not have
+	// every USD invoice marked failed every night.
+	gateways := map[string]payments.Gateway{}
+	if cfg.StripeSecretKey != "" {
+		gateways["stripe"] = payments.NewStripe(cfg.StripeSecretKey, cfg.StripeWebhookSecret)
+	}
+	if cfg.SSLCommerzStoreID != "" {
+		gateways["sslcommerz"] = payments.NewSSLCommerz(
+			cfg.SSLCommerzStoreID, cfg.SSLCommerzStorePass, cfg.SSLCommerzSandbox)
+		if cfg.SSLCommerzSandbox {
+			log.Warn("SSLCommerz is in sandbox: no real money moves")
+		}
+	}
+	river.AddWorker(workers, &pipeline.InvoiceWorker{DB: database})
+	river.AddWorker(workers, &pipeline.CollectWorker{
+		DB: database, Gateways: gateways, BillingURL: cfg.BillingURL})
 	river.AddWorker(workers, &pipeline.SweepWorker{DB: database, Store: store})
 	river.AddWorker(workers, &pipeline.ReclaimWorker{Store: store})
 	river.AddWorker(workers, &pipeline.StorageWorker{DB: database})
@@ -168,7 +187,8 @@ func main() {
 				SessionDomain: cfg.SessionDomain,
 				SessionSecure: cfg.SessionSecure,
 			},
-			liveModule, cfg.PlayerURL).Routes(),
+			liveModule, cfg.PlayerURL,
+			api.Billing{Gateways: gateways, URL: cfg.BillingURL}).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

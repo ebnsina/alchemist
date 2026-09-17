@@ -32,6 +32,10 @@ func (s *Server) checkIngestQuota(ctx context.Context, tenantID string) (string,
 	var l limits
 	var inFlight int
 	var usedHours float64
+	// Refusing new work, never playback: taking a customer's viewers offline over an
+	// unpaid invoice punishes people who are not party to it, and it is the one part
+	// of a suspension that paying cannot undo.
+	var suspended bool
 
 	err := s.db.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
 		l = limits{
@@ -46,6 +50,10 @@ func (s *Server) checkIngestQuota(ctx context.Context, tenantID string) (string,
 			return err
 		}
 
+		if err := tx.QueryRow(ctx,
+			`select billing_status = 'suspended' from tenants`).Scan(&suspended); err != nil {
+			return err
+		}
 		if err := tx.QueryRow(ctx,
 			`select count(*) from assets
 			  where state in ('uploaded','probing','mezzanine','analyzing',
@@ -65,6 +73,11 @@ func (s *Server) checkIngestQuota(ctx context.Context, tenantID string) (string,
 		return "", err
 	}
 
+	if suspended {
+		return "This account is paused because an invoice has not been paid. Settle it " +
+				"under Billing and uploads start again straight away. Your videos keep playing.",
+			errQuotaExceeded
+	}
 	if inFlight >= l.MaxConcurrentJobs {
 		return fmt.Sprintf(
 			"You have %d videos processing, which is your limit. Try again once they finish.",

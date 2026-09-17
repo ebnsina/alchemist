@@ -22,6 +22,7 @@ import (
 	"github.com/ebnsina/alchemist/internal/platform/httpx"
 	"github.com/ebnsina/alchemist/internal/platform/keys"
 	"github.com/ebnsina/alchemist/internal/platform/metrics"
+	"github.com/ebnsina/alchemist/internal/platform/payments"
 	"github.com/ebnsina/alchemist/internal/platform/storage"
 )
 
@@ -39,6 +40,18 @@ type Server struct {
 	authLimiter   *authLimiter
 	playerURL     string
 	live          *live.Module
+	// Gateways by name. An empty map is a deployment with no payment keys, which
+	// leaves the paying half of billing unmounted rather than half-working.
+	gateways   map[string]payments.Gateway
+	billingURL string
+}
+
+// Billing carries the payment gateways and where a customer goes to settle a bill.
+// Zero gateways leaves invoices visible and unpayable online, which is the correct
+// state for a deployment that has not been given keys.
+type Billing struct {
+	Gateways map[string]payments.Gateway
+	URL      string
 }
 
 // Accounts carries what the browser-facing signup and login surface needs. Zero
@@ -49,11 +62,12 @@ type Accounts struct {
 	SessionSecure bool
 }
 
-func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry, acc Accounts, lv *live.Module, playerURL string) *Server {
+func New(database *db.DB, store *storage.Store, rc *river.Client[pgx.Tx], d *delivery.Module, kw *keys.Wrapper, adminKey string, m *metrics.Registry, acc Accounts, lv *live.Module, playerURL string, bill Billing) *Server {
 	return &Server{db: database, store: store, river: rc, delivery: d, keys: kw,
 		adminKey: adminKey, metrics: m, live: lv, playerURL: playerURL,
 		webOrigins: acc.WebOrigins, sessionDomain: acc.SessionDomain,
 		sessionSecure: acc.SessionSecure,
+		gateways:      bill.Gateways, billingURL: bill.URL,
 		// Ten attempts a minute from one address: generous for a person, useless for
 		// a dictionary.
 		authLimiter: newAuthLimiter(10, time.Minute)}
@@ -147,6 +161,14 @@ func (s *Server) Routes() http.Handler {
 	}
 
 	// Public: a viewer with no account and no key still has to see the logo.
+	// Gateways hold no API key, so this sits outside authentication and the signature
+	// is the only thing standing between a stranger and a paid invoice. Verified
+	// inside the handler, before anything is read.
+	if len(s.gateways) > 0 {
+		r.Post("/webhooks/{gateway}", s.gatewayWebhook)
+		r.Post("/webhooks/{gateway}/ipn", s.gatewayWebhook)
+	}
+
 	r.Get("/brand/{tenant}/logo", s.serveBrandLogo)
 
 	// The embed. Authorised by the playback signature, because the caller is a
@@ -180,6 +202,9 @@ func (s *Server) Routes() http.Handler {
 		r.Patch("/webhooks/{id}", s.patchWebhook)
 		r.Delete("/webhooks/{id}", s.deleteWebhook)
 		r.Get("/usage", s.getUsage)
+		r.Get("/billing", s.getBilling)
+		r.Get("/invoices", s.listInvoices)
+		r.Post("/invoices/{id}/pay", s.payInvoice)
 		r.Post("/bucket-sources", s.createBucketSource)
 		r.Get("/bucket-sources", s.listBucketSources)
 		r.Get("/bucket-sources/{id}", s.getBucketSource)

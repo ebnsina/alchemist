@@ -20,6 +20,7 @@
 		BuildingIcon,
 		ConnectIcon,
 		ChartHistogramIcon,
+		Money01Icon,
 		LiveStreaming01Icon,
 		Scissor01Icon,
 		SlidersHorizontalIcon,
@@ -97,7 +98,8 @@
 			items: [
 				{ href: '/app/team/', label: 'Team', icon: UserGroupIcon },
 				{ href: '/app/settings/', label: 'Settings', icon: SlidersHorizontalIcon },
-				{ href: '/app/usage/', label: 'Usage', icon: ChartHistogramIcon }
+				{ href: '/app/usage/', label: 'Usage', icon: ChartHistogramIcon },
+				{ href: '/app/billing/', label: 'Billing', icon: Money01Icon }
 			]
 		}
 	];
