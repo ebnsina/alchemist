@@ -90,6 +90,16 @@
 			body: 'Every play goes through a link that expires when you say it does. Forwarded, posted, pasted into a group — it dies on the clock you set, not on trust.'
 		},
 		{
+			icon: Link01Icon,
+			title: 'And it only works on your own site',
+			body: 'Name the sites your videos are embedded on and a link lifted out of your page does nothing anywhere else. Somebody can copy the address and still not build a site around your course with it.'
+		},
+		{
+			icon: DatabaseLockedIcon,
+			title: 'A stolen disk is worth nothing',
+			body: 'Everything we hold is written to disk encrypted. A drive carried out of the building, or a copy of a backup, decodes to nothing at all.'
+		},
+		{
 			icon: BrickWallShieldIcon,
 			title: 'Nothing is served without the check',
 			body: 'Not even a video already sitting on the machine nearest your viewer. A request that cannot prove it is allowed gets nothing, however many times that video has been watched.'
@@ -239,7 +249,7 @@
 		},
 		{
 			q: 'Can someone share a link and let the whole world watch?',
-			a: 'Not for long. Links stop working after a time you set, so a forwarded one is dead by the time it spreads. A saved copy of the link will not play either.'
+			a: 'No. Two things stop it. Links expire after a time you set, so a forwarded one is dead by the time it spreads. And you can name the sites your videos are allowed to play on, after which a link pasted anywhere else does nothing at all — not on a blog, not in someone else\u2019s app, not on a copy of your page.'
 		},
 		{
 			q: 'What if someone just downloads the video file itself?',
