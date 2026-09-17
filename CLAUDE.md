@@ -189,6 +189,16 @@ These were established by measurement and are expensive to rediscover.
   cannot play it at all (FairPlay is WebKit's only key system) and get
   `browser_not_supported` rather than a black screen. Migration 033 changed the
   default only: existing tenants and every published asset keep what they had.
+- **A per-tenant rule the edge must enforce has to travel inside the token.** njs
+  verifies in the worker with no database, and a warm cache slice never reaches the
+  origin at all, so anything looked up per tenant stops applying the moment the cache
+  fills. `org` is signed for the same reason `vid` and `wm` are. The corollary: the
+  API resolves the origin against `tenants.playback_origins` **before** signing,
+  because nothing downstream re-checks it.
+- **An origin-locked link cannot play in a native app.** The lock is read from `Origin`
+  or `Referer` and an app sends neither; accepting a request with neither would be the
+  whole bypass. Empty `playback_origins` is therefore the correct setting for a tenant
+  with its own app, not an oversight.
 - **Sharing is answered by binding, not by encryption.** `?viewer=` mints a link whose
   signature covers the viewer id and the watermark label, so neither can be edited out,
   and `tenant_limits.max_viewer_devices` caps concurrent devices per viewer at the

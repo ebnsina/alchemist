@@ -109,6 +109,8 @@ GET  /v1/assets/{id}/chunks    -> the chunk map, per rendition
 GET  /v1/assets/{id}/activity  -> pipeline steps, states and timings (no error text)
 POST /v1/assets/{id}/retry     -> try a failed video again; no re-upload, the source
                                   is still there. Only from `failed`.
+GET  /v1/assets/{id}?origin=  -> lock the links to one of your allowed sites; the
+                                  lock is inside the signature and checked at the edge
 GET  /v1/assets/{id}/captions  -> the subtitle tracks on a video
 PUT  /v1/assets/{id}/captions/{lang}
                                -> add or replace one; the body is the WebVTT file

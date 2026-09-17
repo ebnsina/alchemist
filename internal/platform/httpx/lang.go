@@ -60,6 +60,8 @@ var bangla = map[string]string{
 	"playback_not_authorized": "এই লিংকের মেয়াদ শেষ হয়ে গেছে বা এটি বৈধ নয়।",
 	"viewer_limit_reached":    "এই অ্যাকাউন্টটি একসাথে অনেকগুলো ডিভাইসে চলছে। একটি বন্ধ করে আবার চেষ্টা করুন।",
 	"invalid_viewer":          "ভিউয়ার আইডি বা ওয়াটারমার্কে কেবল অক্ষর, সংখ্যা এবং - . _ ~ @ ব্যবহার করুন।",
+	"invalid_origin":          "সাইটের ঠিকানা https://app.example.com এর মতো হতে হবে।",
+	"origin_not_allowed":      "এই অ্যাকাউন্টে এই সাইটে ভিডিও চালানোর অনুমতি নেই।",
 	"browser_not_supported":   "এই ভিডিওটি চালাতে Chrome, Firefox বা Edge ব্যবহার করুন। Safari এখনো সমর্থিত নয়।",
 	"range_not_satisfiable":   "ফাইলের এই অংশটি নেই।",
 	"storage_unavailable":     "ভিডিওটি সাময়িকভাবে পাওয়া যাচ্ছে না। একটু পরে চেষ্টা করুন।",

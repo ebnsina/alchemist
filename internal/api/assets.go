@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/ebnsina/alchemist/internal/modules/delivery"
 	"github.com/ebnsina/alchemist/internal/pipeline"
 )
 
@@ -292,6 +293,16 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Where this link is allowed to play. Resolved against the tenant's list before
+	// it is signed, so a caller cannot lock a link to an origin the account never
+	// named -- the token is trusted by the edge precisely because nothing at the edge
+	// re-checks it.
+	lock, lockErr := s.playbackLock(r.Context(), tenantID, r.URL.Query().Get("origin"))
+	if lockErr != nil {
+		writeErrFor(w, r, http.StatusBadRequest, "origin_not_allowed", lockErr.Error())
+		return
+	}
+
 	var resp assetResponse
 	var encrypted bool
 	resp.Renditions = []rendition{}
@@ -345,13 +356,16 @@ func (s *Server) getAsset(w http.ResponseWriter, r *http.Request) {
 	case "ready", "partially_ready", "live", "live_ended":
 		exp := time.Now().Add(4 * time.Hour).Unix()
 		base := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
-		kid, sig := s.delivery.SignPlayback(base, exp, viewer, label)
+		kid, sig := s.delivery.SignPlayback(base, exp, viewer, label, lock)
 		q := fmt.Sprintf("exp=%d&kid=%s&sig=%s", exp, kid, sig)
 		if viewer != "" {
 			q += "&vid=" + viewer
 		}
 		if label != "" {
 			q += "&wm=" + label
+		}
+		if lock != "" {
+			q += "&org=" + url.QueryEscape(lock)
 		}
 		// A broadcast, or a recording still converting, is served out of the live
 		// prefix: one playlist, an init segment and the media segments. Nothing else
@@ -524,4 +538,46 @@ func reclaimFor(mediaPrefix string, sourceKey, mezzKey *string, ownsMedia bool) 
 		args.Prefixes = append(args.Prefixes, mediaPrefix+"/")
 	}
 	return args
+}
+
+// playbackLock decides which origin a link is minted for.
+//
+// An account with no list gets unlocked links, which is every account today and every
+// account whose viewers use a native app -- the lock is read from a browser's Origin or
+// Referer and an app sends neither.
+//
+// With one origin on the list it is used without being asked for, because a customer
+// who named exactly one place their videos play should not have to repeat it on every
+// call. With several, the caller names which of its own sites is serving this page: we
+// cannot know, and picking one for them would lock the link to the wrong site.
+func (s *Server) playbackLock(ctx context.Context, tenantID, asked string) (string, error) {
+	var allowed []string
+	if err := s.db.AsTenant(ctx, tenantID, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `select playback_origins from tenants`).Scan(&allowed)
+	}); err != nil {
+		return "", nil // a lock we cannot read must not break playback
+	}
+	if len(allowed) == 0 {
+		return "", nil
+	}
+
+	if asked == "" {
+		if len(allowed) == 1 {
+			return allowed[0], nil
+		}
+		return "", fmt.Errorf(
+			"This account allows playback on %d sites, so say which one this link is for "+
+				"with ?origin=", len(allowed))
+	}
+
+	want, ok := delivery.NormalizeOrigin(asked)
+	if !ok {
+		return "", fmt.Errorf("An origin looks like https://app.example.com.")
+	}
+	for _, a := range allowed {
+		if strings.EqualFold(a, want) {
+			return a, nil
+		}
+	}
+	return "", fmt.Errorf("This account does not allow playback on %s.", want)
 }

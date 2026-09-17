@@ -3,6 +3,13 @@
 ## Unreleased
 
 ### Added
+- **Playback settings can name the sites your videos are allowed to play on.** A link
+  copied out of your page then does nothing anywhere else, which is the control every
+  other video platform ships and this one did not — playback answered
+  `Access-Control-Allow-Origin: *` and checked no referer, so a leaked link worked
+  inside any page on any site for its whole four hours. The page says the limit out
+  loud: only browsers can be checked this way, so an account whose viewers use its own
+  app should leave the list empty.
 - **Settings has a Playback tab**, which is where the scrambling switch lives now. It
   had an API and no screen anywhere in the product, so a customer whose iPhone viewers
   got a refusal had no way to turn it off themselves — and it is on by default for new

@@ -162,18 +162,18 @@ func (m *Module) Routes(r chi.Router) {
 // SignPlayback mints the URLs the control plane hands to customers. It lives here
 // because the verification rules live here; keeping them together is what stops the
 // two drifting apart.
-func (m *Module) SignPlayback(prefix string, expUnix int64, viewer, label string) (kid, sig string) {
-	return m.signer.Sign(prefix, expUnix, viewer, label)
+func (m *Module) SignPlayback(prefix string, expUnix int64, viewer, label, origin string) (kid, sig string) {
+	return m.signer.Sign(prefix, expUnix, viewer, label, origin)
 }
 
 // VerifyPlayback exposes signature checking to other modules that authorize viewer
 // traffic, such as the QoE beacon endpoint, without duplicating the rules.
-func (m *Module) VerifyPlayback(prefix, kid, sig, exp, viewer, label string) bool {
-	return m.verify(prefix, kid, sig, exp, viewer, label)
+func (m *Module) VerifyPlayback(prefix, kid, sig, exp, viewer, label, origin string) bool {
+	return m.verify(prefix, kid, sig, exp, viewer, label, origin)
 }
 
-func (m *Module) verify(prefix, kid, sig, exp, viewer, label string) bool {
-	return m.signer.Verify(prefix, kid, sig, exp, viewer, label)
+func (m *Module) verify(prefix, kid, sig, exp, viewer, label, origin string) bool {
+	return m.signer.Verify(prefix, kid, sig, exp, viewer, label, origin)
 }
 
 // Object mirrors the storage response fields the origin passes through verbatim so

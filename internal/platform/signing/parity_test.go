@@ -46,7 +46,7 @@ func TestEdgeScriptMatchesGo(t *testing.T) {
 import mod from './playback_auth.js';
 const cases = JSON.parse(process.argv[2]);
 console.log(JSON.stringify(cases.map(c => ({
-  sig: mod.compute(c.secret, c.prefix, String(c.exp), c.viewer, c.label),
+  sig: mod.compute(c.secret, c.prefix, String(c.exp), c.viewer, c.label, c.origin),
   prefix: mod.assetPrefix(c.uri),
 }))));
 `)
@@ -58,24 +58,32 @@ console.log(JSON.stringify(cases.map(c => ({
 		URI    string `json:"uri"`
 		Viewer string `json:"viewer"`
 		Label  string `json:"label"`
+		Origin string `json:"origin"`
 	}
 	cases := []testCase{
 		{"first-generation-secret-at-least-32by", "/playback/t1/a1", 1789372237,
-			"/playback/t1/a1/master.m3u8", "", ""},
+			"/playback/t1/a1/master.m3u8", "", "", ""},
 		{"second-generation-secret-at-least-32b", "/playback/t1/a1", 1,
-			"/playback/t1/a1/720p.cmfv", "", ""},
+			"/playback/t1/a1/720p.cmfv", "", "", ""},
 		{"a-secret-with-unicode-বাংলা-in-it!!", "/playback/tenant/asset", 2000000000,
-			"/playback/tenant/asset/key", "", ""},
+			"/playback/tenant/asset/key", "", "", ""},
 		{"third-secret-that-is-also-32-bytes-ok", "/playback/x/y", 1735689600,
-			"/playback/x/y/sprite.vtt", "", ""},
+			"/playback/x/y/sprite.vtt", "", "", ""},
 		// Bound links: viewer only, label only, and both. njs reads these from
 		// r.args, Go from the query string, and they must hash the same bytes.
 		{"first-generation-secret-at-least-32by", "/playback/t1/a1", 1789372237,
-			"/playback/t1/a1/master.m3u8", "student-8842", ""},
+			"/playback/t1/a1/master.m3u8", "student-8842", "", ""},
 		{"second-generation-secret-at-least-32b", "/playback/t1/a1", 1789372237,
-			"/playback/t1/a1/master.m3u8", "", "01712345678"},
+			"/playback/t1/a1/master.m3u8", "", "01712345678", ""},
 		{"third-secret-that-is-also-32-bytes-ok", "/playback/t1/a1", 1789372237,
-			"/playback/t1/a1/720p.cmfv", "student-8842", "rafi-01712345678"},
+			"/playback/t1/a1/720p.cmfv", "student-8842", "rafi-01712345678", ""},
+		// Origin-locked. The lock is appended rather than folded in, so a link with an
+		// origin and no viewer must hash differently from the same link unlocked --
+		// and njs has to agree, or every locked link 403s at the edge only.
+		{"first-generation-secret-at-least-32by", "/playback/t1/a1", 1789372237,
+			"/playback/t1/a1/master.m3u8", "", "", "https://app.school.example"},
+		{"second-generation-secret-at-least-32b", "/playback/t1/a1", 1789372237,
+			"/playback/t1/a1/720p.cmfv", "student-8842", "rafi", "https://porua.example"},
 	}
 	payload, err := json.Marshal(cases)
 	if err != nil {
@@ -99,7 +107,7 @@ console.log(JSON.stringify(cases.map(c => ({
 	}
 
 	for i, c := range cases {
-		want := compute([]byte(c.Secret), c.Prefix, c.Exp, c.Viewer, c.Label)
+		want := compute([]byte(c.Secret), c.Prefix, c.Exp, c.Viewer, c.Label, c.Origin)
 		if got[i].Sig != want {
 			t.Errorf("case %d signature mismatch:\n  njs %s\n  go  %s", i, got[i].Sig, want)
 		}

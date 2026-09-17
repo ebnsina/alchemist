@@ -49,7 +49,7 @@ func (s *Server) serveEmbed(w http.ResponseWriter, r *http.Request) {
 	prefix := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
 	q := r.URL.Query()
 	if !s.delivery.VerifyPlayback(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"),
-		q.Get("vid"), q.Get("wm")) {
+		q.Get("vid"), q.Get("wm"), q.Get("org")) {
 		writeErrFor(w, r, http.StatusForbidden, "playback_not_authorized",
 			"This playback link has expired or is not valid.")
 		return

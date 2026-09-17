@@ -70,12 +70,15 @@ func (k *Keyring) KIDs() []string {
 // viewer is the customer's own opaque id for whoever is watching and label is the
 // text their player burns on screen. Both are inside the signature, so a viewer who
 // edits either one out of the URL is left holding a link that no longer verifies.
-func (k *Keyring) Sign(prefix string, exp int64, viewer, label string) (kid, sig string) {
-	return k.activeKID, compute(k.keys[k.activeKID], prefix, exp, viewer, label)
+// origin locks the token to one web origin, e.g. "https://app.school.example". It is
+// inside the signature for the same reason viewer is: the edge has no database, so the
+// only way it can enforce a per-tenant rule is for the rule to travel in the token.
+func (k *Keyring) Sign(prefix string, exp int64, viewer, label, origin string) (kid, sig string) {
+	return k.activeKID, compute(k.keys[k.activeKID], prefix, exp, viewer, label, origin)
 }
 
 // Verify checks a signature against the named key. An unknown key id fails closed.
-func (k *Keyring) Verify(prefix, kid, sig, expRaw, viewer, label string) bool {
+func (k *Keyring) Verify(prefix, kid, sig, expRaw, viewer, label, origin string) bool {
 	secret, ok := k.keys[kid]
 	if !ok {
 		return false
@@ -84,7 +87,7 @@ func (k *Keyring) Verify(prefix, kid, sig, expRaw, viewer, label string) bool {
 	if err != nil || time.Now().Unix() > exp {
 		return false
 	}
-	return hmac.Equal([]byte(sig), []byte(compute(secret, prefix, exp, viewer, label)))
+	return hmac.Equal([]byte(sig), []byte(compute(secret, prefix, exp, viewer, label, origin)))
 }
 
 // compute is the canonical string the edge must reproduce exactly.
@@ -92,11 +95,17 @@ func (k *Keyring) Verify(prefix, kid, sig, expRaw, viewer, label string) bool {
 // An unbound link signs the original two fields and nothing more, so links already
 // handed out keep verifying across the deploy that adds binding -- otherwise every
 // session in flight 403s for the length of a token TTL.
-func compute(secret []byte, prefix string, exp int64, viewer, label string) string {
+func compute(secret []byte, prefix string, exp int64, viewer, label, origin string) string {
 	mac := hmac.New(sha256.New, secret)
 	fmt.Fprintf(mac, "%s|%d", prefix, exp)
-	if viewer != "" || label != "" {
+	if viewer != "" || label != "" || origin != "" {
 		fmt.Fprintf(mac, "|%s|%s", viewer, label)
+	}
+	// Appended rather than folded in, so a bound-but-not-origin-locked link signs the
+	// same four fields it always did and keeps verifying across the deploy that adds
+	// this. Otherwise every session in flight 403s for the length of a token TTL.
+	if origin != "" {
+		fmt.Fprintf(mac, "|%s", origin)
 	}
 	return hex.EncodeToString(mac.Sum(nil))[:SignatureLength]
 }
