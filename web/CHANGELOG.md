@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Added
+- **The home page says what protects a paid video**, now that two of the three answers
+  are new: a link only works on the sites you name, and everything we hold is written to
+  disk encrypted. The sharing question in the FAQ used to answer "not for long" — it
+  answers "no" now, and says why.
 - **How long a playback link lasts is a setting now**, not a hardcoded four hours, with
   the warning that matters said where the number is chosen: pick it from your longest
   video, because the same link carries the whole thing and a link that runs out mid-
@@ -10,6 +14,9 @@
   too long, the allowed-sites list is the control for that instead.
 
 ### Changed
+- Playback settings no longer implies the scrambling toggle is what keeps stored video
+  safe. Storage is encrypted either way; the toggle is a second layer on the file
+  itself, and the page says what it costs before you reach for it.
 - **Scrambling stored video is off for new accounts.** It was on, and it refuses every
   iPhone, iPad and Safari viewer — for a key that is handed to the browser in the clear
   anyway, so it never stopped anyone who was allowed to watch from keeping a copy.

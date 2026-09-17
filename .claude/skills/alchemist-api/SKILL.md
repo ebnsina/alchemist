@@ -18,9 +18,11 @@ end-to-end example using nothing but an API key: `test/journey.sh`.
    `partially_ready`; 480p and above are generated when someone first plays the
    video. **Treat `partially_ready` and `ready` as equally playable.** An asset
    nobody watches stays `partially_ready` indefinitely, and that is correct.
-2. **Playback URLs expire after 4 hours** and carry `exp`, `kid` and `sig`. Fetch
-   them from `GET /v1/assets/{id}` when a viewer asks. Never build them, cache them
-   long-term, or store them in a database.
+2. **Playback URLs expire** — after four hours by default, but it is the account's
+   `playback_ttl_seconds` and may be anything from a minute to a day. They carry
+   `exp`, `kid` and `sig`, plus `org` when the account locks playback to a site.
+   Fetch them from `GET /v1/assets/{id}` when a viewer asks. Never build them, cache
+   them long-term, or store them in a database.
 3. **403 on playback is almost always an expired or mismatched signature.** One
    signature covers the manifest, every segment, the content key, the poster and the
    thumbnails — so if the manifest works and segments 403, you are mixing signatures

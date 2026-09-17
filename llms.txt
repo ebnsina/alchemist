@@ -54,16 +54,27 @@ Things that will otherwise surprise you:
 - **Errors are `{"error":{"code","message"}}`.** Branch on `code`, which is stable.
   `message` is written for a human and is translated when the request sends
   `Accept-Language: bn`.
-- **Media is encrypted by default** for new accounts: `cenc`, with the key endpoint
-  answering an EME Clear Key licence (`{"keys":[{"kty":"oct","kid":"...","k":"..."}],
-  "type":"temporary"}`, unpadded base64url). Chrome, Firefox and Edge play it with no
-  licence vendor. **Safari and iOS cannot** — WebKit's only key system is FairPlay —
-  and they get `403 browser_not_supported` from the key endpoint rather than a black
-  screen. This is encryption at rest, not DRM: the key reaches the browser in the
-  clear behind the signed URL, so a lifted bucket is useless but an entitled viewer
-  can still keep a copy. Turn it off per account with `PUT /v1/playback-settings`.
-  Existing accounts keep the setting they have, and published videos keep whatever
-  they were packaged with.
+- **Media is NOT encrypted by default.** It was until migration 043. Turned on per
+  account with `PUT /v1/playback-settings`, media is packaged `cenc` and the key
+  endpoint answers an EME Clear Key licence
+  (`{"keys":[{"kty":"oct","kid":"...","k":"..."}],"type":"temporary"}`, unpadded
+  base64url). Chrome, Firefox and Edge play it with no licence vendor. **Safari and
+  iOS cannot** — WebKit's only key system is FairPlay — and they get
+  `403 browser_not_supported` from the key endpoint rather than a black screen. That
+  is why it is off: Clear Key is what the EME specification calls the baseline key
+  system for interoperability testing, not content protection, and the key reaches the
+  browser in the clear behind the signed URL anyway. Encryption at rest is done at the
+  storage layer instead, where it costs no viewer anything. Existing accounts keep the
+  setting they have, and published videos keep whatever they were packaged with.
+- **A playback link can be locked to one website.** If the account lists
+  `playback_origins`, pass `?origin=` to `GET /v1/assets/{id}` and the links come back
+  carrying `org` inside the signature. A browser loading them from anywhere else gets
+  403, checked at the edge before the cache. A locked link will not play in a native
+  app, which sends neither `Origin` nor `Referer`.
+- **Link lifetime is the account's setting**, `playback_ttl_seconds`, four hours by
+  default. `?ttl=` may shorten a single link, never lengthen it. It has to outlast the
+  longest single viewing: one signature covers every segment, so a link that expires
+  mid-lecture stops playback mid-lecture.
 - **Play whichever URL `playback.preferred` names.** HLS for a clear asset, DASH for
   an encrypted one: encrypted media is packaged `cenc`, and HLS has no `cenc`. Both
   URLs are always returned. DASH is produced too, but only HLS is verified

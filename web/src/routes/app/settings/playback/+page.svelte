@@ -103,18 +103,19 @@
 	</div>
 {:else}
 	<div class="card mt-6">
-		<p class="title">Scramble the stored files</p>
+		<p class="title">Scramble the video file itself</p>
 		<p class="sub mt-2 max-w-xl">
-			Your videos are stored scrambled, so a copy of our storage taken without the key is
-			worth nothing. It does not stop somebody who is allowed to watch from recording their
-			screen — that is what expiring links and the device limit below are for.
+			Everything we hold is already written to disk encrypted, whatever you choose here — a
+			stolen drive or a copied backup is worth nothing either way. This is a second layer on
+			top: the video file stays scrambled even as it is handed to a player, which buys very
+			little and costs a great deal, so it is off unless you switch it on.
 		</p>
 
 		<div class="mt-5">
 			<Check
 				bind:checked={encrypt}
-				label="Scramble stored video"
-				hint="Off for new accounts."
+				label="Scramble the video file"
+				hint="Off unless you turn it on."
 				disabled={readOnly()}
 			/>
 		</div>
