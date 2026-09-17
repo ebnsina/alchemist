@@ -12,9 +12,14 @@ run: build
 	set -a; . ./.env; set +a; ./bin/alchemist
 
 # Dev object storage. Production runs the same SeaweedFS, with erasure coding.
+#
+# -s3.encryptVolumeData matches production: every object is encrypted before it reaches
+# a volume server, so a stolen disk or a copied backup decodes to nothing. Dev runs it
+# too, because "it worked locally" is worth nothing if the shapes differ. See
+# deploy/README.md for what it does and does not cover.
 storage:
 	mkdir -p $(SEAWEED)/data
-	weed server -dir=$(SEAWEED)/data -s3 -s3.port=9000 \
+	weed server -dir=$(SEAWEED)/data -s3 -s3.port=9000 -s3.encryptVolumeData \
 	  -s3.config=$(SEAWEED)/s3.json -volume.max=64 -master.volumeSizeLimitMB=1024 -ip=127.0.0.1
 
 db-reset:
