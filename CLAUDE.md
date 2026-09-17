@@ -179,6 +179,12 @@ These were established by measurement and are expensive to rediscover.
   surviving duplicate and moves those rows onto it: `content_keys` and `renditions`
   cascade from `assets`, so nulling the pointers instead takes the key and the ladder
   with it while the objects, and playback, carry on.
+- **At rest is the storage layer's job, not the video's.** SeaweedFS runs with
+  `-s3.encryptVolumeData` in dev and production alike, so a stolen disk or backup
+  decodes to nothing for every viewer on every platform. It does not survive leaked S3
+  credentials — the API's job is to hand back plaintext to valid credentials — which is
+  the one thing playback encryption did cover, and the trade that was taken knowingly.
+  Losing the filer's metadata loses the keys: back it up like PostgreSQL.
 - **Playback encryption is off by default since 043, and was never DRM.** Clear Key is
   what the W3C EME specification calls the baseline key system for interoperability
   testing, not a content protection system: the key reaches the browser in the clear

@@ -36,6 +36,49 @@ It mounts only `/playback/...` and `/internal/verify-playback`, and needs the sa
 `upstream origin` at it and scale it on request volume independently of the API.
 `internal/modules/README.md` covers moving it to its own repository entirely.
 
+## Storage
+
+SeaweedFS, run with `-s3.encryptVolumeData`:
+
+```
+weed server -dir=/var/lib/seaweed -s3 -s3.port=9000 \
+  -s3.config=/etc/alchemist/s3.json -s3.encryptVolumeData
+```
+
+Every object is encrypted before it reaches a volume server, and the keys live in the
+filer's metadata. `make storage` runs the same flag locally on purpose: an encryption
+setting that only exists in production is one nobody has ever seen work.
+
+**This is the at-rest control, and it is the only one.** Playback encryption used to
+stand in for it and no longer does — `encrypt_playback` is off by default since
+migration 043, because Clear Key refuses every Apple viewer for a key the browser
+receives in the clear anyway. Turning this flag off leaves nothing covering a stolen
+disk.
+
+Measured rather than assumed, against SeaweedFS 4.47 — a 1 MB object containing a known
+marker, stored through the S3 API both ways:
+
+| | volume `.dat` | marker found on disk | read back through S3 |
+|---|---|---|---|
+| without the flag | 1048664 bytes | yes | intact |
+| with the flag | 1048656 bytes | no | intact |
+
+**What it covers:** a disk, a volume server, or a backup taken away. Those decode to
+nothing without the filer's metadata.
+
+**What it does not cover**, and this is the trade that was made deliberately:
+
+- **Leaked S3 credentials.** The S3 API's job is to hand back plaintext to whoever
+  presents valid credentials, and it does. Playback encryption survived this; volume
+  encryption does not. Treat `s3.json` as a secret on the level of `ALCHEMIST_KEK`.
+- **A compromised running host.** The filer decrypts for anything that can reach it.
+- **A viewer keeping a copy of what they were entitled to watch.** Nothing at this
+  layer addresses that. Signed links, origin locking and the device cap bound who may
+  start; real content protection is multi-DRM and is not built.
+
+Losing the filer's metadata store loses the keys and therefore the objects. Back it up
+with the same seriousness as PostgreSQL — the volumes alone are not a recovery.
+
 ## Control plane
 
 ```
