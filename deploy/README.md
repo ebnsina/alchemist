@@ -79,6 +79,44 @@ nothing without the filer's metadata.
 Losing the filer's metadata store loses the keys and therefore the objects. Back it up
 with the same seriousness as PostgreSQL — the volumes alone are not a recovery.
 
+## Billing
+
+Two gateways, chosen by the account's currency: BDT through SSLCommerz, anything else
+through Stripe. Keys go in `alchemist.env` — see `.env.example`. With none set,
+invoices are still issued and visible and simply cannot be paid online, which is the
+right state before you have a merchant account.
+
+Each gateway needs its callback registered, and the callback is the only thing standing
+between a stranger and a paid invoice:
+
+```
+Stripe      webhook endpoint -> https://api.example.com/webhooks/stripe
+                               events: payment_intent.succeeded,
+                                       payment_intent.payment_failed,
+                                       checkout.session.completed
+SSLCommerz  IPN URL in the   -> https://api.example.com/webhooks/sslcommerz/ipn
+            merchant panel
+```
+
+Both are verified before anything is read — Stripe by its `Stripe-Signature` HMAC with
+a five-minute tolerance, SSLCommerz by the `verify_sign` hash **and** a second call to
+their validation API, because the hash only proves the POST was not edited in transit,
+not that the payment succeeded. An unverified callback is answered 403, never 500: a
+500 invites the gateway to redeliver a request that will never be accepted.
+
+**SSLCommerz cannot be charged automatically.** Its published v4 API is
+initiate-then-redirect with no merchant-initiated charge against a stored card, so a
+BDT invoice is collected by the customer opening a payment link. Stripe charges a saved
+card off-session. The invoice, the three retries and the suspension are identical
+either way; only the collection step differs. Merchant-initiated recurring needs a
+separate agreement with SSLCommerz — when there is one, it goes in
+`internal/platform/payments/sslcommerz.go`.
+
+**Suspension refuses new uploads and nothing else.** Playback continues for a suspended
+account, deliberately: taking a customer's viewers offline over an unpaid invoice
+punishes people who are not party to it, and it is the one part of a suspension that
+paying cannot undo.
+
 ## Control plane
 
 ```
@@ -106,7 +144,10 @@ rows, and those copies are now resolved rather than stored.
 `internal/platform/db/migrations/028_usage_bytes.sql` adds `tenant_stored_bytes()`, another
 `SECURITY DEFINER` reader for a cross-tenant job, and the unique index the daily egress
 and storage rows upsert onto -- without it every flush inserts a new row instead of
-folding into the day. `internal/platform/db/migrations/043_ttl_and_clear_key.sql` makes the playback link
+folding into the day. `internal/platform/db/migrations/044_billing.sql` adds rate cards, invoices, payment
+methods and payments, plus three `SECURITY DEFINER` readers: invoicing and collection
+run with no tenant in scope, and a gateway webhook arrives with none at all.
+`internal/platform/db/migrations/043_ttl_and_clear_key.sql` makes the playback link
 lifetime a per-tenant column and stops playback encryption being the default. Existing
 tenants keep whatever they have, and published assets are never re-packaged — flip an
 existing tenant deliberately, and remember that turning encryption *on* refuses every

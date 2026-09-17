@@ -522,6 +522,67 @@ paths:
         "401": { description: Missing or invalid credentials }
         "404": { description: caption_not_found }
 
+  /v1/billing:
+    get:
+      summary: What this account owes and what happens next
+      description: |
+        `status` is `active`, `past_due` or `suspended`. Suspension refuses new
+        uploads and **nothing else** — existing videos keep playing throughout, which
+        is why `playback_continues` is always true. Taking a customer's viewers
+        offline over an unpaid invoice punishes people who are not party to it.
+
+        `currency` comes from the account's rate card and decides `gateway`: BDT is
+        collected through SSLCommerz, anything else through Stripe. One gateway per
+        account.
+
+        `outstanding_minor` is in minor units — paisa, cents — like every amount here.
+        Money is never a decimal in this API.
+      responses:
+        "200": { description: Billing status, currency, gateway and what is outstanding }
+        "401": { description: Missing or invalid credentials }
+
+  /v1/invoices:
+    get:
+      summary: Invoices, newest first
+      description: |
+        One invoice per calendar month, issued after the month closes, with a line per
+        charged kind carrying the quantity, the unit rate and what it came to. A
+        customer asking why a bill is what it is gets the arithmetic, not a total.
+
+        A month with no usage is still invoiced, for zero, and marked paid — silence
+        would leave somebody wondering whether billing ran.
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Order'
+        - name: sort
+          in: query
+          schema: { type: string, enum: [issued_at, total_minor, status], default: issued_at }
+      responses:
+        "200": { description: Invoices with their lines, and a total count }
+        "401": { description: Missing or invalid credentials }
+
+  /v1/invoices/{id}/pay:
+    post:
+      summary: Somewhere to pay an invoice
+      description: |
+        Answers `pay_url`, a hosted checkout page at the account's gateway. This is how
+        a BDT invoice is settled at all — SSLCommerz's published API has no
+        merchant-initiated charge against a stored card — and how a card customer
+        replaces a card that keeps declining.
+
+        The invoice is **not** marked paid when this returns. A checkout session
+        created is not money received; it is settled only by a webhook whose signature
+        verified and whose amount covers the total.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: "`pay_url` to send the customer to" }
+        "401": { description: Missing or invalid credentials }
+        "404": { description: invoice_not_found }
+        "409": { description: invoice_not_payable }
+        "503": { description: billing_not_configured, or gateway_unavailable }
+
   /v1/keys:
     get:
       summary: List this tenant's API keys

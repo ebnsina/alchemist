@@ -3,6 +3,12 @@
 ## Unreleased
 
 ### Added
+- **Billing.** One bill a month for what was actually used, with every line showing the
+  quantity, the rate and what it came to — a customer asking why a bill is what it is
+  gets the arithmetic rather than a total. BDT accounts pay through SSLCommerz and
+  everyone else through Stripe; the page never touches a card, it sends you to the
+  gateway's own page. A late payment says plainly that videos keep playing, because
+  that is the first thing anybody seeing "paused" wants to know.
 - **The home page says what protects a paid video**, now that two of the three answers
   are new: a link only works on the sites you name, and everything we hold is written to
   disk encrypted. The sharing question in the FAQ used to answer "not for long" — it

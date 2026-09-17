@@ -179,6 +179,23 @@ These were established by measurement and are expensive to rediscover.
   surviving duplicate and moves those rows onto it: `content_keys` and `renditions`
   cascade from `assets`, so nulling the pointers instead takes the key and the ladder
   with it while the objects, and playback, carry on.
+- **Money is integer minor units everywhere it is stored or charged; rates are not.**
+  Unit rates are fractions of a paisa per megabyte, so they stay exact `big.Rat` and
+  only the line total rounds, half-up, once. A `float64` anywhere in that path bills
+  the difference forever: 0.016 has no exact binary representation, and the rate card
+  is parsed with `json.Number` for that reason alone.
+- **Suspension refuses ingest and never playback.** Taking a customer's viewers offline
+  over an unpaid invoice punishes people who are not party to it, and it is the one
+  part of a suspension that paying cannot undo.
+- **SSLCommerz has no merchant-initiated charge in its published API.** It is hosted
+  checkout, so it does not implement `payments.AutoCharger` and a BDT invoice is
+  collected by a link the customer opens. Do not "fix" that by inventing a recurring
+  endpoint; it needs a separate agreement with SSLCommerz.
+- **A verified webhook is not a paid invoice.** SSLCommerz's `verify_sign` proves the
+  POST was not edited, not that money moved — the validation API is the authoritative
+  answer. And an event whose amount is under the invoice total is refused, or a
+  one-taka payment clears a 1,560-taka bill. The gateway's own reference is a unique
+  key on `payments`, so an IPN and a redirect describing one payment credit it once.
 - **At rest is the storage layer's job, not the video's.** SeaweedFS runs with
   `-s3.encryptVolumeData` in dev and production alike, so a stolen disk or backup
   decodes to nothing for every viewer on every platform. It does not survive leaked S3

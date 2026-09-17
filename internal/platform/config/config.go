@@ -49,6 +49,21 @@ type Config struct {
 	// LiveMaxStreams bounds concurrent broadcasts on this box. Cores, not ports:
 	// one rung is roughly one core held for the length of the broadcast.
 	LiveMaxStreams int
+
+	// Payment gateways. Each is optional and each is a pair: half a gateway is worse
+	// than none, because a webhook with no secret to verify against fails closed and
+	// every payment silently goes uncredited. A gateway with no keys leaves invoices
+	// visible and unpayable online, which is the honest state for a deployment that
+	// has not been given any.
+	StripeSecretKey     string
+	StripeWebhookSecret string
+	SSLCommerzStoreID   string
+	SSLCommerzStorePass string
+	SSLCommerzSandbox   bool
+	// BillingURL is where a customer lands after paying, and what a checkout link
+	// returns to. Required once any gateway is configured: a redirect to nowhere is
+	// how a paid invoice looks like a failed one.
+	BillingURL string
 }
 
 func Load() (*Config, error) {
@@ -102,6 +117,28 @@ func Load() (*Config, error) {
 	// Optional as a pair. Live is off unless both are set; one without the other is a
 	// boot failure rather than a surface that half exists.
 	c.PlayerURL = strings.TrimSpace(os.Getenv("ALCHEMIST_PLAYER_URL"))
+
+	c.StripeSecretKey = strings.TrimSpace(os.Getenv("ALCHEMIST_STRIPE_SECRET_KEY"))
+	c.StripeWebhookSecret = strings.TrimSpace(os.Getenv("ALCHEMIST_STRIPE_WEBHOOK_SECRET"))
+	if (c.StripeSecretKey == "") != (c.StripeWebhookSecret == "") {
+		return nil, fmt.Errorf(
+			"ALCHEMIST_STRIPE_SECRET_KEY and ALCHEMIST_STRIPE_WEBHOOK_SECRET must be set together")
+	}
+	c.SSLCommerzStoreID = strings.TrimSpace(os.Getenv("ALCHEMIST_SSLCOMMERZ_STORE_ID"))
+	c.SSLCommerzStorePass = strings.TrimSpace(os.Getenv("ALCHEMIST_SSLCOMMERZ_STORE_PASSWORD"))
+	if (c.SSLCommerzStoreID == "") != (c.SSLCommerzStorePass == "") {
+		return nil, fmt.Errorf(
+			"ALCHEMIST_SSLCOMMERZ_STORE_ID and ALCHEMIST_SSLCOMMERZ_STORE_PASSWORD must be set together")
+	}
+	// Live money by default. A sandbox store that is treated as live refuses every
+	// payment; a live store treated as sandbox charges real cards against a test
+	// endpoint. Opting into sandbox has to be the deliberate act.
+	c.SSLCommerzSandbox = strings.TrimSpace(os.Getenv("ALCHEMIST_SSLCOMMERZ_SANDBOX")) != ""
+	c.BillingURL = strings.TrimRight(strings.TrimSpace(os.Getenv("ALCHEMIST_BILLING_URL")), "/")
+	if c.BillingURL == "" && (c.StripeSecretKey != "" || c.SSLCommerzStoreID != "") {
+		return nil, fmt.Errorf(
+			"ALCHEMIST_BILLING_URL is required when a payment gateway is configured")
+	}
 
 	c.LiveIngestHost = strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_INGEST_HOST"))
 	c.LivePullBase = strings.TrimSpace(os.Getenv("ALCHEMIST_LIVE_PULL_BASE"))

@@ -68,7 +68,12 @@ const MESSAGES: Record<string, string> = {
 	caption_not_found: 'There is no subtitle track in that language on this video.',
 	invalid_origin: 'A site looks like https://app.example.com — scheme and domain, no path.',
 	origin_not_allowed: 'This account does not allow playback on that site.',
-	invalid_ttl: 'A link has to last between a minute and a day.'
+	invalid_ttl: 'A link has to last between a minute and a day.',
+	invoice_not_found: 'We could not find that invoice. Reload the page.',
+	invoice_not_payable: 'That invoice has nothing left to pay.',
+	billing_not_configured:
+		'Paying online is not switched on yet. Talk to us and we will settle it directly.',
+	gateway_unavailable: 'The payment page could not be opened just now. Please try again shortly.'
 };
 
 export class ApiError extends Error {
@@ -438,6 +443,45 @@ export type DeliverySettings = {
 export const getDelivery = () => call<DeliverySettings>('/v1/playback-settings');
 export const setDelivery = (s: DeliverySettings) =>
 	call<DeliverySettings>('/v1/playback-settings', { method: 'PUT', body: JSON.stringify(s) });
+
+export type Billing = {
+	status: 'active' | 'past_due' | 'suspended';
+	currency: string;
+	rate_card: string;
+	gateway: 'stripe' | 'sslcommerz';
+	outstanding_minor: number;
+	billing_email: string | null;
+	playback_continues: boolean;
+};
+
+export type InvoiceLine = {
+	kind: string;
+	unit: string;
+	quantity: string;
+	unit_amount: string;
+	per: string;
+	amount_minor: number;
+};
+
+export type Invoice = {
+	id: string;
+	period_start: string;
+	period_end: string;
+	currency: string;
+	total_minor: number;
+	status: 'open' | 'paid' | 'failed' | 'void';
+	attempts: number;
+	last_error?: string | null;
+	issued_at: string;
+	paid_at?: string | null;
+	lines: InvoiceLine[];
+};
+
+export const getBilling = () => call<Billing>('/v1/billing');
+export const listInvoices = (l: ListQuery = {}) =>
+	call<{ invoices: Invoice[]; total: number }>(`/v1/invoices${listParams(l)}`);
+export const payInvoice = (id: string) =>
+	call<{ pay_url: string }>(`/v1/invoices/${id}/pay`, { method: 'POST' });
 
 export type Webhook = { id: string; url: string; events: string[]; active: boolean };
 export const WEBHOOK_EVENTS = ['asset.ready', 'asset.failed', 'rendition.ready'] as const;

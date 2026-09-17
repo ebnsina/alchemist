@@ -92,6 +92,24 @@ func PeriodicJobs() []*river.PeriodicJob {
 			func() (river.JobArgs, *river.InsertOpts) { return LiveReapArgs{}, nil },
 			&river.PeriodicJobOpts{RunOnStart: true},
 		),
+		// Invoicing checks the day rather than being scheduled monthly, because River
+		// has interval jobs and not a calendar. Issuing is keyed on (tenant, period)
+		// and the definer function skips anyone already invoiced, so running it hourly
+		// on the wrong day costs one cheap query and can never bill twice.
+		river.NewPeriodicJob(
+			river.PeriodicInterval(InvoiceCheckInterval),
+			func() (river.JobArgs, *river.InsertOpts) {
+				return InvoiceArgs{PeriodStart: lastClosedMonth(time.Now())}, nil
+			},
+			&river.PeriodicJobOpts{RunOnStart: true},
+		),
+		// Collection is separate and slower: a declined card is not worth retrying
+		// every hour, and three attempts a day apart is the dunning schedule.
+		river.NewPeriodicJob(
+			river.PeriodicInterval(CollectInterval),
+			func() (river.JobArgs, *river.InsertOpts) { return CollectArgs{}, nil },
+			&river.PeriodicJobOpts{RunOnStart: false},
+		),
 		// Safe to run on start because the day's row is replaced, not added to.
 		river.NewPeriodicJob(
 			river.PeriodicInterval(StorageInterval),
@@ -99,4 +117,22 @@ func PeriodicJobs() []*river.PeriodicJob {
 			&river.PeriodicJobOpts{RunOnStart: true},
 		),
 	}
+}
+
+// InvoiceCheckInterval and CollectInterval pace the two billing jobs.
+//
+// Issuing is idempotent per (tenant, period) so checking often is harmless and means a
+// box that was down on the first of the month still invoices when it comes back.
+// Collecting is not idempotent in the same way -- every run is a real attempt against a
+// card network -- so it runs daily and the attempt counter does the rest.
+const (
+	InvoiceCheckInterval = time.Hour
+	CollectInterval      = 24 * time.Hour
+)
+
+// lastClosedMonth is the month to bill: the one before the month we are in. Billing
+// the current month would invoice usage that is still accruing.
+func lastClosedMonth(now time.Time) string {
+	first := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	return first.AddDate(0, -1, 0).Format("2006-01-02")
 }
