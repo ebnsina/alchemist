@@ -63,7 +63,14 @@ rows, and those copies are now resolved rather than stored.
 `internal/platform/db/migrations/028_usage_bytes.sql` adds `tenant_stored_bytes()`, another
 `SECURITY DEFINER` reader for a cross-tenant job, and the unique index the daily egress
 and storage rows upsert onto -- without it every flush inserts a new row instead of
-folding into the day. `internal/platform/db/migrations/041_live_cleanup.sql` drops `live_streams.ingest_port`,
+folding into the day. `internal/platform/db/migrations/043_ttl_and_clear_key.sql` makes the playback link
+lifetime a per-tenant column and stops playback encryption being the default. Existing
+tenants keep whatever they have, and published assets are never re-packaged — flip an
+existing tenant deliberately, and remember that turning encryption *on* refuses every
+Apple viewer.
+`internal/platform/db/migrations/042_playback_origins.sql` adds the list of sites a
+playback link may be locked to.
+`internal/platform/db/migrations/041_live_cleanup.sql` drops `live_streams.ingest_port`,
 which nothing has written since the ingest server replaced per-stream ports with one
 port dispatched by path.
 `internal/platform/db/migrations/040_captions.sql` adds the subtitle table; it holds

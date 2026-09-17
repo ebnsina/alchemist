@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -72,8 +74,12 @@ type playbackSettings struct {
 	// PlaybackOrigins are the web origins a playback link may be locked to. Empty
 	// means unrestricted, which is what an account with a native app needs: the lock
 	// is read from a browser's Origin or Referer and an app sends neither.
-	PlaybackOrigins  []string `json:"playback_origins"`
-	MaxViewerDevices int      `json:"max_viewer_devices"`
+	PlaybackOrigins []string `json:"playback_origins"`
+	// PlaybackTTLSeconds is how long a minted link lasts, and the ceiling for a
+	// per-request ?ttl=. It has to outlast the longest single viewing: the signature
+	// covers every segment, so a link that expires mid-lecture stops playback there.
+	PlaybackTTLSeconds int `json:"playback_ttl_seconds"`
+	MaxViewerDevices   int `json:"max_viewer_devices"`
 }
 
 // getPlayback and setPlayback expose the delivery settings a customer can change.
@@ -88,10 +94,11 @@ func (s *Server) getPlayback(w http.ResponseWriter, r *http.Request) {
 	out := playbackSettings{PlaybackOrigins: []string{}}
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(r.Context(),
-			`select t.encrypt_playback, t.playback_origins,
+			`select t.encrypt_playback, t.playback_origins, t.playback_ttl_seconds,
 			        coalesce(l.max_viewer_devices, 0)
 			   from tenants t left join tenant_limits l on l.tenant_id = t.id`).
-			Scan(&out.EncryptPlayback, &out.PlaybackOrigins, &out.MaxViewerDevices)
+			Scan(&out.EncryptPlayback, &out.PlaybackOrigins, &out.PlaybackTTLSeconds,
+				&out.MaxViewerDevices)
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
@@ -147,13 +154,22 @@ func (s *Server) setPlayback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ttl := time.Duration(req.PlaybackTTLSeconds) * time.Second
+	if ttl < MinPlaybackTTL || ttl > MaxPlaybackTTL {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_ttl",
+			fmt.Sprintf("A playback link lasts between %d seconds and %d.",
+				int(MinPlaybackTTL.Seconds()), int(MaxPlaybackTTL.Seconds())))
+		return
+	}
+
 	// Videos already published keep whatever they were made with. Changing this does
 	// not silently re-package a library, which would change every ETag and evict the
 	// lot from every edge cache.
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		if _, e := tx.Exec(r.Context(),
-			`update tenants set encrypt_playback = $1, playback_origins = $2`,
-			req.EncryptPlayback, origins); e != nil {
+			`update tenants set encrypt_playback = $1, playback_origins = $2,
+			        playback_ttl_seconds = $3`,
+			req.EncryptPlayback, origins, req.PlaybackTTLSeconds); e != nil {
 			return e
 		}
 		// Upsert: a tenant on plan defaults has no limits row, and setting a cap must

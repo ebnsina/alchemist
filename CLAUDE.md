@@ -179,7 +179,15 @@ These were established by measurement and are expensive to rediscover.
   surviving duplicate and moves those rows onto it: `content_keys` and `renditions`
   cascade from `assets`, so nulling the pointers instead takes the key and the ladder
   with it while the objects, and playback, carry on.
-- **Playback encryption is on by default and is still not DRM.** Media is packaged
+- **Playback encryption is off by default since 043, and was never DRM.** Clear Key is
+  what the W3C EME specification calls the baseline key system for interoperability
+  testing, not a content protection system: the key reaches the browser in the clear
+  behind the signed URL, so it never stopped an entitled viewer keeping a copy. What it
+  buys is encryption at rest, and that threat is answered underneath by encrypting the
+  volumes, which costs no viewer anything — rather than at the video layer, which costs
+  every Apple viewer. Real content protection is multi-DRM: an Apple certificate, a
+  licence vendor, and `cbcs` instead of `cenc`. It belongs to whoever asks for it.
+- **Playback encryption, when a tenant turns it on, is still not DRM.** Media is packaged
   `cenc` and `/playback/.../key` answers an EME Clear Key licence, which Chrome,
   Firefox and Edge play with no licence vendor — that is what made the old cbcs
   default unusable and it is fixed. The key still reaches the browser in the clear

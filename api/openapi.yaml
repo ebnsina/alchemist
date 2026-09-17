@@ -1443,9 +1443,10 @@ paths:
     put:
       summary: Playback encryption, allowed sites, and the per-viewer device cap
       description: |
-        **`encrypt_playback` is on by default for new accounts.** Media is packaged
-        `cenc` and the key endpoint answers an EME Clear Key licence, which Chrome,
-        Firefox and Edge play with no licence vendor.
+        **`encrypt_playback` is off by default.** Turn it on and media is packaged
+        `cenc` with the key endpoint answering an EME Clear Key licence, which Chrome,
+        Firefox and Edge play with no licence vendor — and which Safari and iOS cannot
+        play at all.
 
         Be clear about what it does: this is **encryption at rest, not DRM**. The key
         is handed to the browser in the clear behind the signed URL, so it does not
@@ -1468,6 +1469,16 @@ paths:
 
         Leave it empty if your viewers watch in an app of your own: the lock is read
         from a browser's `Origin` or `Referer`, and an app sends neither.
+
+        **`playback_ttl_seconds`** is how long a minted link lasts, and the ceiling for
+        a per-request `?ttl=` on `GET /v1/assets/{id}`. Between 60 and 86400, four
+        hours by default.
+
+        Pick it from your longest single viewing, not your shortest: every segment
+        request carries the same signature, so a link that expires mid-lecture stops
+        playback mid-lecture. If the worry is a leaked link rather than a long one,
+        `playback_origins` is the control for that — it does not care how long the
+        token lasts.
 
         Changing any of this applies to links minted from now on. Videos already
         published keep the packaging they were made with.

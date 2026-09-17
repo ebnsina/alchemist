@@ -67,7 +67,8 @@ const MESSAGES: Record<string, string> = {
 	caption_too_large: 'That subtitle file is over 2 MB.',
 	caption_not_found: 'There is no subtitle track in that language on this video.',
 	invalid_origin: 'A site looks like https://app.example.com — scheme and domain, no path.',
-	origin_not_allowed: 'This account does not allow playback on that site.'
+	origin_not_allowed: 'This account does not allow playback on that site.',
+	invalid_ttl: 'A link has to last between a minute and a day.'
 };
 
 export class ApiError extends Error {
@@ -430,6 +431,7 @@ export const deleteCaption = (id: string, lang: string) =>
 export type DeliverySettings = {
 	encrypt_playback: boolean;
 	playback_origins: string[];
+	playback_ttl_seconds: number;
 	max_viewer_devices: number;
 };
 
