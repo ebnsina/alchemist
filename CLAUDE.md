@@ -48,10 +48,16 @@ Prose still needs judgement. After changing behaviour, check:
 | Live ingest, ports, segments | `docs/06-live.md`, `deploy/README.md` |
 | Asset states, URL TTLs, headers | `llms.txt` (claims are not test-enforced) |
 | Costs, volumes, BD assumptions | `docs/03-cost-model.md`, `docs/05-bangladesh.md` |
+| Anything a customer would notice | `CHANGELOG.md` — plain language, not release notes |
 | Dashboard routes, copy, components | `web/CLAUDE.md`, `web/DESIGN.md`, `web/CHANGELOG.md` |
 | Player behaviour, SDK surface | `player/README.md`, `player/CHANGELOG.md` |
 
 `docs/` and `data/` are gitignored — they are working references, not published.
+
+`README.md` is for somebody arriving at the repository and `CHANGELOG.md` is for a
+customer reading what changed. Neither is for us: this file is. Keep the changelog in
+the terms a customer would use — "videos shot on a phone were the wrong way round",
+not "dimensions were taken from the source probe".
 
 ## Consumers talk to the API only
 
