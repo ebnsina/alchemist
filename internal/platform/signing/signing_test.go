@@ -20,7 +20,7 @@ func ring(t *testing.T) *Keyring {
 func TestSignVerifyRoundTrip(t *testing.T) {
 	kr := ring(t)
 	exp := time.Now().Add(time.Hour).Unix()
-	kid, sig := kr.Sign("/playback/t/a", exp, "", "")
+	kid, sig := kr.Sign("/playback/t/a", exp, "", "", "")
 
 	if kid != "k2" {
 		t.Errorf("signed with %q, want the first entry k2", kid)
@@ -28,7 +28,7 @@ func TestSignVerifyRoundTrip(t *testing.T) {
 	if len(sig) != SignatureLength {
 		t.Errorf("signature length %d, want %d", len(sig), SignatureLength)
 	}
-	if !kr.Verify("/playback/t/a", kid, sig, itoa(exp), "", "") {
+	if !kr.Verify("/playback/t/a", kid, sig, itoa(exp), "", "", "") {
 		t.Error("valid signature rejected")
 	}
 }
@@ -39,9 +39,9 @@ func TestBindingCannotBeStripped(t *testing.T) {
 	kr := ring(t)
 	exp := time.Now().Add(time.Hour).Unix()
 	expS := itoa(exp)
-	kid, sig := kr.Sign("/playback/t/a", exp, "student-88", "rafi-01712")
+	kid, sig := kr.Sign("/playback/t/a", exp, "student-88", "rafi-01712", "")
 
-	if !kr.Verify("/playback/t/a", kid, sig, expS, "student-88", "rafi-01712") {
+	if !kr.Verify("/playback/t/a", kid, sig, expS, "student-88", "rafi-01712", "") {
 		t.Error("bound signature rejected with its own binding")
 	}
 	for _, tc := range []struct{ name, viewer, label string }{
@@ -51,14 +51,14 @@ func TestBindingCannotBeStripped(t *testing.T) {
 		{"viewer swapped", "student-99", "rafi-01712"},
 		{"label swapped", "student-88", "someone-else"},
 	} {
-		if kr.Verify("/playback/t/a", kid, sig, expS, tc.viewer, tc.label) {
+		if kr.Verify("/playback/t/a", kid, sig, expS, tc.viewer, tc.label, "") {
 			t.Errorf("%s was accepted", tc.name)
 		}
 	}
 
 	// An unbound link is not a bound one with empty fields, or the two would be
 	// interchangeable and stripping the binding would be free.
-	_, plain := kr.Sign("/playback/t/a", exp, "", "")
+	_, plain := kr.Sign("/playback/t/a", exp, "", "", "")
 	if plain == sig {
 		t.Error("bound and unbound links signed identically")
 	}
@@ -68,9 +68,9 @@ func TestBindingCannotBeStripped(t *testing.T) {
 func TestRetiredKeyStillVerifies(t *testing.T) {
 	old, _ := NewKeyring([]string{"k1:first-generation-secret-at-least-32by"})
 	exp := time.Now().Add(time.Hour).Unix()
-	kid, sig := old.Sign("/playback/t/a", exp, "", "")
+	kid, sig := old.Sign("/playback/t/a", exp, "", "", "")
 
-	if !ring(t).Verify("/playback/t/a", kid, sig, itoa(exp), "", "") {
+	if !ring(t).Verify("/playback/t/a", kid, sig, itoa(exp), "", "", "") {
 		t.Error("link signed before rotation stopped working")
 	}
 }
@@ -78,7 +78,7 @@ func TestRetiredKeyStillVerifies(t *testing.T) {
 func TestRejections(t *testing.T) {
 	kr := ring(t)
 	future := itoa(time.Now().Add(time.Hour).Unix())
-	_, sig := kr.Sign("/playback/t/a", time.Now().Add(time.Hour).Unix(), "", "")
+	_, sig := kr.Sign("/playback/t/a", time.Now().Add(time.Hour).Unix(), "", "", "")
 
 	cases := []struct {
 		name                  string
@@ -92,7 +92,7 @@ func TestRejections(t *testing.T) {
 		{"empty signature", "/playback/t/a", "k2", "", future},
 	}
 	for _, tc := range cases {
-		if kr.Verify(tc.prefix, tc.kid, tc.sig, tc.exp, "", "") {
+		if kr.Verify(tc.prefix, tc.kid, tc.sig, tc.exp, "", "", "") {
 			t.Errorf("%s was accepted", tc.name)
 		}
 	}

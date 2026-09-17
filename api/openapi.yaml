@@ -329,11 +329,17 @@ paths:
         once one is publishing, then `live_ended`). URLs are signed and
         expire.
 
-        **Hand the player whichever URL `playback.preferred` names.** Both `hls` and
-        `dash` are always present, but encrypted media is packaged `cenc` and HLS has
-        no `cenc` — its fMP4 encryption is the SAMPLE-AES family — so an encrypted
-        asset plays over DASH and a clear one over HLS. `playback.encrypted` says
-        which kind it is; `preferred` saves the caller having to know the rule.
+        **Hand the player whichever URL `playback.preferred` names.** For a finished
+        video both `hls` and `dash` are present, but encrypted media is packaged
+        `cenc` and HLS has no `cenc` — its fMP4 encryption is the SAMPLE-AES family —
+        so an encrypted asset plays over DASH and a clear one over HLS.
+        `playback.encrypted` says which kind it is; `preferred` saves the caller
+        having to know the rule.
+
+        While a broadcast is on air, and until its recording has converted, only `hls`
+        is present: the live prefix holds a playlist and its segments and nothing
+        else. Do not construct `dash`, `poster` or `thumbnails` for a `live` or
+        `live_ended` asset — they will 404.
 
         Pass `viewer` to bind the link to one person. The id is yours and stays
         opaque to us — it is signed, echoed back in the URL as `vid`, and never
@@ -362,9 +368,29 @@ paths:
           required: false
           description: Short label the player renders on screen.
           schema: { type: string, maxLength: 48, pattern: '^[A-Za-z0-9._~@-]+$' }
+        - name: origin
+          in: query
+          required: false
+          description: |
+            Lock the returned links to one of the account's allowed playback sites,
+            e.g. `https://app.school.example` — see `playback_origins` in
+            `/v1/playback-settings`. Required when the account lists more than one;
+            with exactly one listed it is applied automatically, and with none listed
+            the links are unlocked and this is ignored.
+
+            A locked link travels as `org` inside the signature and only plays inside
+            a page on that site: the browser's `Origin`, or its `Referer` where Safari
+            omits `Origin`, is checked at the edge **before the cache**, because a
+            warmed slice never reaches the origin at all.
+
+            The cost is that a locked link cannot be played by a native app, a TV app
+            or curl — none of them sends either header, and accepting a request with
+            neither would be the whole bypass. An account whose viewers use an app of
+            its own leaves `playback_origins` empty.
+          schema: { type: string, format: uri }
       responses:
         "200": { description: Asset state and playback URLs }
-        "400": { description: invalid_viewer }
+        "400": { description: invalid_viewer, or origin_not_allowed }
         "404": { description: asset_not_found }
     patch:
       summary: Rename a video
@@ -1413,9 +1439,9 @@ paths:
     get:
       summary: How your videos are delivered
       responses:
-        "200": { description: Whether playback encryption is on, and the device cap }
+        "200": { description: "Whether playback encryption is on, the sites playback is allowed on, and the device cap" }
     put:
-      summary: Playback encryption and the per-viewer device cap
+      summary: Playback encryption, allowed sites, and the per-viewer device cap
       description: |
         **`encrypt_playback` is on by default for new accounts.** Media is packaged
         `cenc` and the key endpoint answers an EME Clear Key licence, which Chrome,
@@ -1427,6 +1453,24 @@ paths:
         that a lifted bucket or a stolen backup decodes to nothing. Sharing is
         addressed by `max_viewer_devices` and by binding links to a viewer, not by
         this.
+
+        **Safari and iOS cannot play an encrypted asset** — WebKit implements FairPlay
+        and nothing else, and Clear Key is the only key system with no vendor. They
+        are told so plainly (`403 browser_not_supported`) rather than shown a black
+        screen. If any of your audience is on Apple, leave this off.
+
+        **`playback_origins`** are the sites your videos may be embedded on, as
+        `scheme://host` — `https://app.school.example`. List one or more and
+        `GET /v1/assets/{id}` locks the links it mints to one of them, so a link
+        copied out of your page does nothing anywhere else. Up to 20; anything that is
+        not a scheme and host is `400 invalid_origin`. Values are normalised and
+        echoed back in the form they are enforced in.
+
+        Leave it empty if your viewers watch in an app of your own: the lock is read
+        from a browser's `Origin` or `Referer`, and an app sends neither.
+
+        Changing any of this applies to links minted from now on. Videos already
+        published keep the packaging they were made with.
 
         **Safari and iOS cannot play encrypted assets.** WebKit's only key system is
         FairPlay, which needs an Apple certificate and a licence server. Those viewers

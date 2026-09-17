@@ -176,6 +176,27 @@ An encoder that drops has `ReconnectGrace` to come back before the broadcast is
 declared over, so a brief `live.failed`-looking silence is not the end of the stream.
 Deleting a stream while it is armed or live is refused with `stream_on_air`.
 
+## Locking playback to your own site
+
+If the account lists playback origins, pass the one serving this page:
+
+```
+GET /v1/assets/{id}?origin=https://app.school.example
+```
+
+The links come back with `org=` in the query, covered by the signature. A browser
+loading them from anywhere else gets 403 — the check runs at the edge, before the
+cache, which is the only place it can run at all for a segment that is already warm.
+
+With exactly one origin listed you can omit the parameter. With several, omitting it
+is a 400: we cannot guess which of your sites is serving the page, and guessing wrong
+locks the link to the wrong one.
+
+**A locked link will not play in a native app.** Apps send neither `Origin` nor
+`Referer`, and accepting a request with neither would be the entire bypass. If your
+viewers watch in an app of yours, leave `playback_origins` empty and rely on the
+signature and its expiry.
+
 ## Subtitles
 
 Sidecar WebVTT, one track per language, uploaded against a video that is already

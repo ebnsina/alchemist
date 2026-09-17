@@ -39,13 +39,15 @@ func (m *Module) serveContentKey(w http.ResponseWriter, r *http.Request) {
 
 	prefix := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
 	q := r.URL.Query()
-	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm")) {
+	lock := q.Get("org")
+	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm"), lock) ||
+		!originAllowed(r, lock) {
 		httpx.ErrorFor(w, r, http.StatusForbidden, "playback_not_authorized",
 			"This playback link has expired or is not valid.")
 		return
 	}
 
-	setKeyCORS(w)
+	setKeyCORS(w, lock)
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -109,9 +111,10 @@ func (m *Module) serveContentKey(w http.ResponseWriter, r *http.Request) {
 // a JSON POST from the customer's page, which is a real preflight rather than a
 // simple request, so OPTIONS has to answer for it or every encrypted asset fails to
 // play with the origin looking healthy.
-func setKeyCORS(w http.ResponseWriter) {
+func setKeyCORS(w http.ResponseWriter, locked string) {
 	h := w.Header()
-	h.Set("Access-Control-Allow-Origin", "*")
+	h.Set("Access-Control-Allow-Origin", corsOrigin(locked))
+	h.Add("Vary", "Origin")
 	h.Set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
 	h.Set("Access-Control-Allow-Headers", "Content-Type")
 	h.Set("Access-Control-Max-Age", "86400")

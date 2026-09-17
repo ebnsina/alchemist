@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/ebnsina/alchemist/internal/modules/delivery"
 )
 
 type ladderRung struct {
@@ -66,8 +68,12 @@ type setProfileRequest struct {
 }
 
 type playbackSettings struct {
-	EncryptPlayback  bool `json:"encrypt_playback"`
-	MaxViewerDevices int  `json:"max_viewer_devices"`
+	EncryptPlayback bool `json:"encrypt_playback"`
+	// PlaybackOrigins are the web origins a playback link may be locked to. Empty
+	// means unrestricted, which is what an account with a native app needs: the lock
+	// is read from a browser's Origin or Referer and an app sends neither.
+	PlaybackOrigins  []string `json:"playback_origins"`
+	MaxViewerDevices int      `json:"max_viewer_devices"`
 }
 
 // getPlayback and setPlayback expose the delivery settings a customer can change.
@@ -79,12 +85,13 @@ type playbackSettings struct {
 func (s *Server) getPlayback(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := r.Context().Value(tenantKey).(string)
 
-	var out playbackSettings
+	out := playbackSettings{PlaybackOrigins: []string{}}
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		return tx.QueryRow(r.Context(),
-			`select t.encrypt_playback, coalesce(l.max_viewer_devices, 0)
+			`select t.encrypt_playback, t.playback_origins,
+			        coalesce(l.max_viewer_devices, 0)
 			   from tenants t left join tenant_limits l on l.tenant_id = t.id`).
-			Scan(&out.EncryptPlayback, &out.MaxViewerDevices)
+			Scan(&out.EncryptPlayback, &out.PlaybackOrigins, &out.MaxViewerDevices)
 	})
 	if err != nil {
 		writeErrFor(w, r, http.StatusInternalServerError, "internal_error",
@@ -114,12 +121,39 @@ func (s *Server) setPlayback(w http.ResponseWriter, r *http.Request) {
 			"max_viewer_devices is between 0 (no limit) and 20.")
 		return
 	}
+	// Normalised to exactly what a browser puts in an Origin header, so the comparison
+	// at the edge is never doing normalisation -- njs would have to agree with it, and
+	// two implementations of "is this the same site" is how a lock becomes a coin flip.
+	origins := []string{}
+	seen := map[string]bool{}
+	for _, raw := range req.PlaybackOrigins {
+		o, ok := delivery.NormalizeOrigin(raw)
+		if !ok {
+			writeErrFor(w, r, http.StatusBadRequest, "invalid_origin",
+				"A site looks like https://app.example.com — scheme and domain, no path.")
+			return
+		}
+		if seen[o] {
+			continue
+		}
+		seen[o] = true
+		origins = append(origins, o)
+	}
+	// Bounded: a list this long is a paste accident, and every entry is a string the
+	// token may be locked to.
+	if len(origins) > 20 {
+		writeErrFor(w, r, http.StatusBadRequest, "invalid_origin",
+			"Twenty sites is as many as one account can list.")
+		return
+	}
+
 	// Videos already published keep whatever they were made with. Changing this does
 	// not silently re-package a library, which would change every ETag and evict the
 	// lot from every edge cache.
 	err := s.db.AsTenant(r.Context(), tenantID, func(tx pgx.Tx) error {
 		if _, e := tx.Exec(r.Context(),
-			`update tenants set encrypt_playback = $1`, req.EncryptPlayback); e != nil {
+			`update tenants set encrypt_playback = $1, playback_origins = $2`,
+			req.EncryptPlayback, origins); e != nil {
 			return e
 		}
 		// Upsert: a tenant on plan defaults has no limits row, and setting a cap must

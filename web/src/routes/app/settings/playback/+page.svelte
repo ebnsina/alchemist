@@ -14,6 +14,8 @@
 	// iPhone viewers got a refusal had nowhere in the product to turn it off.
 	let encrypt = $state(false);
 	let devices = $state(0);
+	let origins = $state<string[]>([]);
+	let newOrigin = $state('');
 
 	async function load() {
 		error = '';
@@ -21,6 +23,7 @@
 			settings = await getDelivery();
 			encrypt = settings.encrypt_playback;
 			devices = settings.max_viewer_devices;
+			origins = [...settings.playback_origins];
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong.';
 		} finally {
@@ -34,8 +37,19 @@
 
 	const changed = $derived(
 		!!settings &&
-			(encrypt !== settings.encrypt_playback || devices !== settings.max_viewer_devices)
+			(encrypt !== settings.encrypt_playback ||
+				devices !== settings.max_viewer_devices ||
+				origins.join('\n') !== settings.playback_origins.join('\n'))
 	);
+
+	// Added to the list rather than saved immediately, so one Save covers the whole
+	// page and a half-typed address never becomes a rule.
+	function addOrigin() {
+		const v = newOrigin.trim();
+		if (!v || origins.includes(v)) return;
+		origins = [...origins, v];
+		newOrigin = '';
+	}
 
 	async function save() {
 		error = '';
@@ -47,9 +61,16 @@
 			devices = Math.min(20, Math.max(0, Math.round(Number(devices) || 0)));
 			// Both fields, always: the API writes both, so sending one would set the
 			// other to its zero value and quietly remove the device cap.
-			settings = await setDelivery({ encrypt_playback: encrypt, max_viewer_devices: devices });
+			settings = await setDelivery({
+				encrypt_playback: encrypt,
+				playback_origins: origins,
+				max_viewer_devices: devices
+			});
 			encrypt = settings.encrypt_playback;
 			devices = settings.max_viewer_devices;
+			// Echoed back normalised — a trailing slash or capitals are tidied by the
+			// API, and the list on screen has to be the list that is enforced.
+			origins = [...settings.playback_origins];
 			saved = true;
 		} catch (e) {
 			error = e instanceof ApiError ? e.message : 'Something went wrong.';
@@ -107,6 +128,72 @@
 				cost you real money for a change nobody watching would notice.
 			</p>
 			<p class="sub mt-2">Live broadcasts are never scrambled, so they play on anything.</p>
+		</div>
+	</div>
+
+	<div class="card mt-4">
+		<p class="title">Where your videos are allowed to play</p>
+		<p class="sub mt-2 max-w-xl">
+			Name the sites your videos are embedded on and a playback link only works inside a
+			page on one of them. A link copied out and pasted somewhere else does nothing, for
+			as long as it would otherwise have lasted.
+		</p>
+
+		{#if origins.length}
+			<ul class="mt-5 divide-y divide-sunk border-y border-sunk">
+				{#each origins as o (o)}
+					<li class="flex items-center gap-3 py-2.5">
+						<code class="min-w-0 flex-1 truncate font-mono text-xs">{o}</code>
+						{#if !readOnly()}
+							<button
+								type="button"
+								class="flex-none text-xs text-dim hover:text-red"
+								onclick={() => (origins = origins.filter((x) => x !== o))}
+							>
+								Remove
+							</button>
+						{/if}
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="sub mt-5">
+				Nothing listed, so your videos play wherever your link is used.
+			</p>
+		{/if}
+
+		{#if !readOnly()}
+			<div class="mt-4 flex flex-wrap items-end gap-3">
+				<label class="min-w-56 flex-1">
+					<span class="label">Add a site</span>
+					<input
+						bind:value={newOrigin}
+						class="field mt-1.5"
+						type="url"
+						placeholder="https://app.yourschool.com"
+						onkeydown={(e) => {
+							if (e.key === 'Enter') {
+								e.preventDefault();
+								addOrigin();
+							}
+						}}
+					/>
+				</label>
+				<button type="button" class="btn flex-none" onclick={addOrigin} disabled={!newOrigin.trim()}>
+					Add
+				</button>
+			</div>
+		{/if}
+
+		<!-- The limit, said where the decision is, because finding it out means a
+		     customer's app has already stopped playing. -->
+		<div class="mt-5 rounded-xl border border-sunk p-4">
+			<p class="text-sm font-medium">Only browsers can be checked this way</p>
+			<p class="sub mt-2">
+				A web page tells us which site it is; a phone app or a TV app does not, so a link
+				locked to a site will not play in one. If your videos are watched in an app of
+				your own, leave this list empty — expiring links still protect them.
+			</p>
 		</div>
 	</div>
 

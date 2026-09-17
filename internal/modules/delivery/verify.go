@@ -37,7 +37,15 @@ func (m *Module) verifyPlayback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
-	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm")) {
+	lock := q.Get("org")
+	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm"), lock) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	// The subrequest carries the viewer's own headers, so the lock is enforced here --
+	// before the cache lookup, which is the only place it can be enforced at all for a
+	// slice that is already warm.
+	if !originAllowed(r, lock) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

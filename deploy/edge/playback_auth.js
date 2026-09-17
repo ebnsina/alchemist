@@ -31,10 +31,15 @@ function loadKeyring(r) {
  * neither signs the original two fields, so tokens issued before binding existed
  * keep verifying.
  */
-function compute(secret, prefix, exp, viewer, label) {
+function compute(secret, prefix, exp, viewer, label, origin) {
     var msg = prefix + '|' + exp;
-    if (viewer || label) {
+    if (viewer || label || origin) {
         msg += '|' + (viewer || '') + '|' + (label || '');
+    }
+    // Appended, never folded in: a bound link signs the four fields it always did, so
+    // tokens issued before origin locking existed keep verifying.
+    if (origin) {
+        msg += '|' + origin;
     }
     return crypto.createHmac('sha256', secret)
         .update(msg)
@@ -95,11 +100,40 @@ function authorize(r) {
         return;
     }
 
-    if (!secureEqual(sig, compute(secret, prefix, exp, r.args.vid, r.args.wm))) {
+    var org = r.args.org;
+    if (!secureEqual(sig, compute(secret, prefix, exp, r.args.vid, r.args.wm, org))) {
+        r.return(403);
+        return;
+    }
+
+    // Origin locking. Enforced here rather than at the origin server because the media
+    // cache key excludes the query: once a slice is warm it is served without the
+    // origin ever seeing the request, so this is the only place the rule still applies.
+    //
+    // No Origin and no Referer is refused, because "send no header" is otherwise the
+    // entire bypass. The cost, stated rather than discovered: a locked link cannot be
+    // played by a native app or curl, which send neither. An account with an app leaves
+    // the lock off.
+    if (org && !originAllowed(r, org)) {
         r.return(403);
         return;
     }
     r.return(204);
 }
 
-export default { authorize, compute, assetPrefix, secureEqual };
+// originAllowed must agree with originAllowed() in internal/modules/delivery.
+function originAllowed(r, want) {
+    var origin = r.headersIn['Origin'];
+    if (origin) {
+        return origin.toLowerCase() === want.toLowerCase();
+    }
+    // Safari omits Origin on media subrequests that are not CORS, so Referer is the
+    // fallback rather than a nicety. Scheme and host only; the path is the customer's
+    // own page and is none of our business.
+    var ref = r.headersIn['Referer'];
+    if (!ref) return false;
+    var m = ref.match(/^([a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\/?#]+)/);
+    return m !== null && m[1].toLowerCase() === want.toLowerCase();
+}
+
+export default { authorize, compute, assetPrefix, secureEqual, originAllowed };

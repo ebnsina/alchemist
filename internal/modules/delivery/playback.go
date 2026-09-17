@@ -25,13 +25,18 @@ func (m *Module) servePlayback(w http.ResponseWriter, r *http.Request) {
 
 	prefix := fmt.Sprintf("/playback/%s/%s", tenantID, assetID)
 	q := r.URL.Query()
-	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm")) {
+	// The lock is checked here as well as at the edge. An origin serving without an
+	// edge in front of it, or a request that reaches this directly, must not be the
+	// way around a rule the edge enforces.
+	lock := q.Get("org")
+	if !m.verify(prefix, q.Get("kid"), q.Get("sig"), q.Get("exp"), q.Get("vid"), q.Get("wm"), lock) ||
+		!originAllowed(r, lock) {
 		httpx.ErrorFor(w, r, http.StatusForbidden, "playback_not_authorized",
 			"This playback link has expired or is not valid.")
 		return
 	}
 
-	setCORS(w)
+	setCORS(w, lock)
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -142,9 +147,12 @@ func isRewritten(name string) bool {
 		strings.HasSuffix(name, ".vtt")
 }
 
-func setCORS(w http.ResponseWriter) {
+func setCORS(w http.ResponseWriter, locked string) {
 	h := w.Header()
-	h.Set("Access-Control-Allow-Origin", "*")
+	h.Set("Access-Control-Allow-Origin", corsOrigin(locked))
+	// Without this a cache hands the answer computed for one site to the next one,
+	// which turns the lock into a coin flip.
+	h.Add("Vary", "Origin")
 	h.Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
 	h.Set("Access-Control-Allow-Headers", "Range, If-None-Match")
 	// Players need these to reason about byte ranges.

@@ -56,7 +56,7 @@ func signedURL(t *testing.T, kr *signing.Keyring, path, viewer, label string) st
 	t.Helper()
 	exp := time.Now().Add(time.Hour).Unix()
 	prefix, _ := assetPrefix(path)
-	kid, sig := kr.Sign(prefix, exp, viewer, label)
+	kid, sig := kr.Sign(prefix, exp, viewer, label, "")
 	q := "exp=" + itoa(exp) + "&kid=" + kid + "&sig=" + sig
 	if viewer != "" {
 		q += "&vid=" + viewer

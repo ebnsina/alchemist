@@ -65,7 +65,9 @@ const MESSAGES: Record<string, string> = {
 	invalid_label: 'Keep the name under 60 characters — it has to fit a player\u2019s menu.',
 	invalid_captions: 'That is not a WebVTT file. It has to start with the word WEBVTT.',
 	caption_too_large: 'That subtitle file is over 2 MB.',
-	caption_not_found: 'There is no subtitle track in that language on this video.'
+	caption_not_found: 'There is no subtitle track in that language on this video.',
+	invalid_origin: 'A site looks like https://app.example.com — scheme and domain, no path.',
+	origin_not_allowed: 'This account does not allow playback on that site.'
 };
 
 export class ApiError extends Error {
@@ -427,6 +429,7 @@ export const deleteCaption = (id: string, lang: string) =>
 // the toggle would silently drop the device cap to "no limit".
 export type DeliverySettings = {
 	encrypt_playback: boolean;
+	playback_origins: string[];
 	max_viewer_devices: number;
 };
 
