@@ -27,14 +27,18 @@ export const MODELS: Record<ModelKind, { purpose: string; system: string }> = {
 	}
 };
 
-type Provider = 'anthropic' | 'openai';
+type Provider = 'anthropic' | 'openai' | 'gemini' | 'ollama';
 
 // Each adapter reads its own key from the environment and deliberately refuses to
 // take one as an argument, so a key cannot be captured in application code by
 // accident. We only check it is there, and name the variable when it is not.
 const KEY_VAR: Record<Provider, string> = {
 	anthropic: 'ANTHROPIC_API_KEY',
-	openai: 'OPENAI_API_KEY'
+	openai: 'OPENAI_API_KEY',
+	gemini: 'GEMINI_API_KEY',
+	// Ollama runs on your own machine and authenticates with nothing. The empty name
+	// is what says "this one needs no key" without a second flag to forget.
+	ollama: ''
 };
 
 function configured(): { provider: Provider; model: string } {
@@ -45,8 +49,9 @@ function configured(): { provider: Provider; model: string } {
 	}
 	const model = env.AI_MODEL ?? '';
 	if (!model) throw new Error('AI_MODEL is not set.');
-	if (!env[KEY_VAR[provider]]) {
-		throw new Error(`${KEY_VAR[provider]} is not set, so ${provider} cannot be reached.`);
+	const keyVar = KEY_VAR[provider];
+	if (keyVar && !env[keyVar]) {
+		throw new Error(`${keyVar} is not set, so ${provider} cannot be reached.`);
 	}
 	return { provider, model };
 }
@@ -75,6 +80,16 @@ export async function adapterFor(_kind: ModelKind) {
 			const { openaiText } = await import('@tanstack/ai-openai');
 			return openaiText(model as Parameters<typeof openaiText>[0]);
 		}
+		case 'gemini': {
+			const { geminiText } = await import('@tanstack/ai-gemini');
+			return geminiText(model as Parameters<typeof geminiText>[0]);
+		}
+		case 'ollama': {
+			// Self-hosted, which is this project's preference wherever a solid option
+			// exists: nothing leaves the machine and there is no per-token bill.
+			const { ollamaText } = await import('@tanstack/ai-ollama');
+			return ollamaText(model as Parameters<typeof ollamaText>[0]);
+		}
 		default:
 			throw new Error(
 				`AI_PROVIDER=${provider} is not installed. Add @tanstack/ai-${provider} and a case here.`
@@ -86,6 +101,54 @@ export async function adapterFor(_kind: ModelKind) {
 export function aiEnabled(): boolean {
 	try {
 		configured();
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Transcription is its own provider choice, because it is its own market.
+ *
+ * TanStack AI ships a transcription adapter for OpenAI and not for the others: Gemini
+ * and Ollama's audio support is speech *generation*, which is the opposite direction.
+ * So rather than pretend there are four options, this reads its own variables and
+ * leans on the fact that whisper's API shape is the one everybody copied.
+ *
+ * TRANSCRIBE_BASE_URL is the whole self-hosted story. faster-whisper-server,
+ * whisper.cpp's server and several others expose an OpenAI-compatible
+ * /v1/audio/transcriptions, so pointing this at one keeps the audio on your own
+ * machine and costs nothing per minute. Unset, it goes to OpenAI.
+ */
+export function transcriptionConfigured(): { model: string; baseURL?: string } {
+	const model = env.TRANSCRIBE_MODEL ?? '';
+	if (!model) throw new Error('TRANSCRIBE_MODEL is not set. Nothing here guesses a model.');
+	const baseURL = env.TRANSCRIBE_BASE_URL || undefined;
+	// A self-hosted server usually wants no key at all, so one is only insisted on
+	// when the request is going to OpenAI.
+	if (!baseURL && !env.OPENAI_API_KEY) {
+		throw new Error('OPENAI_API_KEY is not set, and no TRANSCRIBE_BASE_URL was given.');
+	}
+	return { model, baseURL };
+}
+
+export async function transcriberFor() {
+	const { model, baseURL } = transcriptionConfigured();
+	const { createOpenaiTranscription } = await import('@tanstack/ai-openai');
+	// A local server is given a placeholder rather than nothing: the client insists on
+	// a key it will then send to a server that ignores it.
+	const apiKey = env.OPENAI_API_KEY || 'self-hosted';
+	return createOpenaiTranscription(
+		model as Parameters<typeof createOpenaiTranscription>[0],
+		apiKey,
+		baseURL ? { baseURL } : undefined
+	);
+}
+
+/** Whether transcription is usable, so the dashboard can hide a button that would 503. */
+export function transcriptionEnabled(): boolean {
+	try {
+		transcriptionConfigured();
 		return true;
 	} catch {
 		return false;

@@ -33,6 +33,8 @@
     "@hugeicons/svelte": "^1.1.5",
     "@tanstack/ai": "^0.54.0",
     "@tanstack/ai-anthropic": "^0.18.6",
+    "@tanstack/ai-gemini": "^0.29.2",
+    "@tanstack/ai-ollama": "^0.11.2",
     "@tanstack/ai-openai": "^0.22.6",
     "@tanstack/ai-svelte": "^0.21.1",
     "@tanstack/svelte-table": "^9.2.4",

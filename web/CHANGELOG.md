@@ -3,6 +3,14 @@
 ## Unreleased
 
 ### Added
+- **Subtitles can be drafted from the audio.** A transcript comes back as WebVTT, which
+  is exactly what the captions upload already takes — but it comes back as a *draft*.
+  Nothing is stored and nothing is published from it: somebody reads it and decides,
+  because a machine transcript going live unread is how a lecture ends up captioned
+  with the wrong terms. Bangla especially.
+- **Gemini and Ollama joined the AI providers**, which is one package and one case each.
+  Ollama is the self-hosted one: nothing leaves the machine and there is no per-token
+  bill.
 - **An audio-only option on every video that has sound.** Players offer it as the
   lowest rung, and on a metered connection it is about 40 MB an hour against 300 at the
   smallest picture — enough to finish a lecture on what is left of a data pack.
