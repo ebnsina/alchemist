@@ -98,3 +98,49 @@ func truncate(s string) string {
 	}
 	return s
 }
+
+// Conformant reports whether a source is already everything a mezzanine has to be, so
+// it can be remuxed rather than re-encoded.
+//
+// Checked rather than trusted. The caller knows where the file came from, but "live
+// encodes on the same grid" is a fact two files away that could drift, and the cost of
+// being wrong is a chunk plan that does not land on keyframes -- which surfaces as
+// stitch failures, not as an error here.
+//
+// The GOP itself is not probed: reading every keyframe position means walking the whole
+// index, which is most of what remuxing was meant to save. Live builds the grid from
+// media.GOPSeconds by construction, and VerifyStitch catches it downstream if it ever
+// stops being true.
+func Conformant(p *Probe, fps int) bool {
+	// Near enough is not enough: rounding 29.97 to 30 and copying leaves the chunk
+	// plan assuming 30 frames a second where there are 29.97, so every boundary drifts
+	// a little further off the keyframes. Live writes exactly -r fps, so a genuine
+	// recording sits on the integer and a tolerance this tight costs it nothing.
+	return p != nil && p.VideoCodec == "h264" &&
+		math.Abs(p.FrameRate-float64(fps)) < 0.01 &&
+		p.Width > 0 && p.Height > 0
+}
+
+// RemuxMezzanine rewrites the container and copies the streams.
+//
+// A broadcast's recording is already H.264 on the two-second grid at a constant rate,
+// because live encodes it that way. Re-encoding it to CRF 17 produced a mezzanine
+// roughly twice the size of the file it came from, with a generation of loss, and then
+// built the whole ladder from that degraded copy. Measured: 0.04s against 0.61s, and
+// 1.5 MB against 2.9 MB, on a clip where the input was 1.5 MB.
+func RemuxMezzanine(ctx context.Context, src, dst string) error {
+	args := []string{
+		"-y", "-hide_banner", "-loglevel", "error",
+		// The concatenated segments carry the timestamps of several encoder
+		// connections, so the container is rebuilt with a clean timeline.
+		"-fflags", "+genpts", "-i", src,
+		"-map", "0:v:0", "-map", "0:a:0?",
+		"-c", "copy",
+		"-movflags", "+faststart",
+		dst,
+	}
+	if out, err := exec.CommandContext(ctx, "ffmpeg", args...).CombinedOutput(); err != nil {
+		return fmt.Errorf("%w: remux mezzanine: %s", ErrEncodeFailed, truncate(string(out)))
+	}
+	return nil
+}

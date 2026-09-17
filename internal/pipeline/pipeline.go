@@ -173,6 +173,9 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 	defer stop()
 
 	opts := media.DefaultOptions()
+	// A recording came out of live's own encoder on the mezzanine's grid, so it is
+	// remuxed rather than re-encoded. Transcode checks the file before believing this.
+	opts.SourceConformant = state == "live_ended"
 
 	// On by default since migration 033. cenc plus an EME Clear Key licence plays in
 	// Chrome, Firefox and Edge with no vendor; what it buys is that a lifted bucket
@@ -347,13 +350,12 @@ func (w *TranscodeWorker) Work(ctx context.Context, job *river.Job[TranscodeArgs
 		return err
 	}
 
-	// The packager writes the master playlist, and it knows nothing about subtitles.
-	// A track uploaded while this was encoding would be in the database and missing
-	// from the manifest the viewer reads, with nothing to say so.
-	if captions, err := w.captionsFor(ctx, a.TenantID, a.AssetID); err == nil && len(captions) > 0 {
-		if err := w.republish(ctx, a.TenantID, a.AssetID); err != nil {
-			return fmt.Errorf("publish subtitle tracks: %w", err)
-		}
+	// The master playlist is composed here rather than left as the packager wrote it,
+	// so one piece of code owns it. The packager knows nothing about subtitles or the
+	// audio-only variant, and the last time two things wrote this file a track sat in
+	// the database, missing from the manifest, with nothing to say so.
+	if err := w.republish(ctx, a.TenantID, a.AssetID); err != nil {
+		return fmt.Errorf("publish manifests: %w", err)
 	}
 
 	w.emit(ctx, a, "asset.ready", map[string]any{

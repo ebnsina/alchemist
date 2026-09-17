@@ -3,6 +3,9 @@
 ## Unreleased
 
 ### Added
+- **An audio-only option on every video that has sound.** Players offer it as the
+  lowest rung, and on a metered connection it is about 40 MB an hour against 300 at the
+  smallest picture — enough to finish a lecture on what is left of a data pack.
 - **Billing.** One bill a month for what was actually used, with every line showing the
   quantity, the rate and what it came to — a customer asking why a bill is what it is
   gets the arithmetic rather than a total. BDT accounts pay through SSLCommerz and

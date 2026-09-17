@@ -142,6 +142,11 @@ func codecString(r media.Rung) string {
 // manifest-only mode, so the media itself is never rewritten: ETags hold and edge
 // caches keep every segment they already have. Only the two small manifest files
 // change, which is the whole point of composing rather than re-packaging.
+// audioOnlyBandwidth is the audio rendition's rate plus container overhead. Declared
+// rather than measured because a playlist wants the number a player should plan for,
+// and EncodeAudio fixes it at 96k.
+const audioOnlyBandwidth = 112000
+
 type variant struct {
 	height, width, bandwidth int
 	codec                    string
@@ -212,6 +217,20 @@ func (w *TranscodeWorker) republish(ctx context.Context, tenantID, assetID strin
 			`NAME="AUDIO",DEFAULT=YES,AUTOSELECT=YES,CHANNELS="2"` + "\n\n")
 		audioAttr = `,AUDIO="audio"`
 	}
+	// An audio-only variant, offered before the video ones so a player starting on a
+	// bad connection can fall back to it rather than stalling.
+	//
+	// It is the same audio object every video variant already references -- audio is
+	// encoded once and shared -- so this costs one line in a playlist and no storage.
+	// On a market where most viewers pay by the gigabyte it is the difference between
+	// finishing a lecture and running out of data: roughly 40 MB an hour against 300
+	// at 144p.
+	if hasAudio {
+		fmt.Fprintf(&b,
+			"#EXT-X-STREAM-INF:BANDWIDTH=%d,CODECS=\"mp4a.40.2\"%s%s\naudio.m3u8\n",
+			audioOnlyBandwidth, audioAttr, subsAttr)
+	}
+
 	for _, v := range variants {
 		codecs := v.codec
 		if hasAudio {
